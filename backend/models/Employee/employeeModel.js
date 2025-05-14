@@ -25,6 +25,9 @@ class Employee {
         hasEpfEtf: employeeData.hasEpfEtf || "", // Add hasEpfEtf
         overtimeHourlyRate: employeeData.overtimeHourlyRate || "", // Add overtimeHourlyRate
         epfNumber: employeeData.hasEpfEtf === "Yes" ? employeeData.epfNumber || "" : "", // Add epfNumber if EPF/ETF is Yes
+        bankName: employeeData.bankName || "", // Add bankName
+        bankBranch: employeeData.bankBranch || "", // Add bankBranch
+        bankNumber: employeeData.bankNumber || "", // Add bankNumber
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -114,6 +117,9 @@ class Employee {
         overtimeHourlyRate: data.overtimeHourlyRate || "", // Add overtimeHourlyRate
         epfNumber: data.epfNumber || "", // Add epfNumber
         profileImage: data.profileImage || null, // Ensure the profileImage URL is returned
+        bankName: data.bankName || "", // Add bankName
+        bankBranch: data.bankBranch || "", // Add bankBranch
+        bankNumber: data.bankNumber || "", // Add bankNumber
       };
     } catch (error) {
       console.error('Error getting employee:', error);
@@ -156,6 +162,9 @@ class Employee {
         hasEpfEtf: updateData.hasEpfEtf || "", // Add hasEpfEtf
         overtimeHourlyRate: updateData.overtimeHourlyRate || "", // Add overtimeHourlyRate
         epfNumber: updateData.hasEpfEtf === "Yes" ? updateData.epfNumber || "" : "", // Add epfNumber if EPF/ETF is Yes
+        bankName: updateData.bankName || employeeData.bankName || "", // Add bankName
+        bankBranch: updateData.bankBranch || employeeData.bankBranch || "", // Add bankBranch
+        bankNumber: updateData.bankNumber || employeeData.bankNumber || "", // Add bankNumber
         updatedAt: new Date().toISOString()
       };
       Object.keys(updateObject).forEach(key => {

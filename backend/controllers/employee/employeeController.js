@@ -8,27 +8,6 @@ class EmployeeController {
   static async createEmployee(req, res) {
     try {
       const employee = await Employee.create(req.body);
-
-      // Send employee credentials email
-      await sendEmployeeCredentials(
-        req.body.email,
-        req.body.password,
-        `${req.body.firstName} ${req.body.lastName}`
-      );
-
-      // Attempt to send employee credentials SMS
-      try {
-        await sendEmployeeCredentialsSMS(
-          req.body.phoneNumber,
-          req.body.email, // Pass email to the SMS function
-          req.body.password,
-          `${req.body.firstName} ${req.body.lastName}`
-        );
-      } catch (smsError) {
-        console.error('SMS sending failed:', smsError.message);
-        // Log the error but do not delete the employee record
-      }
-
       res.status(201).json({ success: true, data: employee });
     } catch (error) {
       console.error('Error creating employee:', error);

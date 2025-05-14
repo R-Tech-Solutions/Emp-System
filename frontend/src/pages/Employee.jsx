@@ -157,11 +157,11 @@ export default function Employee() {
 
     const generateEmployeeId = () => {
         if (!employees.length) return 'EMP001';
-        
+
         const maxId = employees
             .map(emp => parseInt(emp.employeeId.replace('EMP', '')))
             .reduce((max, current) => Math.max(max, current), 0);
-            
+
         return `EMP${String(maxId + 1).padStart(3, '0')}`;
     };
 
@@ -528,35 +528,34 @@ export default function Employee() {
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
             {/* Overlay for viewing employee details */}
             {selectedEmployee && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                    <div className={`relative w-11/12 max-w-4xl p-6 rounded-lg shadow-xl overflow-y-auto max-h-[90vh] ${isDarkMode ? "bg-gray-800 text-gray-200" : "bg-white text-gray-900"}`}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                    <div className={`relative w-full max-w-5xl mx-4 p-8 rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh] transition-all duration-300 ${isDarkMode ? "bg-gray-900 text-gray-100" : "bg-white text-gray-900"}`}>
                         <button
                             onClick={closeOverlay}
-                            className="absolute top-4 right-4 p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+                            className="absolute top-4 right-4 p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition"
                         >
                             <X className="h-5 w-5" />
                         </button>
 
-                        <h2 className="text-3xl font-bold mb-6 text-center">Employee Details</h2>
+                        <h2 className="text-4xl font-extrabold mb-8 text-center tracking-tight">Employee Profile</h2>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Profile Section */}
-                            <div className="md:col-span-2 flex items-center gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {/* Profile Header */}
+                            <div className="md:col-span-2 flex items-center gap-6 border-b pb-6 mb-6">
                                 {selectedEmployee.profileImage && (
                                     <img
-                                        src={selectedEmployee.profileImage} // Use the URL directly
+                                        src={selectedEmployee.profileImage}
                                         alt="Profile"
-                                        className="w-32 h-32 rounded-full"
+                                        className="w-28 h-28 rounded-full border-4 border-blue-500 shadow-md"
                                     />
                                 )}
-                                 console.log{selectedEmployee.profileImage};
                                 <div>
-                                    <p className="text-lg font-semibold">{selectedEmployee.firstName} {selectedEmployee.lastName}</p>
+                                    <h3 className="text-2xl font-semibold">{selectedEmployee.firstName} {selectedEmployee.lastName}</h3>
                                     <p className="text-sm text-gray-500 dark:text-gray-400">Employee ID: {selectedEmployee.employeeId}</p>
                                     {selectedEmployee.resume && (
                                         <button
                                             onClick={() => handleDownloadResume(selectedEmployee.resume, `${selectedEmployee.firstName}_resume.pdf`)}
-                                            className="mt-2 inline-flex items-center text-blue-500 hover:text-blue-700"
+                                            className="mt-2 inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
                                         >
                                             <Download className="h-5 w-5 mr-1" /> Download Resume
                                         </button>
@@ -564,51 +563,49 @@ export default function Employee() {
                                 </div>
                             </div>
 
-                            {/* Personal Info */}
-                            <div><strong>Email:</strong> {selectedEmployee.email}</div>
-                            <div><strong>Phone Number:</strong> {selectedEmployee.phoneNumber}</div>
-                            <div><strong>Date of Birth:</strong> {selectedEmployee.dateOfBirth}</div>
-                            <div><strong>Gender:</strong> {selectedEmployee.gender}</div>
-                            <div><strong>Nationality:</strong> {selectedEmployee.nationality}</div>
-                            <div><strong>NIC/Passport:</strong> {selectedEmployee.nicPassport}</div>
-                            <div><strong>Marital Status:</strong> {selectedEmployee.maritalStatus}</div>
-                            <div><strong>Country:</strong> {selectedEmployee.country}</div>
-                            <div><strong>Address:</strong> {selectedEmployee.address}</div>
+                            {/* Personal Details */}
+                            <div><span className="font-medium">Email:</span> {selectedEmployee.email}</div>
+                            <div><span className="font-medium">Phone:</span> {selectedEmployee.phoneNumber}</div>
+                            <div><span className="font-medium">Date of Birth:</span> {selectedEmployee.dateOfBirth}</div>
+                            <div><span className="font-medium">Gender:</span> {selectedEmployee.gender}</div>
+                            <div><span className="font-medium">Nationality:</span> {selectedEmployee.nationality}</div>
+                            <div><span className="font-medium">NIC/Passport:</span> {selectedEmployee.nicPassport}</div>
+                            <div><span className="font-medium">Marital Status:</span> {selectedEmployee.maritalStatus}</div>
+                            <div><span className="font-medium">Country:</span> {selectedEmployee.country}</div>
+                            <div className="md:col-span-2"><span className="font-medium">Address:</span> {selectedEmployee.address}</div>
 
                             {/* Job Info */}
-                            <div><strong>Join Date:</strong> {selectedEmployee.joinDate}</div>
-                            <div><strong>Position:</strong> {selectedEmployee.position}</div>
-                            <div><strong>Department:</strong> {selectedEmployee.department}</div>
-                            <div><strong>Work Location:</strong> {selectedEmployee.workLocation}</div>
-                            <div><strong>Work Address:</strong> {selectedEmployee.workAddress}</div>
-                            <div><strong>Employment Type:</strong> {selectedEmployee.employmentType}</div>
-                            <div><strong>Contract Period:</strong> {selectedEmployee.contractPeriod}</div>
-                            <div><strong>Employment Status:</strong> {selectedEmployee.employmentStatus}</div>
-                            <div><strong>Pay Method:</strong> {selectedEmployee.payMethod}</div>
-                            <div><strong>Hourly Rate:</strong> {selectedEmployee.hourlyRate}</div>
-                            <div><strong>Overtime Hourly Rate:</strong> {selectedEmployee.overtimeHourlyRate}</div>
-                            <div><strong>Monthly Salary:</strong> {selectedEmployee.monthlySalary}</div>
-                            <div><strong>EPF/ETF:</strong> {selectedEmployee.hasEpfEtf}</div>
+                            <div><span className="font-medium">Join Date:</span> {selectedEmployee.joinDate}</div>
+                            <div><span className="font-medium">Position:</span> {selectedEmployee.position}</div>
+                            <div><span className="font-medium">Department:</span> {selectedEmployee.department}</div>
+                            <div><span className="font-medium">Work Location:</span> {selectedEmployee.workLocation}</div>
+                            <div className="md:col-span-2"><span className="font-medium">Work Address:</span> {selectedEmployee.workAddress}</div>
+                            <div><span className="font-medium">Employment Type:</span> {selectedEmployee.employmentType}</div>
+                            <div><span className="font-medium">Contract Period:</span> {selectedEmployee.contractPeriod}</div>
+                            <div><span className="font-medium">Employment Status:</span> {selectedEmployee.employmentStatus}</div>
+                            <div><span className="font-medium">Pay Method:</span> {selectedEmployee.payMethod}</div>
+                            <div><span className="font-medium">Hourly Rate:</span> {selectedEmployee.hourlyRate}</div>
+                            <div><span className="font-medium">Overtime Rate:</span> {selectedEmployee.overtimeHourlyRate}</div>
+                            <div><span className="font-medium">Monthly Salary:</span> {selectedEmployee.monthlySalary}</div>
+                            <div><span className="font-medium">EPF/ETF:</span> {selectedEmployee.hasEpfEtf}</div>
                             {selectedEmployee.hasEpfEtf === "Yes" && (
-                                <div><strong>EPF Number:</strong> {selectedEmployee.epfNumber}</div>
+                                <div><span className="font-medium">EPF Number:</span> {selectedEmployee.epfNumber}</div>
                             )}
 
                             {/* Emergency Contacts */}
-                            <div className="md:col-span-2">
-                                <strong>Emergency Contacts:</strong>
-                                <ul className="list-disc ml-5 mt-1">
+                            <div className="md:col-span-2 border-t pt-6">
+                                <h4 className="font-semibold mb-2">Emergency Contacts:</h4>
+                                <ul className="list-disc ml-6 space-y-1">
                                     {selectedEmployee.emergencyContacts.map((contact, index) => (
-                                        <li key={index}>
-                                            {contact.contactName} - {contact.contactNumber}
-                                        </li>
+                                        <li key={index}>{contact.contactName} - {contact.contactNumber}</li>
                                     ))}
                                 </ul>
                             </div>
 
-                            {/* Education Details */}
-                            <div className="md:col-span-2">
-                                <strong>Education Details:</strong>
-                                <ul className="list-disc ml-5 mt-1">
+                            {/* Education */}
+                            <div className="md:col-span-2 border-t pt-6">
+                                <h4 className="font-semibold mb-2">Education Details:</h4>
+                                <ul className="list-disc ml-6 space-y-1">
                                     {selectedEmployee.educationDetails.map((education, index) => (
                                         <li key={index}>
                                             {education.certificateLevel} in {education.fieldOfStudy} from {education.schoolUniversity}
@@ -616,12 +613,18 @@ export default function Employee() {
                                     ))}
                                 </ul>
                             </div>
+
+                            {/* Bank Details */}
+                            <div className="md:col-span-2 border-t pt-6">
+                                <h4 className="font-semibold mb-2">Bank Details:</h4>
+                                <div><span className="font-medium">Bank Name:</span> {selectedEmployee.bankName}</div>
+                                <div><span className="font-medium">Bank Branch:</span> {selectedEmployee.bankBranch}</div>
+                                <div><span className="font-medium">Account Number:</span> {selectedEmployee.bankNumber}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             )}
-
-
             <div className="container mx-auto py-8 px-4">
                 <div className="flex justify-between items-center mb-8">
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Employee Management System</h1>
@@ -748,11 +751,10 @@ export default function Employee() {
                                                 value={formData.employeeId}
                                                 onChange={handleChange}
                                                 readOnly
-                                                className={`w-full px-3 py-2 rounded-md ${
-                                                    isDarkMode
-                                                        ? "bg-gray-700 border-gray-600 text-white"
-                                                        : "bg-white border-gray-300 text-gray-700"
-                                                } border cursor-not-allowed`}
+                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
+                                                    ? "bg-gray-700 border-gray-600 text-white"
+                                                    : "bg-white border-gray-300 text-gray-700"
+                                                    } border cursor-not-allowed`}
                                             />
                                             {errors.employeeId && <p className="text-red-500 text-sm mt-1">{errors.employeeId}</p>}
                                         </div>
@@ -1293,11 +1295,10 @@ export default function Employee() {
                                                 name="nationality"
                                                 value={formData.nationality}
                                                 onChange={handleChange}
-                                                className={`w-full px-3 py-2 rounded-md ${
-                                                    isDarkMode
-                                                        ? "bg-gray-700 border-gray-600 text-white"
-                                                        : "bg-white border-gray-300 text-gray-700"
-                                                } border`}
+                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
+                                                    ? "bg-gray-700 border-gray-600 text-white"
+                                                    : "bg-white border-gray-300 text-gray-700"
+                                                    } border`}
                                             />
                                         </div>
 
@@ -1313,11 +1314,10 @@ export default function Employee() {
                                                 name="country"
                                                 value={formData.country}
                                                 onChange={handleChange}
-                                                className={`w-full px-3 py-2 rounded-md ${
-                                                    isDarkMode
-                                                        ? "bg-gray-700 border-gray-600 text-white"
-                                                        : "bg-white border-gray-300 text-gray-700"
-                                                } border`}
+                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
+                                                    ? "bg-gray-700 border-gray-600 text-white"
+                                                    : "bg-white border-gray-300 text-gray-700"
+                                                    } border`}
                                             />
                                         </div>
 
@@ -1346,11 +1346,10 @@ export default function Employee() {
                                                 name="bankName"
                                                 value={formData.bankName}
                                                 onChange={handleChange}
-                                                className={`w-full px-3 py-2 rounded-md ${
-                                                    isDarkMode
-                                                        ? "bg-gray-700 border-gray-600 text-white"
-                                                        : "bg-white border-gray-300 text-gray-700"
-                                                } border`}
+                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
+                                                    ? "bg-gray-700 border-gray-600 text-white"
+                                                    : "bg-white border-gray-300 text-gray-700"
+                                                    } border`}
                                             />
                                         </div>
 
@@ -1366,11 +1365,10 @@ export default function Employee() {
                                                 name="bankBranch"
                                                 value={formData.bankBranch}
                                                 onChange={handleChange}
-                                                className={`w-full px-3 py-2 rounded-md ${
-                                                    isDarkMode
-                                                        ? "bg-gray-700 border-gray-600 text-white"
-                                                        : "bg-white border-gray-300 text-gray-700"
-                                                } border`}
+                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
+                                                    ? "bg-gray-700 border-gray-600 text-white"
+                                                    : "bg-white border-gray-300 text-gray-700"
+                                                    } border`}
                                             />
                                         </div>
 
@@ -1386,11 +1384,10 @@ export default function Employee() {
                                                 name="bankNumber"
                                                 value={formData.bankNumber}
                                                 onChange={handleChange}
-                                                className={`w-full px-3 py-2 rounded-md ${
-                                                    isDarkMode
-                                                        ? "bg-gray-700 border-gray-600 text-white"
-                                                        : "bg-white border-gray-300 text-gray-700"
-                                                } border`}
+                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
+                                                    ? "bg-gray-700 border-gray-600 text-white"
+                                                    : "bg-white border-gray-300 text-gray-700"
+                                                    } border`}
                                             />
                                         </div>
                                     </div>
@@ -1643,7 +1640,7 @@ export default function Employee() {
                     </div>
                     <div className="p-6">
                         {status === 'loading' ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' , height: '10px', justifyContent: 'center'}}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', height: '10px', justifyContent: 'center' }}>
                                 <DotSpinner />
                             </div>
                         ) : error ? (
