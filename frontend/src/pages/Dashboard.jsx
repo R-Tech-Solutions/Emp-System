@@ -169,19 +169,9 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchAttendanceData = async () => {
       try {
-        const response = await axios.get(
-          `${backEndURL}/api/employee-work-hours/today-attendance`
-        );
-        const data = response.data.data || []; // Ensure data is an array
-        setAttendanceData(data);
-        setWorkingToday(data.filter((emp) => emp.status === "Working").length);
-        setOnLeaveToday(data.filter((emp) => emp.status === "Absent").length);
-        setOnTimeEmployees(
-          data.filter((emp) => emp.attendance === "On Time").length
-        );
-        setLateEmployees(
-          data.filter((emp) => emp.attendance === "Late").length
-        );
+        const response = await axios.get(`${backEndURL}/api/attendance`);
+        const data = response.data || []; // Ensure data is an array
+        setAttendanceData(data); // Set all attendance records
       } catch (error) {
         console.error("Error fetching attendance data:", error);
       }
@@ -363,6 +353,49 @@ export default function AdminDashboard() {
 
     return matchesSearch && matchesStatus;
   });
+
+  useEffect(() => {
+    const fetchAttendanceAndEmployees = async () => {
+      try {
+        const [attendanceResponse, employeesResponse] = await Promise.all([
+          axios.get(`${backEndURL}/api/attendance`),
+          axios.get(`${backEndURL}/api/employees`),
+        ]);
+
+        const attendance = attendanceResponse.data || [];
+        const employees = employeesResponse.data.data || [];
+
+        // Match attendance with employee details
+        const matchedData = attendance
+          .filter((record) => {
+            const today = new Date().toISOString().split("T")[0];
+            return record.date && record.date.split("T")[0] === today; // Add null check for record.date
+          })
+          .map((record) => {
+            const employee = employees.find(
+              (emp) => emp.email === record.employeeEmail
+            );
+            if (employee) {
+              return {
+                firstName: employee.firstName,
+                lastName: employee.lastName,
+                department: employee.department,
+                position: employee.position,
+                status: record.isAttend ? "Present" : "Absent",
+              };
+            }
+            return null;
+          })
+          .filter(Boolean); // Remove null entries
+
+        setAttendanceData(matchedData);
+      } catch (error) {
+        console.error("Error fetching attendance or employee data:", error);
+      }
+    };
+
+    fetchAttendanceAndEmployees();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 p-4 md:p-6">
@@ -860,17 +893,6 @@ export default function AdminDashboard() {
           </div>
 
           <div className="px-5 py-4 bg-gray-800 border-t border-gray-700 flex flex-col sm:flex-row justify-between items-center">
-            <div className="text-sm text-gray-400 mb-3 sm:mb-0">
-              Showing{" "}
-              <span className="font-semibold text-white">
-                {filteredEmployees.length}
-              </span>{" "}
-              of{" "}
-              <span className="font-semibold text-white">
-                {employeesData.length}
-              </span>{" "}
-              employees
-            </div>
             <div className="flex items-center space-x-2">
               <button
                 className="px-3 py-1 bg-gray-700 rounded-md text-sm hover:bg-gray-600 disabled:opacity-50"
@@ -888,7 +910,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Today's Attendance */}
         <div className="bg-gray-800 rounded-2xl shadow-lg overflow-hidden mb-6">
           <div className="px-5 py-4 border-b border-gray-700 flex flex-col md:flex-row justify-between md:items-center">
             <div>
@@ -940,52 +961,44 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {filteredEmployees.length > 0 ? (
-                  filteredEmployees.map((employee, index) => (
+                {attendanceData.length > 0 ? (
+                  attendanceData.map((employee, index) => (
                     <tr
-                      key={employee.id}
+                      key={index}
                       className={`border-b border-gray-700 ${index % 2 === 0 ? "bg-gray-800" : "bg-gray-750"
                         } hover:bg-gray-700 transition-colors`}
                     >
                       <td className="px-6 py-4 flex items-center whitespace-nowrap">
-                        <img
-                          className="w-8 h-8 rounded-full mr-3 object-cover"
-                          src={employee.avatar || "/placeholder.svg"}
-                          alt={employee.name}
-                        />
                         <span className="font-medium text-white">
-                          {employee.name}
+                          {employee.firstName} {employee.lastName}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-gray-300">
-                        {employee.department}
-                      </td>
-                      <td className="px-6 py-4 text-gray-300">
-                        {employee.position}
-                      </td>
+                      <td className="px-6 py-4 text-gray-300">{employee.department}</td>
+                      <td className="px-6 py-4 text-gray-300">{employee.position}</td>
                       <td className="px-6 py-4">
                         <span
                           title={employee.status}
-                          className={`flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium w-max ${employee.status === "Working"
-                            ? "bg-green-900 text-green-300"
-                            : "bg-yellow-900 text-yellow-300"
+                          className={`flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium w-max ${employee.status === "Present"
+                              ? "bg-green-900 text-green-300"
+                              : "bg-yellow-900 text-yellow-300"
                             }`}
                         >
                           <span
-                            className={`w-2 h-2 rounded-full ${employee.status === "Working"
-                              ? "bg-green-400"
-                              : "bg-yellow-400"
+                            className={`w-2 h-2 rounded-full ${employee.status === "Present"
+                                ? "bg-green-400"
+                                : "bg-yellow-400"
                               }`}
                           ></span>
                           {employee.status}
                         </span>
                       </td>
+                      {/* <td className="px-6 py-4 text-gray-300">{employee.checkIn}</td> */}
                     </tr>
                   ))
                 ) : (
                   <tr className="text-center">
                     <td colSpan="6" className="px-6 py-6 text-gray-500">
-                      No matching employees found.
+                      No attendance records found for today.
                     </td>
                   </tr>
                 )}
@@ -994,17 +1007,6 @@ export default function AdminDashboard() {
           </div>
 
           <div className="px-5 py-4 bg-gray-800 border-t border-gray-700 flex flex-col sm:flex-row justify-between items-center">
-            <div className="text-sm text-gray-400 mb-3 sm:mb-0">
-              Showing{" "}
-              <span className="font-semibold text-white">
-                {filteredEmployees.length}
-              </span>{" "}
-              of{" "}
-              <span className="font-semibold text-white">
-                {employeesData.length}
-              </span>{" "}
-              employees
-            </div>
             <div className="flex items-center space-x-2">
               <button
                 className="px-3 py-1 bg-gray-700 rounded-md text-sm hover:bg-gray-600 disabled:opacity-50"

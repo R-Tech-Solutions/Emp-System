@@ -9,11 +9,20 @@ const getAllAttendance = async (req, res) => {
       return {
         id: doc.id,
         employeeEmail: data.employeeEmail,
-        date: data.date.toDate(), // Firestore timestamp
+        date: data.date instanceof Date
+          ? data.date.toISOString() // If it's a Date object
+          : typeof data.date === 'string'
+          ? new Date(data.date).toISOString() // If it's a string
+          : null, // Handle unexpected types
         isAttend: data.isAttend,
+        checkIn: data.checkIn || null, // Include check-in time if available
       };
     });
-    res.status(200).json(attendanceList);
+
+    // Filter records where isAttend is true
+    const filteredAttendance = attendanceList.filter(record => record.isAttend === true);
+
+    res.status(200).json(filteredAttendance);
   } catch (error) {
     console.error("Firebase Fetch Error:", error);
     res.status(500).json({ message: 'Error fetching attendance records', error: error.message });
