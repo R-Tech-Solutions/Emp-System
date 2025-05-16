@@ -20,6 +20,7 @@ const employeeWorkHoursRoutes = require('./routes/employee/employeeWorkHoursRout
 const monthlyWorkHoursRoutes = require('./routes/monthlyWorkHoursRoutes');
 const salaryRoutes = require('./routes/salaryRoutes');
 const incomeExpenseRoutes = require('./routes/employee/incomeExpenseRoutes');
+const attendanceRoutes = require('./routes/attendanceRoutes');
 
 dotenv.config();
 
@@ -47,6 +48,7 @@ app.use('/api/employee-work-hours', employeeWorkHoursRoutes);
 app.use('/api/monthly-work-hours', monthlyWorkHoursRoutes);
 app.use('/api/salary', salaryRoutes);
 app.use('/api/income-expenses', incomeExpenseRoutes);
+app.use('/api/attendance', attendanceRoutes);
 
 app.get('/', (req, res) => {
     res.send('Hello World!'); 

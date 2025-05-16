@@ -212,11 +212,14 @@ export default function AdminDashboard() {
 
         const today = new Date();
         const birthdayData = employees
-          .filter((employee) => employee.dateOfBirth) // Ensure dateOfBirth exists
+          .filter((employee) => {
+            // Check if dateOfBirth exists and is a valid date string
+            if (!employee.dateOfBirth) return false;
+            const birthDate = new Date(employee.dateOfBirth);
+            return !isNaN(birthDate.getTime()); // Only keep valid dates
+          })
           .map((employee) => {
             const birthDate = new Date(employee.dateOfBirth);
-            if (isNaN(birthDate)) return null; // Skip invalid dates
-
             const currentYear = today.getFullYear();
             const nextBirthday = new Date(birthDate);
             nextBirthday.setFullYear(currentYear);
@@ -240,8 +243,7 @@ export default function AdminDashboard() {
                 (nextBirthday.getFullYear() > currentYear ? 1 : 0),
               daysUntilBirthday,
             };
-          })
-          .filter((b) => b !== null); // Remove null entries
+          });
 
         const filteredAndSortedBirthdays = birthdayData
           .filter((b) => b.daysUntilBirthday >= 0)
@@ -308,32 +310,44 @@ export default function AdminDashboard() {
   }, []);
 
   const calculateContractDetails = useMemo(() => {
-    return contractData.map((employee) => {
-      const joinDate = new Date(employee.joinDate);
-      const contractEndDate = new Date(joinDate);
-      contractEndDate.setMonth(
-        contractEndDate.getMonth() + parseInt(employee.contractPeriod)
-      );
-      if (contractEndDate.getDate() !== joinDate.getDate()) {
-        contractEndDate.setDate(0);
-      }
-      const today = new Date();
-      const daysLeft = Math.ceil(
-        (contractEndDate - today) / (1000 * 60 * 60 * 24)
-      );
+    return contractData
+      .filter((employee) => employee.joinDate) // Filter out employees without joinDate
+      .map((employee) => {
+        try {
+          const joinDate = new Date(employee.joinDate);
+          if (isNaN(joinDate.getTime())) return null; // Skip invalid dates
 
-      return {
-        ...employee,
-        contractEndDate: contractEndDate.toISOString().split("T")[0],
-        daysLeft,
-        status:
-          daysLeft < 0
-            ? "Expired"
-            : daysLeft <= 30
-            ? "Nearing Expiry"
-            : "Active",
-      };
-    });
+          const contractEndDate = new Date(joinDate);
+          contractEndDate.setMonth(
+            contractEndDate.getMonth() + parseInt(employee.contractPeriod || 0)
+          );
+
+          if (contractEndDate.getDate() !== joinDate.getDate()) {
+            contractEndDate.setDate(0);
+          }
+
+          const today = new Date();
+          const daysLeft = Math.ceil(
+            (contractEndDate - today) / (1000 * 60 * 60 * 24)
+          );
+
+          return {
+            ...employee,
+            contractEndDate: contractEndDate.toISOString().split("T")[0],
+            daysLeft,
+            status:
+              daysLeft < 0
+                ? "Expired"
+                : daysLeft <= 30
+                  ? "Nearing Expiry"
+                  : "Active",
+          };
+        } catch (error) {
+          console.error("Error processing contract for employee:", employee.employeeId, error);
+          return null;
+        }
+      })
+      .filter(Boolean); // Remove any null entries
   }, [contractData]);
 
   const totalEmployees = employeesData.length;
@@ -530,8 +544,8 @@ export default function AdminDashboard() {
                           {leave.employeeName}
                           <br />
                           <span className="text-xs text-gray-400">
-                            ({new Date(leave.startDate).toLocaleDateString()} -{" "}
-                            {new Date(leave.endDate).toLocaleDateString()})
+                            ({new Date(leave.startstartDate).toLocaleDateString()} -{" "}
+                            {new Date(leave.endstartDate).toLocaleDateString()})
                           </span>
                         </li>
                       ))}
@@ -585,8 +599,8 @@ export default function AdminDashboard() {
                       entry.status === "Expired"
                         ? "#DC2626"
                         : entry.status === "Nearing Expiry"
-                        ? "#F59E0B"
-                        : "#10B981"
+                          ? "#F59E0B"
+                          : "#10B981"
                     }
                   />
                 ))}
@@ -807,9 +821,8 @@ export default function AdminDashboard() {
                     return (
                       <tr
                         key={employee.id}
-                        className={`border-b border-gray-700 ${
-                          index % 2 === 0 ? "bg-gray-800" : "bg-gray-750"
-                        } hover:bg-gray-700 transition-colors`}
+                        className={`border-b border-gray-700 ${index % 2 === 0 ? "bg-gray-800" : "bg-gray-750"
+                          } hover:bg-gray-700 transition-colors`}
                       >
                         <td className="px-6 py-4 flex items-center whitespace-nowrap">
                           <img
@@ -924,8 +937,6 @@ export default function AdminDashboard() {
                   <th className="px-6 py-3">Department</th>
                   <th className="px-6 py-3">Position</th>
                   <th className="px-6 py-3">Status</th>
-                  <th className="px-6 py-3">Attendance</th>
-                  <th className="px-6 py-3">Check In</th>
                 </tr>
               </thead>
               <tbody>
@@ -933,9 +944,8 @@ export default function AdminDashboard() {
                   filteredEmployees.map((employee, index) => (
                     <tr
                       key={employee.id}
-                      className={`border-b border-gray-700 ${
-                        index % 2 === 0 ? "bg-gray-800" : "bg-gray-750"
-                      } hover:bg-gray-700 transition-colors`}
+                      className={`border-b border-gray-700 ${index % 2 === 0 ? "bg-gray-800" : "bg-gray-750"
+                        } hover:bg-gray-700 transition-colors`}
                     >
                       <td className="px-6 py-4 flex items-center whitespace-nowrap">
                         <img
@@ -956,38 +966,19 @@ export default function AdminDashboard() {
                       <td className="px-6 py-4">
                         <span
                           title={employee.status}
-                          className={`flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium w-max ${
-                            employee.status === "Working"
-                              ? "bg-green-900 text-green-300"
-                              : "bg-yellow-900 text-yellow-300"
-                          }`}
+                          className={`flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium w-max ${employee.status === "Working"
+                            ? "bg-green-900 text-green-300"
+                            : "bg-yellow-900 text-yellow-300"
+                            }`}
                         >
                           <span
-                            className={`w-2 h-2 rounded-full ${
-                              employee.status === "Working"
-                                ? "bg-green-400"
-                                : "bg-yellow-400"
-                            }`}
+                            className={`w-2 h-2 rounded-full ${employee.status === "Working"
+                              ? "bg-green-400"
+                              : "bg-yellow-400"
+                              }`}
                           ></span>
                           {employee.status}
                         </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          title={employee.attendance}
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            employee.attendance === "On Time"
-                              ? "bg-blue-900 text-blue-300"
-                              : employee.attendance === "Late"
-                              ? "bg-red-900 text-red-300"
-                              : "bg-gray-700 text-gray-300"
-                          }`}
-                        >
-                          {employee.attendance}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-gray-300">
-                        {employee.checkIn}
                       </td>
                     </tr>
                   ))
@@ -1017,13 +1008,13 @@ export default function AdminDashboard() {
             <div className="flex items-center space-x-2">
               <button
                 className="px-3 py-1 bg-gray-700 rounded-md text-sm hover:bg-gray-600 disabled:opacity-50"
-                // disabled={currentPage === 1}
+              // disabled={currentPage === 1}
               >
                 Previous
               </button>
               <button
                 className="px-3 py-1 bg-blue-600 rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
-                // disabled={currentPage * pageSize >= filteredEmployees.length}
+              // disabled={currentPage * pageSize >= filteredEmployees.length}
               >
                 Next
               </button>
@@ -1129,13 +1120,12 @@ export default function AdminDashboard() {
                         </td>
                         <td className="p-3">
                           <span
-                            className={`px-2 py-1 rounded-full text-xs ${
-                              asset.status === "Active"
-                                ? "bg-green-900 text-green-300"
-                                : asset.status === "Maintenance"
+                            className={`px-2 py-1 rounded-full text-xs ${asset.status === "Active"
+                              ? "bg-green-900 text-green-300"
+                              : asset.status === "Maintenance"
                                 ? "bg-yellow-900 text-yellow-300"
                                 : "bg-red-900 text-red-300"
-                            }`}
+                              }`}
                           >
                             {asset.status}
                           </span>

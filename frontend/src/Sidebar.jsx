@@ -44,6 +44,7 @@ function Sidebar() {
     { name: "User", path: "/user", icon: <User className="w-5 h-5" /> },
     { name: "Profile", path: "/my", icon: <User className="w-5 h-5" /> },
     { name: "Reports", path: "/reports", icon: <BarChart2 className="w-5 h-5" /> },
+    { name: "Crm", path: "/crm", icon: <BarChart2 className="w-5 h-5" /> },
   ];
 
   return (

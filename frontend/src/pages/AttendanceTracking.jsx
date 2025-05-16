@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
-import DotSpinner from "../loaders/Loader"; // Import the loader
+import DotSpinner from "../loaders/Loader"; 
 import { backEndURL } from "../Backendurl";
 
 export default function AttendancePage() {
@@ -24,7 +24,7 @@ export default function AttendancePage() {
   };
 
   // Fetch employees and attendance data
-  useEffect(() => {
+    useEffect(() => {
     const fetchEmployees = async () => {
       setLoading(true); // Show loader
       try {

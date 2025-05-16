@@ -18,6 +18,7 @@ import Assets from "./pages/Stocks.jsx";
 import Timesheets from "./pages/Timesheets.jsx";
 import Payrol from "./pages/Payroll.jsx";
 import New from "./pages/new.jsx";
+import Crm from "./pages/Crm"
 
 function App() {
   const { theme } = useTheme();
@@ -151,6 +152,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Payrol />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="crm"
+            element={
+              <ProtectedRoute>
+                <Crm />
               </ProtectedRoute>
             }
           />
