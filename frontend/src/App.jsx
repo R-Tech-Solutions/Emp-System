@@ -19,6 +19,7 @@ import Timesheets from "./pages/Timesheets.jsx";
 import Payrol from "./pages/Payroll.jsx";
 import New from "./pages/new.jsx";
 import Crm from "./pages/Crm"
+import Products from "./pages/Product.jsx"
 
 function App() {
   const { theme } = useTheme();
@@ -160,6 +161,15 @@ function App() {
             element={
               <ProtectedRoute>
                 <Crm />
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="products"
+            element={
+              <ProtectedRoute>
+                <Products />
               </ProtectedRoute>
             }
           />

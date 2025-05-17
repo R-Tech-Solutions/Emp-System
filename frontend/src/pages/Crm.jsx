@@ -1,8 +1,4 @@
-"use client"
-
-import { useState, useEffect, useMemo } from "react"
-import { DndProvider, useDrag, useDrop } from "react-dnd"
-import { HTML5Backend } from "react-dnd-html5-backend"
+import { useState, useEffect, useMemo } from "react";
 import {
   Search,
   Filter,
@@ -17,48 +13,17 @@ import {
   X,
   Check,
   Users,
-} from "lucide-react"
+  ArrowRight,
+  Clock,
+  AlertCircle,
+  CheckCircle2,
+  FileText,
+  DollarSign,
+} from "lucide-react";
 
 // Utility function to conditionally join class names
 function cn(...classes) {
-  return classes.filter(Boolean).join(" ")
-}
-
-// Sample data generation functions
-function generateSampleLeads(count = 5) {
-  const stages = ["New", "Qualified", "Proposal Sent", "Negotiation", "Won", "Lost"]
-  const sources = ["Website", "Referral", "Social Media", "Email Campaign", "Event"]
-  const companies = ["Acme Inc", "Globex Corp", "Initech", "Umbrella Corp", "Stark Industries"]
-
-  const leads = []
-
-  for (let i = 0; i < count; i++) {
-    const assignedToId = `sp-${Math.floor(Math.random() * 5) + 1}`
-    const assignedToName = getSalespersonName(assignedToId)
-    const isExistingClient = Math.random() > 0.7 // 30% chance of being an existing client
-    const stage = stages[Math.floor(Math.random() * 4)] // Only use first 4 stages for new leads
-
-    leads.push({
-      id: `lead-${Date.now()}-${i}`,
-      opportunityName: `Opportunity ${i + 1}`,
-      clientName: getRandomName(),
-      email: `client${i + 1}@example.com`,
-      phone: `(${Math.floor(Math.random() * 900) + 100}) ${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 9000) + 1000}`,
-      expectedRevenue: Math.floor(Math.random() * 100000) + 5000,
-      assignedTo: assignedToId,
-      assignedToName,
-      stage,
-      internalNotes: Math.random() > 0.5 ? "Follow up needed. Client seems interested in our premium plan." : "",
-      company: companies[Math.floor(Math.random() * companies.length)],
-      website: `https://example${i + 1}.com`,
-      leadSource: sources[Math.floor(Math.random() * sources.length)],
-      leadScore: Math.floor(Math.random() * 100),
-      isExistingClient,
-      contactId: isExistingClient ? `contact-${Math.floor(Math.random() * 5) + 1}` : undefined,
-    })
-  }
-
-  return leads
+  return classes.filter(Boolean).join(" ");
 }
 
 function generateSampleSalespeople() {
@@ -81,11 +46,17 @@ function generateSampleSalespeople() {
       email: "nashad@company.com",
       role: "Sales Rep",
     },
-  ]
+  ];
 }
 
 function generateSampleContacts() {
-  const companies = ["Acme Inc", "Globex Corp", "Initech", "Umbrella Corp", "Stark Industries"]
+  const companies = [
+    "Acme Inc",
+    "Globex Corp",
+    "Initech",
+    "Umbrella Corp",
+    "Stark Industries",
+  ];
 
   return [
     {
@@ -128,7 +99,7 @@ function generateSampleContacts() {
       notes: "Interested in premium features",
       createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days ago
     },
-  ]
+  ];
 }
 
 function getSalespersonName(id) {
@@ -138,13 +109,24 @@ function getSalespersonName(id) {
     "sp-3": "nashad",
     "sp-4": "Emily Davis",
     "sp-5": "Michael Wilson",
-  }
+  };
 
-  return salespeople[id] || ""
+  return salespeople[id] || "";
 }
 
 function getRandomName() {
-  const firstNames = ["Alex", "Taylor", "Jordan", "Casey", "Morgan", "Riley", "Jamie", "Quinn", "Avery", "Cameron"]
+  const firstNames = [
+    "Alex",
+    "Taylor",
+    "Jordan",
+    "Casey",
+    "Morgan",
+    "Riley",
+    "Jamie",
+    "Quinn",
+    "Avery",
+    "Cameron",
+  ];
   const lastNames = [
     "Smith",
     "Johnson",
@@ -156,84 +138,920 @@ function getRandomName() {
     "Garcia",
     "Rodriguez",
     "Wilson",
-  ]
+  ];
 
-  return `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`
+  return `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${
+    lastNames[Math.floor(Math.random() * lastNames.length)]
+  }`;
 }
 
 // Inside the LeadCard component, add these SVG graphics after the imports but before the component definition:
 function SuccessGraffiti() {
   return (
     <div className="absolute -right-2 -top-2 rotate-12 z-10">
-      <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg
+        width="60"
+        height="60"
+        viewBox="0 0 60 60"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
         <path
           d="M55 30C55 43.8071 43.8071 55 30 55C16.1929 55 5 43.8071 5 30C5 16.1929 16.1929 5 30 5C43.8071 5 55 16.1929 55 30Z"
           fill="#22c55e"
           fillOpacity="0.8"
         />
-        <path d="M22 32L27 37L38 26" stroke="white" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M2 10L10 2M2 2L10 10" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" />
-        <path d="M50 10L58 2M50 2L58 10" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" />
-        <path d="M10 50L18 42M10 42L18 50" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" />
-        <path d="M50 50L58 42M50 42L58 50" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" />
+        <path
+          d="M22 32L27 37L38 26"
+          stroke="white"
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M2 10L10 2M2 2L10 10"
+          stroke="#22c55e"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+        <path
+          d="M50 10L58 2M50 2L58 10"
+          stroke="#22c55e"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+        <path
+          d="M10 50L18 42M10 42L18 50"
+          stroke="#22c55e"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+        <path
+          d="M50 50L58 42M50 42L58 50"
+          stroke="#22c55e"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
       </svg>
     </div>
-  )
+  );
 }
 
 function SadGraffiti() {
   return (
     <div className="absolute -right-2 -top-2 rotate-12 z-10">
-      <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg
+        width="60"
+        height="60"
+        viewBox="0 0 60 60"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
         <path
           d="M55 30C55 43.8071 43.8071 55 30 55C16.1929 55 5 43.8071 5 30C5 16.1929 16.1929 5 30 5C43.8071 5 55 16.1929 55 30Z"
           fill="#ef4444"
           fillOpacity="0.8"
         />
-        <path d="M20 40C23.3333 36.6667 36.6667 36.6667 40 40" stroke="white" strokeWidth="3" strokeLinecap="round" />
+        <path
+          d="M20 40C23.3333 36.6667 36.6667 36.6667 40 40"
+          stroke="white"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
         <circle cx="22" cy="25" r="3" fill="white" />
         <circle cx="38" cy="25" r="3" fill="white" />
-        <path d="M2 10L10 2M2 2L10 10" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
-        <path d="M50 10L58 2M50 2L58 10" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
-        <path d="M10 50L18 42M10 42L18 50" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
-        <path d="M50 50L58 42M50 42L58 50" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
+        <path
+          d="M2 10L10 2M2 2L10 10"
+          stroke="#ef4444"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+        <path
+          d="M50 10L58 2M50 2L58 10"
+          stroke="#ef4444"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+        <path
+          d="M10 50L18 42M10 42L18 50"
+          stroke="#ef4444"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+        <path
+          d="M50 50L58 42M50 42L58 50"
+          stroke="#ef4444"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
       </svg>
     </div>
-  )
+  );
 }
 
-// Lead Card Component
-function LeadCard({ lead, onEdit, onMarkAsLost, onMarkAsWon }) {
-  const [expanded, setExpanded] = useState(false)
+// Stage Transition Dialog Component
+function StageTransitionDialog({
+  isOpen,
+  onClose,
+  onConfirm,
+  lead,
+  currentStage,
+  nextStage,
+  validationErrors,
+}) {
+  const [notes, setNotes] = useState("");
+  const [formData, setFormData] = useState({});
+  const [attachments, setAttachments] = useState([]);
 
-  const [{ isDragging }, drag] = useDrag({
-    type: "lead",
-    item: { id: lead.id },
-    collect: (monitor) => ({
-      isDragging: !!monitor.isDragging(),
-    }),
-    canDrag: () => lead.stage !== "Won" && lead.stage !== "Lost",
-  })
+  useEffect(() => {
+    if (isOpen) {
+      setNotes("");
+      setFormData({});
+      setAttachments([]);
+    }
+  }, [isOpen]);
 
-  const getLeadScoreBadge = () => {
-    const score = lead.leadScore || 0
-    if (score >= 80) return <span className="bg-green-500 text-white text-xs px-2 py-0.5 rounded-full">Hot</span>
-    if (score >= 50) return <span className="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">Warm</span>
-    return <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">Cold</span>
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleFileChange = (e) => {
+    if (e.target.files.length > 0) {
+      const newAttachments = [...attachments];
+      for (let i = 0; i < e.target.files.length; i++) {
+        newAttachments.push({
+          name: e.target.files[i].name,
+          size: e.target.files[i].size,
+          type: e.target.files[i].type,
+        });
+      }
+      setAttachments(newAttachments);
+    }
+  };
+
+  const handleSubmit = () => {
+    onConfirm(nextStage, notes, formData, attachments);
+  };
+
+  if (!isOpen) return null;
+
+  const renderStageSpecificFields = () => {
+    switch (nextStage) {
+      case "Qualified":
+        return (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium">
+                Contact Attempt Details
+              </label>
+              <textarea
+                value={formData.contactDetails || ""}
+                name="contactDetails"
+                onChange={handleInputChange}
+                placeholder="Describe your contact attempt (e.g., phone call, email)"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium">
+                Qualification Criteria
+              </label>
+              <div className="space-y-2">
+                <label className="flex items-center space-x-2 text-sm">
+                  <input
+                    type="checkbox"
+                    name="hasBudget"
+                    checked={formData.hasBudget || false}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 text-blue-600"
+                  />
+                  <span>Has budget</span>
+                </label>
+                <label className="flex items-center space-x-2 text-sm">
+                  <input
+                    type="checkbox"
+                    name="hasAuthority"
+                    checked={formData.hasAuthority || false}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 text-blue-600"
+                  />
+                  <span>Has decision-making authority</span>
+                </label>
+                <label className="flex items-center space-x-2 text-sm">
+                  <input
+                    type="checkbox"
+                    name="hasNeed"
+                    checked={formData.hasNeed || false}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 text-blue-600"
+                  />
+                  <span>Has identified need</span>
+                </label>
+                <label className="flex items-center space-x-2 text-sm">
+                  <input
+                    type="checkbox"
+                    name="hasTimeline"
+                    checked={formData.hasTimeline || false}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 text-blue-600"
+                  />
+                  <span>Has timeline for purchase</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        );
+      case "Proposal Sent":
+        return (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium">
+                Proposal Document
+              </label>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="file"
+                  onChange={handleFileChange}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+              </div>
+              {attachments.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {attachments.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center text-xs text-gray-500"
+                    >
+                      <FileText size={14} className="mr-1" />
+                      {file.name} ({Math.round(file.size / 1024)} KB)
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
+              <label
+                htmlFor="proposalValue"
+                className="block text-sm font-medium"
+              >
+                Proposal Value ($)
+              </label>
+              <input
+                id="proposalValue"
+                name="proposalValue"
+                type="number"
+                value={formData.proposalValue || ""}
+                onChange={handleInputChange}
+                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+        );
+      case "Negotiation":
+        return (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label
+                htmlFor="followUpDate"
+                className="block text-sm font-medium"
+              >
+                Next Follow-up Date *
+              </label>
+              <input
+                id="followUpDate"
+                name="followUpDate"
+                type="date"
+                value={formData.followUpDate || ""}
+                onChange={handleInputChange}
+                required
+                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-medium">
+                Client Feedback
+              </label>
+              <textarea
+                value={formData.clientFeedback || ""}
+                name="clientFeedback"
+                onChange={handleInputChange}
+                placeholder="What feedback did the client provide on the proposal?"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                rows={3}
+              />
+            </div>
+          </div>
+        );
+      case "Won":
+        return (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label
+                htmlFor="finalDealValue"
+                className="block text-sm font-medium"
+              >
+                Final Deal Value ($) *
+              </label>
+              <input
+                id="finalDealValue"
+                name="finalDealValue"
+                type="number"
+                value={formData.finalDealValue || ""}
+                onChange={handleInputChange}
+                required
+                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="space-y-2">
+              <label
+                htmlFor="closingDate"
+                className="block text-sm font-medium"
+              >
+                Closing Date *
+              </label>
+              <input
+                id="closingDate"
+                name="closingDate"
+                type="date"
+                value={formData.closingDate || ""}
+                onChange={handleInputChange}
+                required
+                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+        );
+      case "Lost":
+        return (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="lostReason" className="block text-sm font-medium">
+                Lost Reason *
+              </label>
+              <select
+                id="lostReason"
+                name="lostReason"
+                value={formData.lostReason || ""}
+                onChange={handleInputChange}
+                required
+                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+              >
+                <option value="">Select a reason</option>
+                <option value="price">Price too high</option>
+                <option value="competitor">Went with competitor</option>
+                <option value="timing">Bad timing</option>
+                <option value="needs">Needs not aligned</option>
+                <option value="budget">Budget constraints</option>
+                <option value="noDecision">No decision made</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            {formData.lostReason === "competitor" && (
+              <div className="space-y-2">
+                <label
+                  htmlFor="competitorInfo"
+                  className="block text-sm font-medium"
+                >
+                  Competitor Information
+                </label>
+                <input
+                  id="competitorInfo"
+                  name="competitorInfo"
+                  value={formData.competitorInfo || ""}
+                  onChange={handleInputChange}
+                  placeholder="Which competitor did they choose?"
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                />
+              </div>
+            )}
+            <div className="space-y-2">
+              <label
+                htmlFor="closingDate"
+                className="block text-sm font-medium"
+              >
+                Closing Date *
+              </label>
+              <input
+                id="closingDate"
+                name="closingDate"
+                type="date"
+                value={formData.closingDate || ""}
+                onChange={handleInputChange}
+                required
+                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const getDialogTitle = () => {
+    switch (nextStage) {
+      case "Qualified":
+        return "Mark as Qualified";
+      case "Proposal Sent":
+        return "Submit Proposal";
+      case "Negotiation":
+        return "Begin Negotiation";
+      case "Won":
+        return "Close as Won";
+      case "Lost":
+        return "Close as Lost";
+      default:
+        return "Change Stage";
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-md w-full">
+        <h3 className="text-lg font-bold mb-4">{getDialogTitle()}</h3>
+
+        {validationErrors.length > 0 && (
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+            <h4 className="text-sm font-medium text-red-800 dark:text-red-300 flex items-center">
+              <AlertCircle size={16} className="mr-1" /> Cannot proceed
+            </h4>
+            <ul className="mt-1 text-xs text-red-700 dark:text-red-400 list-disc list-inside">
+              {validationErrors.map((error, index) => (
+                <li key={index}>{error}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {renderStageSpecificFields()}
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">Notes</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add notes about this stage change"
+              rows={3}
+              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end space-x-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-sm font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={validationErrors.length > 0}
+            className={`px-4 py-2 text-white rounded-md text-sm font-medium ${
+              validationErrors.length > 0
+                ? "bg-gray-400 cursor-not-allowed"
+                : nextStage === "Lost"
+                ? "bg-red-600 hover:bg-red-700"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Action History Timeline Component
+function ActionHistoryTimeline({ history }) {
+  if (!history || history.length === 0) {
+    return (
+      <div className="text-center text-sm text-gray-500 dark:text-gray-400 py-4">
+        No history available
+      </div>
+    );
   }
 
   return (
-    <div
-      ref={drag}
-      className={cn(
-        "bg-white dark:bg-gray-800 rounded-lg border shadow-sm cursor-pointer transition-all relative",
-        isDragging ? "opacity-50" : "opacity-100",
-        expanded ? "ring-1 ring-blue-500" : "",
-        lead.stage === "Won" && "border-green-500 bg-green-50 dark:bg-green-900/20",
-        lead.stage === "Lost" && "border-red-500 bg-red-50 dark:bg-red-900/20",
-        lead.isExistingClient && "border-l-4 border-l-blue-500",
+    <div className="space-y-3 py-2 max-h-[300px] overflow-y-auto">
+      {history.map((item, index) => (
+        <div key={index} className="relative pl-6">
+          <div className="absolute left-0 top-1 h-4 w-4 rounded-full bg-blue-500"></div>
+          {index !== history.length - 1 && (
+            <div className="absolute left-2 top-5 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
+          )}
+          <div className="mb-1">
+            <span className="text-xs font-medium">{item.stage}</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+              {new Date(item.date).toLocaleDateString()}{" "}
+              {new Date(item.date).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+          </div>
+          {item.notes && (
+            <p className="text-xs text-gray-600 dark:text-gray-300 mb-1">
+              {item.notes}
+            </p>
+          )}
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            by {item.changedBy}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Validation Indicator Component
+function ValidationIndicator({ lead, nextStage }) {
+  const [validationErrors, setValidationErrors] = useState([]);
+
+  useEffect(() => {
+    const errors = [];
+
+    if (nextStage === "Qualified" && !lead.contactAttempts?.length) {
+      errors.push("At least one contact attempt must be logged");
+    }
+
+    if (nextStage === "Proposal Sent" && !lead.proposalDocument) {
+      errors.push("Proposal document must be attached");
+    }
+
+    if (nextStage === "Negotiation" && !lead.nextFollowUp) {
+      errors.push("Follow-up date must be set");
+    }
+
+    if ((nextStage === "Won" || nextStage === "Lost") && !lead.dealValue) {
+      errors.push("Deal value must be specified");
+    }
+
+    setValidationErrors(errors);
+  }, [lead, nextStage]);
+
+  if (validationErrors.length === 0) {
+    return (
+      <div className="flex items-center text-green-600 dark:text-green-400 text-xs">
+        <CheckCircle2 size={14} className="mr-1" />
+        Ready to move
+      </div>
+    );
+  }
+
+  return (
+    <div className="text-red-600 dark:text-red-400 text-xs">
+      <div className="flex items-center">
+        <AlertCircle size={14} className="mr-1" />
+        <span>Missing requirements:</span>
+      </div>
+      <ul className="list-disc list-inside ml-4 mt-1">
+        {validationErrors.map((error, index) => (
+          <li key={index}>{error}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// Add a new NotesManager component after the ValidationIndicator component
+
+// Notes Manager Component
+function NotesManager({ notes = [], onAddNote, onEditNote, title = "Notes" }) {
+  const [isAdding, setIsAdding] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingNoteIndex, setEditingNoteIndex] = useState(null);
+  const [noteContent, setNoteContent] = useState("");
+
+  const handleAddClick = () => {
+    setIsAdding(true);
+    setNoteContent("");
+  };
+
+  const handleEditClick = (index) => {
+    setIsEditing(true);
+    setEditingNoteIndex(index);
+    setNoteContent(notes[index].content);
+  };
+
+  const handleSaveNote = () => {
+    if (noteContent.trim() === "") return;
+
+    if (isEditing && editingNoteIndex !== null) {
+      onEditNote(editingNoteIndex, noteContent);
+    } else {
+      onAddNote(noteContent);
+    }
+
+    setIsAdding(false);
+    setIsEditing(false);
+    setEditingNoteIndex(null);
+    setNoteContent("");
+  };
+
+  const handleCancel = () => {
+    setIsAdding(false);
+    setIsEditing(false);
+    setEditingNoteIndex(null);
+    setNoteContent("");
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-center">
+        <h5 className="text-sm font-medium">{title}</h5>
+        {!isAdding && !isEditing && (
+          <button
+            onClick={handleAddClick}
+            className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-md flex items-center"
+          >
+            <Plus size={12} className="mr-1" /> Add Note
+          </button>
+        )}
+      </div>
+
+      {(isAdding || isEditing) && (
+        <div className="space-y-2">
+          <textarea
+            value={noteContent}
+            onChange={(e) => setNoteContent(e.target.value)}
+            placeholder="Enter your note..."
+            rows={3}
+            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-xs"
+          />
+          <div className="flex justify-end space-x-2">
+            <button
+              onClick={handleCancel}
+              className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-700 rounded-md"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveNote}
+              className="text-xs px-2 py-1 bg-blue-600 text-white rounded-md"
+            >
+              Save
+            </button>
+          </div>
+        </div>
       )}
-      style={{ opacity: isDragging ? 0.5 : 1 }}
+
+      {notes.length > 0 ? (
+        <div className="space-y-2">
+          {notes.map((note, index) => (
+            <div
+              key={index}
+              className="bg-gray-50 dark:bg-gray-900 p-2 rounded-md"
+            >
+              <div className="flex justify-between items-start">
+                <div className="text-xs text-gray-600 dark:text-gray-300">
+                  {note.content}
+                </div>
+                <button
+                  onClick={() => handleEditClick(index)}
+                  className="ml-1 text-gray-500 hover:text-blue-500 dark:text-gray-400"
+                >
+                  <Edit size={12} />
+                </button>
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {new Date(note.date).toLocaleString()} • {note.createdBy}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-xs text-gray-500 dark:text-gray-400 italic">
+          No notes yet
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Lead Card Component
+function LeadCard({ lead, onEdit, onStageTransition }) {
+  const [expanded, setExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState("details");
+  const [leadNotes, setLeadNotes] = useState(lead.notes || []);
+
+  const handleAddNote = (content) => {
+    const newNote = {
+      content: content,
+      date: new Date().toISOString(),
+      createdBy: "You", // Replace with actual user info
+    };
+    setLeadNotes([...leadNotes, newNote]);
+  };
+
+  const handleEditNote = (index, content) => {
+    const updatedNotes = [...leadNotes];
+    updatedNotes[index] = {
+      ...updatedNotes[index],
+      content: content,
+    };
+    setLeadNotes(updatedNotes);
+  };
+
+  useEffect(() => {
+    // Update the lead's notes when leadNotes change
+    onEdit({ ...lead, notes: leadNotes });
+  }, [leadNotes]);
+
+  const getNextStage = (currentStage) => {
+    const stageFlow = {
+      New: "Qualified",
+      Qualified: "Proposal Sent",
+      "Proposal Sent": "Negotiation",
+      Negotiation: ["Won", "Lost"],
+    };
+
+    return stageFlow[currentStage] || null;
+  };
+
+  const validateStageTransition = (currentStage, targetStage) => {
+    const errors = [];
+
+    // Cannot skip stages
+    const stageOrder = [
+      "New",
+      "Qualified",
+      "Proposal Sent",
+      "Negotiation",
+      "Won",
+      "Lost",
+    ];
+    const currentIndex = stageOrder.indexOf(currentStage);
+    const targetIndex = stageOrder.indexOf(targetStage);
+
+    if (targetStage !== "Lost" && targetIndex > currentIndex + 1) {
+      errors.push(`Cannot skip from ${currentStage} to ${targetStage}`);
+    }
+
+    // Stage-specific validations
+    if (targetStage === "Qualified") {
+      if (!lead.contactAttempts || lead.contactAttempts.length === 0) {
+        errors.push("At least one contact attempt must be logged");
+      }
+    }
+
+    if (targetStage === "Proposal Sent") {
+      if (!lead.proposalDocument) {
+        errors.push("Proposal document must be attached");
+      }
+    }
+
+    if (targetStage === "Negotiation") {
+      if (!lead.nextFollowUp) {
+        errors.push("Follow-up date must be set");
+      }
+    }
+
+    return errors;
+  };
+
+  const renderStageActions = () => {
+    if (lead.stage === "Won" || lead.stage === "Lost") {
+      return null;
+    }
+
+    const nextStage = getNextStage(lead.stage);
+
+    if (!nextStage) {
+      return null;
+    }
+
+    if (Array.isArray(nextStage)) {
+      return (
+        <div className="flex gap-2 mt-3">
+          <button
+            className="w-full text-xs h-8 bg-green-600 hover:bg-green-700 text-white rounded-md flex items-center justify-center"
+            onClick={() => onStageTransition(lead, "Won")}
+          >
+            <Check size={12} className="mr-1" /> Close Won
+          </button>
+          <button
+            className="w-full text-xs h-8 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center justify-center"
+            onClick={() => onStageTransition(lead, "Lost")}
+          >
+            <X size={12} className="mr-1" /> Close Lost
+          </button>
+        </div>
+      );
+    }
+
+    const buttonText = {
+      Qualified: "Mark as Qualified",
+      "Proposal Sent": "Submit Proposal",
+      Negotiation: "Begin Negotiation",
+    };
+
+    const validationErrors = validateStageTransition(lead.stage, nextStage);
+
+    return (
+      <div className="mt-3">
+        {validationErrors.length > 0 && (
+          <div className="mb-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-xs">
+            <ValidationIndicator lead={lead} nextStage={nextStage} />
+          </div>
+        )}
+        <button
+          className={`w-full text-xs h-8 rounded-md flex items-center justify-center ${
+            validationErrors.length > 0
+              ? "bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700 text-white"
+          }`}
+          onClick={() => onStageTransition(lead, nextStage)}
+          disabled={validationErrors.length > 0}
+        >
+          <ArrowRight size={12} className="mr-1" /> {buttonText[nextStage]}
+        </button>
+      </div>
+    );
+  };
+
+  const renderStageIndicators = () => {
+    const indicators = [];
+
+    // Overdue follow-up
+    if (lead.nextFollowUp) {
+      const followUpDate = new Date(lead.nextFollowUp);
+      const today = new Date();
+
+      if (
+        followUpDate < today &&
+        lead.stage !== "Won" &&
+        lead.stage !== "Lost"
+      ) {
+        indicators.push(
+          <span
+            key="overdue"
+            className="border border-red-500 text-red-500 text-xs px-2 py-0.5 rounded-full flex items-center"
+          >
+            <Clock size={10} className="mr-1" /> Overdue
+          </span>
+        );
+      }
+    }
+
+    // High-value deal
+    if (lead.expectedRevenue > 10000) {
+      indicators.push(
+        <span
+          key="high-value"
+          className="border border-amber-500 text-amber-500 text-xs px-2 py-0.5 rounded-full flex items-center"
+        >
+          <DollarSign size={10} className="mr-1" /> High Value
+        </span>
+      );
+    }
+
+    // Stale lead (no activity in 14 days)
+    if (lead.stageHistory && lead.stageHistory.length > 0) {
+      const lastActivity = new Date(
+        lead.stageHistory[lead.stageHistory.length - 1].date
+      );
+      const today = new Date();
+      const daysSinceLastActivity = Math.floor(
+        (today - lastActivity) / (1000 * 60 * 60 * 24)
+      );
+
+      if (
+        daysSinceLastActivity > 14 &&
+        lead.stage !== "Won" &&
+        lead.stage !== "Lost"
+      ) {
+        indicators.push(
+          <span
+            key="stale"
+            className="border border-gray-500 text-gray-500 text-xs px-2 py-0.5 rounded-full flex items-center"
+          >
+            <AlertCircle size={10} className="mr-1" /> Stale
+          </span>
+        );
+      }
+    }
+
+    return indicators;
+  };
+
+  return (
+    <div
+      className={cn(
+        "bg-white dark:bg-gray-800 rounded-lg border shadow-sm transition-all relative",
+        expanded ? "ring-1 ring-blue-500" : "",
+        lead.stage === "Won" &&
+          "border-green-500 bg-green-50 dark:bg-green-900/20",
+        lead.stage === "Lost" && "border-red-500 bg-red-50 dark:bg-red-900/20",
+        lead.isExistingClient && "border-l-4 border-l-blue-500"
+      )}
     >
       {lead.stage === "Won" && <SuccessGraffiti />}
       {lead.stage === "Lost" && <SadGraffiti />}
@@ -241,7 +1059,9 @@ function LeadCard({ lead, onEdit, onMarkAsLost, onMarkAsWon }) {
         <div className="flex justify-between items-start mb-2">
           <div>
             <h4 className="font-medium text-sm">{lead.clientName}</h4>
-            <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[180px]">{lead.opportunityName}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[180px]">
+              {lead.opportunityName}
+            </p>
           </div>
           <div className="flex items-center gap-1">
             {lead.isExistingClient && (
@@ -249,7 +1069,6 @@ function LeadCard({ lead, onEdit, onMarkAsLost, onMarkAsWon }) {
                 <User size={10} className="mr-1" /> Existing
               </span>
             )}
-            {getLeadScoreBadge()}
             <button
               className="h-6 w-6 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center"
               onClick={() => setExpanded(!expanded)}
@@ -268,93 +1087,268 @@ function LeadCard({ lead, onEdit, onMarkAsLost, onMarkAsWon }) {
           <span>{lead.phone}</span>
         </div>
 
+        {/* Stage indicators */}
+        {renderStageIndicators().length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {renderStageIndicators()}
+          </div>
+        )}
+
         {expanded && (
           <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
             <div className="flex border-b border-gray-200 dark:border-gray-700">
-              <button className="flex-1 py-1 px-2 text-xs font-medium border-b-2 border-blue-500">Details</button>
-              <button className="flex-1 py-1 px-2 text-xs font-medium text-gray-500 dark:text-gray-400">Notes</button>
+              <button
+                className={`flex-1 py-1 px-2 text-xs font-medium ${
+                  activeTab === "details"
+                    ? "border-b-2 border-blue-500"
+                    : "text-gray-500 dark:text-gray-400"
+                }`}
+                onClick={() => setActiveTab("details")}
+              >
+                Details
+              </button>
+              <button
+                className={`flex-1 py-1 px-2 text-xs font-medium ${
+                  activeTab === "actions"
+                    ? "border-b-2 border-blue-500"
+                    : "text-gray-500 dark:text-gray-400"
+                }`}
+                onClick={() => setActiveTab("actions")}
+              >
+                Actions
+              </button>
+              <button
+                className={`flex-1 py-1 px-2 text-xs font-medium ${
+                  activeTab === "notes"
+                    ? "border-b-2 border-blue-500"
+                    : "text-gray-500 dark:text-gray-400"
+                }`}
+                onClick={() => setActiveTab("notes")}
+              >
+                Notes
+              </button>
+              <button
+                className={`flex-1 py-1 px-2 text-xs font-medium ${
+                  activeTab === "history"
+                    ? "border-b-2 border-blue-500"
+                    : "text-gray-500 dark:text-gray-400"
+                }`}
+                onClick={() => setActiveTab("history")}
+              >
+                History
+              </button>
             </div>
 
-            <div className="space-y-2 text-xs pt-2">
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Expected Revenue:</span>
-                <span className="font-medium">${lead.expectedRevenue?.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Assigned To:</span>
-                <span className="font-medium">{lead.assignedToName}</span>
-              </div>
-              {lead.company && (
+            {activeTab === "details" && (
+              <div className="space-y-2 text-xs pt-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Company:</span>
-                  <span className="font-medium">{lead.company}</span>
-                </div>
-              )}
-              {(lead.stage === "Won" || lead.stage === "Lost") && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Status:</span>
-                  <span className={cn("font-medium", lead.stage === "Won" ? "text-green-500" : "text-red-500")}>
-                    {lead.stage}
+                  <span className="text-gray-500 dark:text-gray-400">
+                    Expected Revenue:
+                  </span>
+                  <span className="font-medium">
+                    ${lead.expectedRevenue?.toLocaleString()}
                   </span>
                 </div>
-              )}
-            </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500 dark:text-gray-400">
+                    Assigned To:
+                  </span>
+                  <span className="font-medium">{lead.assignedToName}</span>
+                </div>
+                {lead.company && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Company:
+                    </span>
+                    <span className="font-medium">{lead.company}</span>
+                  </div>
+                )}
+                {lead.nextFollowUp && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Next Follow-up:
+                    </span>
+                    <span className="font-medium">
+                      {new Date(lead.nextFollowUp).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
+                {lead.lastContactDate && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Last Contact:
+                    </span>
+                    <span className="font-medium">
+                      {new Date(lead.lastContactDate).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
+                {lead.stage === "Won" && lead.dealValue && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Final Deal Value:
+                    </span>
+                    <span className="font-medium text-green-600">
+                      ${lead.dealValue.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+                {lead.stage === "Lost" && lead.lostReason && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Lost Reason:
+                    </span>
+                    <span className="font-medium text-red-600">
+                      {lead.lostReason}
+                    </span>
+                  </div>
+                )}
+                {lead.stage === "Lost" && lead.competitorInfo && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Competitor:
+                    </span>
+                    <span className="font-medium">{lead.competitorInfo}</span>
+                  </div>
+                )}
 
-            <div className="flex gap-2 mt-3">
-              <button
-                className="w-full text-xs h-8 border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center"
-                onClick={() => onEdit(lead)}
-              >
-                <Edit size={12} className="mr-1" /> Edit
-              </button>
-              {lead.stage !== "Won" && lead.stage !== "Lost" && (
-                <>
-                  <button
-                    className="w-full text-xs h-8 bg-green-600 hover:bg-green-700 text-white rounded-md flex items-center justify-center"
-                    onClick={() => onMarkAsWon(lead.id)}
-                  >
-                    <Check size={12} className="mr-1" /> Won
-                  </button>
-                  <button
-                    className="w-full text-xs h-8 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center justify-center"
-                    onClick={() => onMarkAsLost(lead.id)}
-                  >
-                    <X size={12} className="mr-1" /> Lost
-                  </button>
-                </>
-              )}
-            </div>
+                {/* Internal notes display */}
+                {lead.internalNotes && (
+                  <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <div className="text-xs font-medium mb-1">
+                      Internal Notes:
+                    </div>
+                    <div className="text-xs text-gray-600 dark:text-gray-300">
+                      {lead.internalNotes}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === "actions" && (
+              <div className="space-y-3 pt-2">
+                <div className="text-xs">
+                  <h5 className="font-medium mb-1">Required Actions:</h5>
+                  {lead.stage === "New" && (
+                    <ul className="list-disc list-inside text-gray-600 dark:text-gray-300 space-y-1 ml-2">
+                      <li>Make initial contact</li>
+                      <li>Assess qualification criteria</li>
+                      <li>Schedule discovery call</li>
+                    </ul>
+                  )}
+                  {lead.stage === "Qualified" && (
+                    <ul className="list-disc list-inside text-gray-600 dark:text-gray-300 space-y-1 ml-2">
+                      <li>Prepare proposal document</li>
+                      <li>Get internal approval</li>
+                      <li>Send proposal to client</li>
+                    </ul>
+                  )}
+                  {lead.stage === "Proposal Sent" && (
+                    <ul className="list-disc list-inside text-gray-600 dark:text-gray-300 space-y-1 ml-2">
+                      <li>Follow up on proposal</li>
+                      <li>Address client questions</li>
+                      <li>Schedule negotiation call</li>
+                    </ul>
+                  )}
+                  {lead.stage === "Negotiation" && (
+                    <ul className="list-disc list-inside text-gray-600 dark:text-gray-300 space-y-1 ml-2">
+                      <li>Prepare contract</li>
+                      <li>Get final approval</li>
+                      <li>Send contract for signature</li>
+                    </ul>
+                  )}
+                </div>
+
+                {renderStageActions()}
+
+                <button
+                  className="w-full text-xs h-8 border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center"
+                  onClick={() => onEdit(lead)}
+                >
+                  <Edit size={12} className="mr-1" /> Edit Lead
+                </button>
+              </div>
+            )}
+
+            {activeTab === "history" && (
+              <div className="pt-2">
+                <ActionHistoryTimeline history={lead.stageHistory || []} />
+              </div>
+            )}
+            {activeTab === "notes" && (
+              <NotesManager
+                notes={lead.stageNotes?.[lead.stage] || []}
+                onAddNote={(content) => {
+                  const newNote = {
+                    content,
+                    date: new Date().toISOString(),
+                    createdBy: lead.assignedToName || "User",
+                    stage: lead.stage,
+                  };
+
+                  const existingStageNotes = lead.stageNotes || {};
+                  const stageNotes = existingStageNotes[lead.stage] || [];
+
+                  const updatedNotes = {
+                    ...existingStageNotes,
+                    [lead.stage]: [...stageNotes, newNote],
+                  };
+
+                  onEdit({
+                    ...lead,
+                    stageNotes: updatedNotes,
+                  });
+                }}
+                onEditNote={(index, content) => {
+                  const existingStageNotes = lead.stageNotes || {};
+                  const stageNotes = [
+                    ...(existingStageNotes[lead.stage] || []),
+                  ];
+
+                  stageNotes[index] = {
+                    ...stageNotes[index],
+                    content,
+                    editedAt: new Date().toISOString(),
+                  };
+
+                  const updatedNotes = {
+                    ...existingStageNotes,
+                    [lead.stage]: stageNotes,
+                  };
+
+                  onEdit({
+                    ...lead,
+                    stageNotes: updatedNotes,
+                  });
+                }}
+                title={`${lead.stage} Notes`}
+              />
+            )}
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }
 
 // Kanban Column Component
-function KanbanColumn({ id, title, color, leads, onMoveLead, onEditLead, onMarkAsLost, onMarkAsWon }) {
-  const [{ isOver }, drop] = useDrop({
-    accept: "lead",
-    drop: (item) => {
-      onMoveLead(item.id, id)
-    },
-    collect: (monitor) => ({
-      isOver: !!monitor.isOver(),
-    }),
-  })
-
+function KanbanColumn({
+  id,
+  title,
+  color,
+  leads,
+  onEditLead,
+  onStageTransition,
+}) {
   return (
-    <div
-      ref={drop}
-      className={cn(
-        "flex-shrink-0 w-80 flex flex-col rounded-lg bg-gray-50 dark:bg-gray-900 border",
-        isOver && "border-blue-500 border-dashed",
-      )}
-    >
+    <div className="flex-shrink-0 w-80 flex flex-col rounded-lg bg-gray-50 dark:bg-gray-900 border">
       <div className={`p-3 ${color} rounded-t-lg`}>
         <h3 className="font-medium text-white flex justify-between items-center">
           {title}
-          <span className="bg-white/20 text-white text-xs px-2 py-1 rounded-full">{leads.length}</span>
+          <span className="bg-white/20 text-white text-xs px-2 py-1 rounded-full">
+            {leads.length}
+          </span>
         </h3>
       </div>
       <div className="flex-1 p-2 space-y-2 overflow-y-auto max-h-[calc(100vh-220px)]">
@@ -363,8 +1357,7 @@ function KanbanColumn({ id, title, color, leads, onMoveLead, onEditLead, onMarkA
             key={lead.id}
             lead={lead}
             onEdit={onEditLead}
-            onMarkAsLost={onMarkAsLost}
-            onMarkAsWon={onMarkAsWon}
+            onStageTransition={onStageTransition}
           />
         ))}
         {leads.length === 0 && (
@@ -374,11 +1367,11 @@ function KanbanColumn({ id, title, color, leads, onMoveLead, onEditLead, onMarkA
         )}
       </div>
     </div>
-  )
+  );
 }
 
 // Kanban Board Component
-function KanbanBoard({ leads, onMoveLead, onEditLead, onMarkAsLost, onMarkAsWon }) {
+function KanbanBoard({ leads, onEditLead, onStageTransition }) {
   const stages = [
     { id: "New", name: "New", color: "bg-blue-500" },
     { id: "Qualified", name: "Qualified", color: "bg-purple-500" },
@@ -386,17 +1379,17 @@ function KanbanBoard({ leads, onMoveLead, onEditLead, onMarkAsLost, onMarkAsWon 
     { id: "Negotiation", name: "Negotiation ✅", color: "bg-orange-500" },
     { id: "Won", name: "Won", color: "bg-green-500" },
     { id: "Lost", name: "Lost", color: "bg-red-500" },
-  ]
+  ];
 
   const leadsByStage = useMemo(() => {
-    const result = {}
+    const result = {};
 
     stages.forEach((stage) => {
-      result[stage.id] = leads.filter((lead) => lead.stage === stage.id)
-    })
+      result[stage.id] = leads.filter((lead) => lead.stage === stage.id);
+    });
 
-    return result
-  }, [leads, stages])
+    return result;
+  }, [leads, stages]);
 
   return (
     <div className="flex gap-4 h-full overflow-x-auto pb-4">
@@ -407,14 +1400,12 @@ function KanbanBoard({ leads, onMoveLead, onEditLead, onMarkAsLost, onMarkAsWon 
           title={stage.name}
           color={stage.color}
           leads={leadsByStage[stage.id] || []}
-          onMoveLead={onMoveLead}
           onEditLead={onEditLead}
-          onMarkAsLost={onMarkAsLost}
-          onMarkAsWon={onMarkAsWon}
+          onStageTransition={onStageTransition}
         />
       ))}
     </div>
-  )
+  );
 }
 
 // Lead Form Component
@@ -433,15 +1424,20 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts }) {
     leadScore: 0,
     isExistingClient: false,
     contactId: "",
-  })
+    // New fields
+    lastContactDate: "",
+    nextFollowUp: "",
+    stageHistory: [],
+    dealValue: 0,
+  });
 
-  const [clientType, setClientType] = useState("new")
-  const [activeTab, setActiveTab] = useState("basic")
+  const [clientType, setClientType] = useState("new");
+  const [activeTab, setActiveTab] = useState("basic");
 
   useEffect(() => {
     if (lead) {
-      setFormData(lead)
-      setClientType(lead.isExistingClient ? "existing" : "new")
+      setFormData(lead);
+      setClientType(lead.isExistingClient ? "existing" : "new");
     } else {
       setFormData({
         opportunityName: "",
@@ -457,39 +1453,46 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts }) {
         leadScore: 0,
         isExistingClient: false,
         contactId: "",
-      })
-      setClientType("new")
+        // New fields
+        lastContactDate: "",
+        nextFollowUp: "",
+        stageHistory: [],
+        dealValue: 0,
+      });
+      setClientType("new");
     }
-  }, [lead])
+  }, [lead]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target
+    const { name, value, type } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "expectedRevenue" ? Number.parseFloat(value) || 0 : value,
-    }))
-  }
+      [name]: type === "number" ? Number.parseFloat(value) || 0 : value,
+    }));
+  };
 
   const handleSelectChange = (name, value) => {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
       assignedToName:
-        name === "assignedTo" ? salespeople.find((sp) => sp.id === value)?.name || "" : prev.assignedToName,
-    }))
-  }
+        name === "assignedTo"
+          ? salespeople.find((sp) => sp.id === value)?.name || ""
+          : prev.assignedToName,
+    }));
+  };
 
   const handleClientTypeChange = (value) => {
-    setClientType(value)
+    setClientType(value);
     setFormData((prev) => ({
       ...prev,
       isExistingClient: value === "existing",
       contactId: value === "existing" ? prev.contactId : "",
-    }))
-  }
+    }));
+  };
 
   const handleContactSelect = (contactId) => {
-    const selectedContact = contacts.find((c) => c.id === contactId)
+    const selectedContact = contacts.find((c) => c.id === contactId);
     if (selectedContact) {
       setFormData((prev) => ({
         ...prev,
@@ -499,15 +1502,30 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts }) {
         phone: selectedContact.phone,
         company: selectedContact.company || "",
         website: selectedContact.website || "",
-      }))
+      }));
     }
-  }
+  };
 
   const handleSubmit = (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
     // Find the salesperson name based on the ID
-    const assignedSalesperson = salespeople.find((sp) => sp.id === formData.assignedTo)
+    const assignedSalesperson = salespeople.find(
+      (sp) => sp.id === formData.assignedTo
+    );
+
+    // Initialize stage history if it's a new lead
+    let stageHistory = formData.stageHistory || [];
+    if (!lead) {
+      stageHistory = [
+        {
+          stage: "New",
+          date: new Date().toISOString(),
+          notes: "Lead created",
+          changedBy: assignedSalesperson?.name || "System",
+        },
+      ];
+    }
 
     onSave({
       ...formData,
@@ -515,13 +1533,16 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts }) {
       stage: lead?.stage || "New",
       assignedToName: assignedSalesperson?.name || "",
       isExistingClient: clientType === "existing",
-    })
-  }
+      stageHistory,
+    });
+  };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-3xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">{lead ? "Edit Lead" : "Add New Lead"}</h2>
+        <h2 className="text-xl font-bold">
+          {lead ? "Edit Lead" : "Add New Lead"}
+        </h2>
         <button
           onClick={onCancel}
           className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -529,262 +1550,349 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts }) {
           <X size={20} />
         </button>
       </div>
-
-      <form onSubmit={handleSubmit}>
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium">Client Type</label>
-            <div className="flex space-x-4">
-              <label className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  checked={clientType === "new"}
-                  onChange={() => handleClientTypeChange("new")}
-                  className="h-4 w-4 text-blue-600"
-                />
-                <span>New Client</span>
-              </label>
-              <label className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  checked={clientType === "existing"}
-                  onChange={() => handleClientTypeChange("existing")}
-                  className="h-4 w-4 text-blue-600"
-                />
-                <span>Existing Client</span>
-              </label>
-            </div>
-          </div>
-
-          {clientType === "existing" && (
+      <div className="max-h-[400px] max-w-[800px] overflow-y-auto pr-2">
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-6">
             <div className="space-y-2">
-              <label htmlFor="contactId" className="block text-sm font-medium">
-                Select Existing Client
-              </label>
-              <select
-                id="contactId"
-                value={formData.contactId || ""}
-                onChange={(e) => handleContactSelect(e.target.value)}
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-              >
-                <option value="">Select a client</option>
-                {contacts.map((contact) => (
-                  <option key={contact.id} value={contact.id}>
-                    {contact.name} - {contact.company}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <label htmlFor="opportunityName" className="block text-sm font-medium">
-              Opportunity Name *
-            </label>
-            <input
-              id="opportunityName"
-              name="opportunityName"
-              value={formData.opportunityName || ""}
-              onChange={handleChange}
-              required
-              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-            />
-          </div>
-
-          {clientType === "new" && (
-            <div>
-              <div className="flex space-x-4 mb-4">
-                <button
-                  type="button"
-                  className={`px-4 py-2 text-sm font-medium ${activeTab === "basic" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500"}`}
-                  onClick={() => setActiveTab("basic")}
-                >
-                  Basic Information
-                </button>
-                <button
-                  type="button"
-                  className={`px-4 py-2 text-sm font-medium ${activeTab === "notes" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-500"}`}
-                  onClick={() => setActiveTab("notes")}
-                >
-                  Internal Notes
-                </button>
-              </div>
-
-              {activeTab === "basic" && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label htmlFor="clientName" className="block text-sm font-medium">
-                      Client Name *
-                    </label>
-                    <input
-                      id="clientName"
-                      name="clientName"
-                      value={formData.clientName || ""}
-                      onChange={handleChange}
-                      required
-                      className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="email" className="block text-sm font-medium">
-                      Email *
-                    </label>
-                    <input
-                      id="email"
-                      name="email"
-                      type="email"
-                      value={formData.email || ""}
-                      onChange={handleChange}
-                      required
-                      className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="phone" className="block text-sm font-medium">
-                      Phone *
-                    </label>
-                    <input
-                      id="phone"
-                      name="phone"
-                      value={formData.phone || ""}
-                      onChange={handleChange}
-                      required
-                      className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="company" className="block text-sm font-medium">
-                      Company
-                    </label>
-                    <input
-                      id="company"
-                      name="company"
-                      value={formData.company || ""}
-                      onChange={handleChange}
-                      className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="website" className="block text-sm font-medium">
-                      Website
-                    </label>
-                    <input
-                      id="website"
-                      name="website"
-                      value={formData.website || ""}
-                      onChange={handleChange}
-                      className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "notes" && (
-                <div className="space-y-2">
-                  <label htmlFor="internalNotes" className="block text-sm font-medium">
-                    Internal Notes
-                  </label>
-                  <textarea
-                    id="internalNotes"
-                    name="internalNotes"
-                    value={formData.internalNotes || ""}
-                    onChange={handleChange}
-                    rows={8}
-                    placeholder="Add any internal notes or observations about this lead"
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+              <label className="block text-sm font-medium">Client Type</label>
+              <div className="flex space-x-4">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    checked={clientType === "new"}
+                    onChange={() => handleClientTypeChange("new")}
+                    className="h-4 w-4 text-blue-600"
                   />
-                </div>
-              )}
+                  <span>New Client</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    checked={clientType === "existing"}
+                    onChange={() => handleClientTypeChange("existing")}
+                    className="h-4 w-4 text-blue-600"
+                  />
+                  <span>Existing Client</span>
+                </label>
+              </div>
             </div>
-          )}
 
-          <div className="grid grid-cols-2 gap-4">
+            {clientType === "existing" && (
+              <div className="space-y-2">
+                <label
+                  htmlFor="contactId"
+                  className="block text-sm font-medium"
+                >
+                  Select Existing Client
+                </label>
+                <select
+                  id="contactId"
+                  value={formData.contactId || ""}
+                  onChange={(e) => handleContactSelect(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                >
+                  <option value="">Select a client</option>
+                  {contacts.map((contact) => (
+                    <option key={contact.id} value={contact.id}>
+                      {contact.name} - {contact.company}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="space-y-2">
-              <label htmlFor="expectedRevenue" className="block text-sm font-medium">
-                Expected Revenue ($)
+              <label
+                htmlFor="opportunityName"
+                className="block text-sm font-medium"
+              >
+                Opportunity Name *
               </label>
               <input
-                id="expectedRevenue"
-                name="expectedRevenue"
-                type="number"
-                value={formData.expectedRevenue || ""}
+                id="opportunityName"
+                name="opportunityName"
+                value={formData.opportunityName || ""}
                 onChange={handleChange}
+                required
                 className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
               />
             </div>
-            <div className="space-y-2">
-              <label htmlFor="assignedTo" className="block text-sm font-medium">
-                Assign to Salesperson
-              </label>
-              <select
-                id="assignedTo"
-                value={formData.assignedTo || ""}
-                onChange={(e) => handleSelectChange("assignedTo", e.target.value)}
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-              >
-                <option value="">Select a salesperson</option>
-                {salespeople.map((person) => (
-                  <option key={person.id} value={person.id}>
-                    {person.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="leadSource" className="block text-sm font-medium">
-                Lead Source
-              </label>
-              <select
-                id="leadSource"
-                value={formData.leadSource || ""}
-                onChange={(e) => handleSelectChange("leadSource", e.target.value)}
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-              >
-                <option value="">Select a source</option>
-                <option value="website">Website</option>
-                <option value="referral">Referral</option>
-                <option value="social_media">Social Media</option>
-                <option value="email">Email Campaign</option>
-                <option value="event">Event</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="leadScore" className="block text-sm font-medium">
-                Lead Score (0-100)
-              </label>
-              <input
-                id="leadScore"
-                name="leadScore"
-                type="number"
-                min="0"
-                max="100"
-                value={formData.leadScore || ""}
-                onChange={handleChange}
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-              />
+
+            {/* Update in the LeadForm component, modify the return statement containing the form */}
+            {/* Inside LeadForm, modify the clientType section to always show the internal notes tab */}
+            {
+              <div>
+                <div className="flex space-x-4 mb-4">
+                  <button
+                    type="button"
+                    className={`px-4 py-2 text-sm font-medium ${
+                      activeTab === "basic"
+                        ? "border-b-2 border-blue-500 text-blue-600"
+                        : "text-gray-500"
+                    }`}
+                    onClick={() => setActiveTab("basic")}
+                  >
+                    Basic Information
+                  </button>
+                  <button
+                    type="button"
+                    className={`px-4 py-2 text-sm font-medium ${
+                      activeTab === "notes"
+                        ? "border-b-2 border-blue-500 text-blue-600"
+                        : "text-gray-500"
+                    }`}
+                    onClick={() => setActiveTab("notes")}
+                  >
+                    Internal Notes
+                  </button>
+                </div>
+
+                {activeTab === "basic" && (
+                  <div className="grid grid-cols-2 gap-4">
+                    {clientType === "new" && (
+                      <>
+                        <div className="space-y-2">
+                          <label
+                            htmlFor="clientName"
+                            className="block text-sm font-medium"
+                          >
+                            Client Name *
+                          </label>
+                          <input
+                            id="clientName"
+                            name="clientName"
+                            value={formData.clientName || ""}
+                            onChange={handleChange}
+                            required
+                            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label
+                            htmlFor="email"
+                            className="block text-sm font-medium"
+                          >
+                            Email *
+                          </label>
+                          <input
+                            id="email"
+                            name="email"
+                            type="email"
+                            value={formData.email || ""}
+                            onChange={handleChange}
+                            required
+                            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label
+                            htmlFor="phone"
+                            className="block text-sm font-medium"
+                          >
+                            Phone *
+                          </label>
+                          <input
+                            id="phone"
+                            name="phone"
+                            value={formData.phone || ""}
+                            onChange={handleChange}
+                            required
+                            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label
+                            htmlFor="company"
+                            className="block text-sm font-medium"
+                          >
+                            Company
+                          </label>
+                          <input
+                            id="company"
+                            name="company"
+                            value={formData.company || ""}
+                            onChange={handleChange}
+                            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label
+                            htmlFor="website"
+                            className="block text-sm font-medium"
+                          >
+                            Website
+                          </label>
+                          <input
+                            id="website"
+                            name="website"
+                            value={formData.website || ""}
+                            onChange={handleChange}
+                            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === "notes" && (
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="internalNotes"
+                      className="block text-sm font-medium"
+                    >
+                      Internal Notes
+                    </label>
+                    <textarea
+                      id="internalNotes"
+                      name="internalNotes"
+                      value={formData.internalNotes || ""}
+                      onChange={handleChange}
+                      rows={8}
+                      placeholder="Add any internal notes or observations about this lead"
+                      className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                    />
+                  </div>
+                )}
+              </div>
+            }
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label
+                  htmlFor="expectedRevenue"
+                  className="block text-sm font-medium"
+                >
+                  Expected Revenue ($)
+                </label>
+                <input
+                  id="expectedRevenue"
+                  name="expectedRevenue"
+                  type="number"
+                  value={formData.expectedRevenue || ""}
+                  onChange={handleChange}
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <label
+                  htmlFor="assignedTo"
+                  className="block text-sm font-medium"
+                >
+                  Assign to Salesperson
+                </label>
+                <select
+                  id="assignedTo"
+                  value={formData.assignedTo || ""}
+                  onChange={(e) =>
+                    handleSelectChange("assignedTo", e.target.value)
+                  }
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                >
+                  <option value="">Select a salesperson</option>
+                  {salespeople.map((person) => (
+                    <option key={person.id} value={person.id}>
+                      {person.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label
+                  htmlFor="leadSource"
+                  className="block text-sm font-medium"
+                >
+                  Lead Source
+                </label>
+                <select
+                  id="leadSource"
+                  value={formData.leadSource || ""}
+                  onChange={(e) =>
+                    handleSelectChange("leadSource", e.target.value)
+                  }
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                >
+                  <option value="">Select a source</option>
+                  <option value="website">Website</option>
+                  <option value="referral">Referral</option>
+                  <option value="social_media">Social Media</option>
+                  <option value="email">Email Campaign</option>
+                  <option value="event">Event</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label
+                  htmlFor="leadScore"
+                  className="block text-sm font-medium"
+                >
+                  Lead Score (0-100)
+                </label>
+                <input
+                  id="leadScore"
+                  name="leadScore"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={formData.leadScore || ""}
+                  onChange={handleChange}
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <label
+                  htmlFor="lastContactDate"
+                  className="block text-sm font-medium"
+                >
+                  Last Contact Date
+                </label>
+                <input
+                  id="lastContactDate"
+                  name="lastContactDate"
+                  type="date"
+                  value={formData.lastContactDate || ""}
+                  onChange={handleChange}
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <label
+                  htmlFor="nextFollowUp"
+                  className="block text-sm font-medium"
+                >
+                  Next Follow-up Date
+                </label>
+                <input
+                  id="nextFollowUp"
+                  name="nextFollowUp"
+                  type="date"
+                  value={formData.nextFollowUp || ""}
+                  onChange={handleChange}
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="mt-6 flex justify-end space-x-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-sm font-medium"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
-          >
-            {lead ? "Update Lead" : "Add Lead"}
-          </button>
-        </div>
-      </form>
+          <div className="mt-6 flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-sm font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
+            >
+              {lead ? "Update Lead" : "Add Lead"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
-  )
+  );
 }
 
 // Contact Form Component
@@ -796,11 +1904,11 @@ function ContactForm({ contact, onSave, onCancel }) {
     company: "",
     website: "",
     notes: "",
-  })
+  });
 
   useEffect(() => {
     if (contact) {
-      setFormData(contact)
+      setFormData(contact);
     } else {
       setFormData({
         name: "",
@@ -809,31 +1917,33 @@ function ContactForm({ contact, onSave, onCancel }) {
         company: "",
         website: "",
         notes: "",
-      })
+      });
     }
-  }, [contact])
+  }, [contact]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target
+    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
-    }))
-  }
+    }));
+  };
 
   const handleSubmit = (e) => {
-    e.preventDefault()
+    e.preventDefault();
     onSave({
       ...formData,
       id: contact?.id || `contact-${Date.now()}`,
       createdAt: contact?.createdAt || new Date().toISOString(),
-    })
-  }
+    });
+  };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-2xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">{contact ? "Edit Contact" : "Add New Contact"}</h2>
+        <h2 className="text-xl font-bold">
+          {contact ? "Edit Contact" : "Add New Contact"}
+        </h2>
         <button
           onClick={onCancel}
           className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -940,19 +2050,20 @@ function ContactForm({ contact, onSave, onCancel }) {
         </div>
       </form>
     </div>
-  )
+  );
 }
 
 // Contacts Table Component
 function ContactsTable({ contacts, onEdit, onDelete }) {
-  const [searchTerm, setSearchTerm] = useState("")
+  const [searchTerm, setSearchTerm] = useState("");
 
   const filteredContacts = contacts.filter(
     (contact) =>
       contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (contact.company && contact.company.toLowerCase().includes(searchTerm.toLowerCase())),
-  )
+      (contact.company &&
+        contact.company.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
@@ -994,7 +2105,9 @@ function ContactsTable({ contacts, onEdit, onDelete }) {
             {filteredContacts.length > 0 ? (
               filteredContacts.map((contact) => (
                 <tr key={contact.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{contact.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    {contact.name}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     {contact.email}
                   </td>
@@ -1026,7 +2139,10 @@ function ContactsTable({ contacts, onEdit, onDelete }) {
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                <td
+                  colSpan={5}
+                  className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400"
+                >
                   {searchTerm
                     ? "No contacts found matching your search."
                     : "No contacts found. Add your first contact!"}
@@ -1037,76 +2153,20 @@ function ContactsTable({ contacts, onEdit, onDelete }) {
         </table>
       </div>
     </div>
-  )
-}
-
-// Lost Lead Dialog Component
-function LostLeadDialog({ isOpen, onClose, onConfirm }) {
-  const [reason, setReason] = useState("")
-  const [notes, setNotes] = useState("")
-
-  const handleSubmit = () => {
-    onConfirm(reason, notes)
-    setReason("")
-    setNotes("")
-  }
-
-  if (!isOpen) return null
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-md w-full">
-        <h3 className="text-lg font-bold mb-4">Mark as Lost</h3>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium">Lost Reason</label>
-            <input
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="Why was this deal lost?"
-              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-medium">Closing Notes</label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Any additional notes about this lost opportunity"
-              rows={3}
-              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-            />
-          </div>
-        </div>
-        <div className="mt-6 flex justify-end space-x-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-sm font-medium"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700"
-          >
-            Mark as Lost
-          </button>
-        </div>
-      </div>
-    </div>
-  )
+  );
 }
 
 // Delete Confirmation Dialog Component
 function DeleteConfirmationDialog({ isOpen, onClose, onConfirm }) {
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-md w-full">
         <h3 className="text-lg font-bold mb-2">Are you sure?</h3>
         <p className="text-gray-500 dark:text-gray-400 mb-4">
-          This will permanently delete this contact. This action cannot be undone.
+          This will permanently delete this contact. This action cannot be
+          undone.
         </p>
         <div className="flex justify-end space-x-3">
           <button
@@ -1124,20 +2184,25 @@ function DeleteConfirmationDialog({ isOpen, onClose, onConfirm }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 // Toast Component
 function Toast({ message, type, onClose }) {
   useEffect(() => {
     const timer = setTimeout(() => {
-      onClose()
-    }, 3000)
+      onClose();
+    }, 3000);
 
-    return () => clearTimeout(timer)
-  }, [onClose])
+    return () => clearTimeout(timer);
+  }, [onClose]);
 
-  const bgColor = type === "success" ? "bg-green-500" : type === "error" ? "bg-red-500" : "bg-blue-500"
+  const bgColor =
+    type === "success"
+      ? "bg-green-500"
+      : type === "error"
+      ? "bg-red-500"
+      : "bg-blue-500";
 
   return (
     <div
@@ -1148,334 +2213,470 @@ function Toast({ message, type, onClose }) {
         <X size={16} />
       </button>
     </div>
-  )
+  );
 }
 
 // Main CRM Application
-export default function CrmSinglePage() {
-  const [leads, setLeads] = useState([])
-  const [salespeople, setSalespeople] = useState([])
-  const [contacts, setContacts] = useState([])
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filterStage, setFilterStage] = useState(null)
-  const [filterSalesperson, setFilterSalesperson] = useState(null)
+export default function CrmPipeline() {
+  const [leads, setLeads] = useState([]);
+  const [salespeople, setSalespeople] = useState([]);
+  const [contacts, setContacts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStage, setFilterStage] = useState(null);
+  const [filterSalesperson, setFilterSalesperson] = useState(null);
 
-  const [activeView, setActiveView] = useState("pipeline") // "pipeline" or "contacts"
-  const [isLeadFormOpen, setIsLeadFormOpen] = useState(false)
-  const [isContactFormOpen, setIsContactFormOpen] = useState(false)
-  const [editingLead, setEditingLead] = useState(null)
-  const [editingContact, setEditingContact] = useState(null)
-  const [isLostDialogOpen, setIsLostDialogOpen] = useState(false)
-  const [leadToMarkAsLost, setLeadToMarkAsLost] = useState(null)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [contactToDelete, setContactToDelete] = useState(null)
+  const [activeView, setActiveView] = useState("pipeline"); // "pipeline" or "contacts"
+  const [isLeadFormOpen, setIsLeadFormOpen] = useState(false);
+  const [isContactFormOpen, setIsContactFormOpen] = useState(false);
+  const [editingLead, setEditingLead] = useState(null);
+  const [editingContact, setEditingContact] = useState(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [contactToDelete, setContactToDelete] = useState(null);
 
-  const [toast, setToast] = useState(null)
+  // New state for stage transition dialog
+  const [isStageTransitionDialogOpen, setIsStageTransitionDialogOpen] =
+    useState(false);
+  const [transitioningLead, setTransitioningLead] = useState(null);
+  const [targetStage, setTargetStage] = useState(null);
+  const [stageValidationErrors, setStageValidationErrors] = useState([]);
+
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     // Initialize with sample data
-    setSalespeople(generateSampleSalespeople())
-    setLeads(generateSampleLeads(15))
-    setContacts(generateSampleContacts())
-  }, [])
+    setSalespeople(generateSampleSalespeople());
+    setContacts(generateSampleContacts());
+  }, []);
 
   const showToast = (message, type = "success") => {
-    setToast({ message, type })
-  }
+    setToast({ message, type });
+  };
 
   const handleAddLead = (lead) => {
     if (editingLead) {
-      setLeads(leads.map((l) => (l.id === lead.id ? lead : l)))
-      showToast(`${lead.opportunityName} has been updated.`)
+      setLeads(leads.map((l) => (l.id === lead.id ? lead : l)));
+      showToast(`${lead.opportunityName} has been updated.`);
     } else {
-      setLeads([...leads, { ...lead, id: `lead-${Date.now()}`, stage: "New" }])
-      showToast(`${lead.opportunityName} has been added to the pipeline.`)
+      setLeads([...leads, { ...lead, id: `lead-${Date.now()}`, stage: "New" }]);
+      showToast(`${lead.opportunityName} has been added to the pipeline.`);
     }
-    setIsLeadFormOpen(false)
-    setEditingLead(null)
-  }
-
-  const handleMoveLead = (leadId, newStage) => {
-    setLeads(
-      leads.map((lead) => {
-        if (lead.id === leadId) {
-          return { ...lead, stage: newStage }
-        }
-        return lead
-      }),
-    )
-  }
+    setIsLeadFormOpen(false);
+    setEditingLead(null);
+  };
 
   const handleEditLead = (lead) => {
-    setEditingLead(lead)
-    setIsLeadFormOpen(true)
-  }
+    setEditingLead(lead);
+    setIsLeadFormOpen(true);
+  };
 
-  const handleMarkAsLost = (leadId) => {
-    setLeadToMarkAsLost(leadId)
-    setIsLostDialogOpen(true)
-  }
+  const handleStageTransition = (lead, nextStage) => {
+    // Validate the transition
+    const errors = validateStageTransition(lead, nextStage);
+    setStageValidationErrors(errors);
 
-  const confirmMarkAsLost = (reason, notes) => {
-    setLeads(
-      leads.map((lead) => {
-        if (lead.id === leadToMarkAsLost) {
-          return {
-            ...lead,
-            stage: "Lost",
-            lostReason: reason,
-            closingNotes: notes,
-          }
+    // Open the dialog
+    setTransitioningLead(lead);
+    setTargetStage(nextStage);
+    setIsStageTransitionDialogOpen(true);
+  };
+
+  const validateStageTransition = (lead, targetStage) => {
+    const errors = [];
+
+    // Cannot skip stages
+    const stageOrder = [
+      "New",
+      "Qualified",
+      "Proposal Sent",
+      "Negotiation",
+      "Won",
+      "Lost",
+    ];
+    const currentIndex = stageOrder.indexOf(lead.stage);
+    const targetIndex = stageOrder.indexOf(targetStage);
+
+    if (targetStage !== "Lost" && targetIndex > currentIndex + 1) {
+      errors.push(`Cannot skip from ${lead.stage} to ${targetStage}`);
+    }
+
+    // Stage-specific validations
+    if (targetStage === "Qualified") {
+      if (!lead.contactAttempts || lead.contactAttempts.length === 0) {
+        if (!lead.lastContactDate) {
+          errors.push("At least one contact attempt must be logged");
         }
-        return lead
-      }),
-    )
-    setIsLostDialogOpen(false)
-    setLeadToMarkAsLost(null)
-    showToast("The lead has been moved to the Lost stage.", "error")
-  }
+      }
+    }
 
-  const handleMarkAsWon = (leadId) => {
-    setLeads(
-      leads.map((lead) => {
-        if (lead.id === leadId) {
-          return { ...lead, stage: "Won" }
-        }
-        return lead
-      }),
-    )
-    showToast("Congratulations on closing the deal!", "success")
-  }
+    if (targetStage === "Proposal Sent") {
+      if (!lead.proposalDocument) {
+        errors.push("Proposal document must be attached");
+      }
+    }
+
+    if (targetStage === "Negotiation") {
+      if (!lead.nextFollowUp) {
+        errors.push("Follow-up date must be set");
+      }
+    }
+
+    return errors;
+  };
+
+  const confirmStageTransition = (nextStage, notes, formData, attachments) => {
+    const now = new Date().toISOString();
+    const assignedPerson = salespeople.find(
+      (sp) => sp.id === transitioningLead.assignedTo
+    );
+    const assignedName = assignedPerson?.name || "System";
+
+    // Create history entry
+    const historyEntry = {
+      stage: nextStage,
+      date: now,
+      notes: notes,
+      changedBy: assignedName,
+    };
+
+    // Update lead with stage-specific data
+    let updatedLead = {
+      ...transitioningLead,
+      stage: nextStage,
+      stageHistory: [...(transitioningLead.stageHistory || []), historyEntry],
+    };
+
+    // Add stage-specific data
+    switch (nextStage) {
+      case "Qualified":
+        updatedLead = {
+          ...updatedLead,
+          lastContactDate: now,
+          contactAttempts: [
+            ...(updatedLead.contactAttempts || []),
+            {
+              date: now,
+              details: formData.contactDetails,
+              type: "qualification",
+            },
+          ],
+        };
+        break;
+      case "Proposal Sent":
+        updatedLead = {
+          ...updatedLead,
+          proposalSentDate: now,
+          proposalDocument: attachments.length > 0 ? attachments[0].name : null,
+          dealValue: formData.proposalValue || updatedLead.expectedRevenue,
+        };
+        break;
+      case "Negotiation":
+        updatedLead = {
+          ...updatedLead,
+          negotiationStartDate: now,
+          nextFollowUp: formData.followUpDate,
+          clientFeedback: formData.clientFeedback,
+        };
+        break;
+      case "Won":
+        updatedLead = {
+          ...updatedLead,
+          wonLostDate: formData.closingDate || now,
+          dealValue: formData.finalDealValue || updatedLead.expectedRevenue,
+        };
+        break;
+      case "Lost":
+        updatedLead = {
+          ...updatedLead,
+          wonLostDate: formData.closingDate || now,
+          lostReason: formData.lostReason,
+          competitorInfo: formData.competitorInfo,
+        };
+        break;
+    }
+
+    // Update leads state
+    setLeads(leads.map((l) => (l.id === updatedLead.id ? updatedLead : l)));
+
+    // Show toast
+    if (nextStage === "Won") {
+      showToast(
+        `Congratulations! ${updatedLead.opportunityName} has been won.`,
+        "success"
+      );
+    } else if (nextStage === "Lost") {
+      showToast(
+        `${updatedLead.opportunityName} has been marked as lost.`,
+        "error"
+      );
+    } else {
+      showToast(`${updatedLead.opportunityName} has moved to ${nextStage}.`);
+    }
+
+    // Close dialog
+    setIsStageTransitionDialogOpen(false);
+    setTransitioningLead(null);
+    setTargetStage(null);
+    setStageValidationErrors([]);
+  };
 
   const handleAddContact = (contact) => {
     if (editingContact) {
-      setContacts(contacts.map((c) => (c.id === contact.id ? contact : c)))
-      showToast(`${contact.name} has been updated.`)
+      setContacts(contacts.map((c) => (c.id === contact.id ? contact : c)));
+      showToast(`${contact.name} has been updated.`);
     } else {
       const newContact = {
         ...contact,
         id: `contact-${Date.now()}`,
         createdAt: new Date().toISOString(),
-      }
-      setContacts([...contacts, newContact])
-      showToast(`${contact.name} has been added to your contacts.`)
+      };
+      setContacts([...contacts, newContact]);
+      showToast(`${contact.name} has been added to your contacts.`);
     }
-    setIsContactFormOpen(false)
-    setEditingContact(null)
-  }
+    setIsContactFormOpen(false);
+    setEditingContact(null);
+  };
 
   const handleEditContact = (contact) => {
-    setEditingContact(contact)
-    setIsContactFormOpen(true)
-  }
+    setEditingContact(contact);
+    setIsContactFormOpen(true);
+  };
 
   const handleDeleteContact = (contactId) => {
-    setContactToDelete(contactId)
-    setIsDeleteDialogOpen(true)
-  }
+    setContactToDelete(contactId);
+    setIsDeleteDialogOpen(true);
+  };
 
   const confirmDeleteContact = () => {
     // Check if contact is used in any leads
-    const isContactUsed = leads.some((lead) => lead.contactId === contactToDelete)
+    const isContactUsed = leads.some(
+      (lead) => lead.contactId === contactToDelete
+    );
 
     if (isContactUsed) {
-      showToast("This contact is associated with one or more leads.", "error")
+      showToast("This contact is associated with one or more leads.", "error");
     } else {
-      setContacts(contacts.filter((c) => c.id !== contactToDelete))
-      showToast("The contact has been removed from your contacts.", "error")
+      setContacts(contacts.filter((c) => c.id !== contactToDelete));
+      showToast("The contact has been removed from your contacts.", "error");
     }
 
-    setIsDeleteDialogOpen(false)
-    setContactToDelete(null)
-  }
+    setIsDeleteDialogOpen(false);
+    setContactToDelete(null);
+  };
 
   const filteredLeads = leads.filter((lead) => {
     const matchesSearch =
       searchTerm === "" ||
       lead.opportunityName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lead.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lead.email.toLowerCase().includes(searchTerm.toLowerCase())
+      lead.email.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStage = filterStage === null || lead.stage === filterStage
+    const matchesStage = filterStage === null || lead.stage === filterStage;
 
-    const matchesSalesperson = filterSalesperson === null || lead.assignedTo === filterSalesperson
+    const matchesSalesperson =
+      filterSalesperson === null || lead.assignedTo === filterSalesperson;
 
-    return matchesSearch && matchesStage && matchesSalesperson
-  })
+    return matchesSearch && matchesStage && matchesSalesperson;
+  });
 
   return (
-    <DndProvider backend={HTML5Backend}>
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-        {/* Header */}
-        <header>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex justify-between items-center">
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => setActiveView("pipeline")}
-                  className={`px-4 py-2 rounded-md text-sm font-medium ${
-                    activeView === "pipeline"
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                  }`}
-                >
-                  Pipeline
-                </button>
-                <button
-                  onClick={() => setActiveView("contacts")}
-                  className={`px-4 py-2 rounded-md text-sm font-medium flex items-center ${
-                    activeView === "contacts"
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                  }`}
-                >
-                  <Users size={16} className="mr-1" /> Contacts
-                </button>
-              </div>
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+      {/* Header */}
+      <header>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setActiveView("pipeline")}
+                className={`px-4 py-2 rounded-md text-sm font-medium ${
+                  activeView === "pipeline"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                }`}
+              >
+                Pipeline
+              </button>
+              <button
+                onClick={() => setActiveView("contacts")}
+                className={`px-4 py-2 rounded-md text-sm font-medium flex items-center ${
+                  activeView === "contacts"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                }`}
+              >
+                <Users size={16} className="mr-1" /> Contacts
+              </button>
             </div>
           </div>
-        </header>
+        </div>
+      </header>
 
-        {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {activeView === "pipeline" && (
-            <>
-              {/* Top Controls */}
-              <div className="mb-6 flex justify-between items-center">
-                <h2 className="text-xl font-bold">Sales Pipeline</h2>
-                <button
-                  onClick={() => {
-                    setEditingLead(null)
-                    setIsLeadFormOpen(true)
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 flex items-center"
-                >
-                  <Plus size={16} className="mr-1" /> New Lead
-                </button>
-              </div>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {activeView === "pipeline" && (
+          <>
+            {/* Top Controls */}
+            <div className="mb-6 flex justify-between items-center">
+              <h2 className="text-xl font-bold">Sales Pipeline</h2>
+              <button
+                onClick={() => {
+                  setEditingLead(null);
+                  setIsLeadFormOpen(true);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 flex items-center"
+              >
+                <Plus size={16} className="mr-1" /> New Lead
+              </button>
+            </div>
 
-              {/* Search and Filters */}
-              <div className="mb-6 flex flex-wrap gap-3">
-                <div className="relative flex-1 min-w-[200px]">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
-                  <input
-                    placeholder="Search leads..."
-                    className="pl-8 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Filter size={16} className="text-gray-500 dark:text-gray-400" />
-                  <select
-                    value={filterStage || ""}
-                    onChange={(e) => setFilterStage(e.target.value === "" ? null : e.target.value)}
-                    className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                  >
-                    <option value="">All Stages</option>
-                    <option value="New">New</option>
-                    <option value="Qualified">Qualified</option>
-                    <option value="Proposal Sent">Proposal Sent</option>
-                    <option value="Negotiation">Negotiation</option>
-                    <option value="Won">Won</option>
-                    <option value="Lost">Lost</option>
-                  </select>
-                </div>
-                <div>
-                  <select
-                    value={filterSalesperson || ""}
-                    onChange={(e) => setFilterSalesperson(e.target.value === "" ? null : e.target.value)}
-                    className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                  >
-                    <option value="">All Salespeople</option>
-                    {salespeople.map((person) => (
-                      <option key={person.id} value={person.id}>
-                        {person.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Kanban Board */}
-              <div className="h-[calc(100vh-220px)] overflow-x-auto">
-                <KanbanBoard
-                  leads={filteredLeads}
-                  onMoveLead={handleMoveLead}
-                  onEditLead={handleEditLead}
-                  onMarkAsLost={handleMarkAsLost}
-                  onMarkAsWon={handleMarkAsWon}
+            {/* Search and Filters */}
+            <div className="mb-6 flex flex-wrap gap-3">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
+                <input
+                  placeholder="Search leads..."
+                  className="pl-8 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
-            </>
-          )}
-
-          {activeView === "contacts" && (
-            <>
-              <div className="mb-6 flex justify-between items-center">
-                <h2 className="text-xl font-bold">Contacts Management</h2>
-                <button
-                  onClick={() => {
-                    setEditingContact(null)
-                    setIsContactFormOpen(true)
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 flex items-center"
+              <div className="flex items-center gap-2">
+                <Filter
+                  size={16}
+                  className="text-gray-500 dark:text-gray-400"
+                />
+                <select
+                  value={filterStage || ""}
+                  onChange={(e) =>
+                    setFilterStage(
+                      e.target.value === "" ? null : e.target.value
+                    )
+                  }
+                  className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
                 >
-                  <Plus size={16} className="mr-1" /> New Contact
-                </button>
+                  <option value="">All Stages</option>
+                  <option value="New">New</option>
+                  <option value="Qualified">Qualified</option>
+                  <option value="Proposal Sent">Proposal Sent</option>
+                  <option value="Negotiation">Negotiation</option>
+                  <option value="Won">Won</option>
+                  <option value="Lost">Lost</option>
+                </select>
               </div>
-              <ContactsTable contacts={contacts} onEdit={handleEditContact} onDelete={handleDeleteContact} />
-            </>
-          )}
-        </main>
+              <div>
+                <select
+                  value={filterSalesperson || ""}
+                  onChange={(e) =>
+                    setFilterSalesperson(
+                      e.target.value === "" ? null : e.target.value
+                    )
+                  }
+                  className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                >
+                  <option value="">All Salespeople</option>
+                  {salespeople.map((person) => (
+                    <option key={person.id} value={person.id}>
+                      {person.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-        {/* Lead Form */}
-        {isLeadFormOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 p-4 overflow-y-auto">
-            <LeadForm
-              lead={editingLead}
-              onSave={handleAddLead}
-              onCancel={() => {
-                setIsLeadFormOpen(false)
-                setEditingLead(null)
-              }}
-              salespeople={salespeople}
+            {/* Kanban Board */}
+            <div className="h-[calc(100vh-220px)] overflow-x-auto">
+              <KanbanBoard
+                leads={filteredLeads}
+                onEditLead={handleEditLead}
+                onStageTransition={handleStageTransition}
+              />
+            </div>
+          </>
+        )}
+
+        {activeView === "contacts" && (
+          <>
+            <div className="mb-6 flex justify-between items-center">
+              <h2 className="text-xl font-bold">Contacts Management</h2>
+              <button
+                onClick={() => {
+                  setEditingContact(null);
+                  setIsContactFormOpen(true);
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 flex items-center"
+              >
+                <Plus size={16} className="mr-1" /> New Contact
+              </button>
+            </div>
+            <ContactsTable
               contacts={contacts}
+              onEdit={handleEditContact}
+              onDelete={handleDeleteContact}
             />
-          </div>
+          </>
         )}
+      </main>
 
-        {/* Contact Form */}
-        {isContactFormOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 p-4 overflow-y-auto">
-            <ContactForm
-              contact={editingContact}
-              onSave={handleAddContact}
-              onCancel={() => {
-                setIsContactFormOpen(false)
-                setEditingContact(null)
-              }}
-            />
-          </div>
-        )}
+      {/* Lead Form */}
+      {isLeadFormOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 p-4 overflow-y-auto">
+          <LeadForm
+            lead={editingLead}
+            onSave={handleAddLead}
+            onCancel={() => {
+              setIsLeadFormOpen(false);
+              setEditingLead(null);
+            }}
+            salespeople={salespeople}
+            contacts={contacts}
+          />
+        </div>
+      )}
 
-        {/* Lost Lead Dialog */}
-        <LostLeadDialog
-          isOpen={isLostDialogOpen}
-          onClose={() => setIsLostDialogOpen(false)}
-          onConfirm={confirmMarkAsLost}
+      {/* Contact Form */}
+      {isContactFormOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 p-4 overflow-y-auto">
+          <ContactForm
+            contact={editingContact}
+            onSave={handleAddContact}
+            onCancel={() => {
+              setIsContactFormOpen(false);
+              setEditingContact(null);
+            }}
+          />
+        </div>
+      )}
+
+      {/* Stage Transition Dialog */}
+      <StageTransitionDialog
+        isOpen={isStageTransitionDialogOpen}
+        onClose={() => {
+          setIsStageTransitionDialogOpen(false);
+          setTransitioningLead(null);
+          setTargetStage(null);
+          setStageValidationErrors([]);
+        }}
+        onConfirm={confirmStageTransition}
+        lead={transitioningLead}
+        currentStage={transitioningLead?.stage}
+        nextStage={targetStage}
+        validationErrors={stageValidationErrors}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={confirmDeleteContact}
+      />
+
+      {/* Toast */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
         />
-
-        {/* Delete Confirmation Dialog */}
-        <DeleteConfirmationDialog
-          isOpen={isDeleteDialogOpen}
-          onClose={() => setIsDeleteDialogOpen(false)}
-          onConfirm={confirmDeleteContact}
-        />
-
-        {/* Toast */}
-        {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      </div>
-    </DndProvider>
-  )
+      )}
+    </div>
+  );
 }
