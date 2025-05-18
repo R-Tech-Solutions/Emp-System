@@ -248,35 +248,64 @@ export default function AdminDashboard() {
     fetchUpcomingBirthdays();
   }, []);
 
+  // Calculate workingToday from attendanceData (status === "Present")
+  useEffect(() => {
+    const presentCount = attendanceData.filter(emp => emp.status === "Present").length;
+    setWorkingToday(presentCount);
+  }, [attendanceData]);
+
+  // Fetch leave data and calculate On Leave Today and Future Leaves (per-day granularity)
   useEffect(() => {
     const fetchLeaveData = async () => {
       try {
         const response = await axios.get(`${backEndURL}/api/leave`);
         const leaveRequests = response.data || [];
         const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-        const onLeaveToday = [];
-        const futureLeaves = [];
-        const pendingLeaves = [];
+        // Helper to get all dates in a leave period
+        const getDatesInRange = (start, end) => {
+          const dates = [];
+          let current = new Date(start);
+          current.setHours(0, 0, 0, 0);
+          const last = new Date(end);
+          last.setHours(0, 0, 0, 0);
+          while (current <= last) {
+            dates.push(new Date(current));
+            current.setDate(current.getDate() + 1);
+          }
+          return dates;
+        };
+
+        // For On Leave Today and Future Leaves (per day)
+        const onLeaveTodayArr = [];
+        const futureLeaveArr = [];
 
         leaveRequests.forEach((leave) => {
-          const startDate = new Date(leave.startDate);
-          const endDate = new Date(leave.endDate);
+          if (leave.status !== "Approved") return;
+          const startDate = new Date(leave.startDate || leave.startstartDate);
+          const endDate = new Date(leave.endDate || leave.endstartDate);
+          if (isNaN(startDate) || isNaN(endDate)) return;
+          const leaveDates = getDatesInRange(startDate, endDate);
 
-          if (leave.status === "Approved") {
-            if (today >= startDate && today <= endDate) {
-              onLeaveToday.push(leave);
-            } else if (today < startDate) {
-              futureLeaves.push(leave);
+          leaveDates.forEach(date => {
+            date.setHours(0, 0, 0, 0);
+            if (date.getTime() === today.getTime()) {
+              onLeaveTodayArr.push({
+                ...leave,
+                leaveDate: new Date(date),
+              });
+            } else if (date.getTime() > today.getTime()) {
+              futureLeaveArr.push({
+                ...leave,
+                leaveDate: new Date(date),
+              });
             }
-          } else if (leave.status === "Pending") {
-            pendingLeaves.push(leave);
-          }
+          });
         });
 
-        setOnLeaveTodayDetails(onLeaveToday);
-        setFutureLeaveDetails(futureLeaves);
-        setPendingLeaveDetails(pendingLeaves);
+        setOnLeaveTodayDetails(onLeaveTodayArr);
+        setFutureLeaveDetails(futureLeaveArr);
       } catch (error) {
         console.error("Error fetching leave data:", error);
       }
@@ -565,20 +594,22 @@ export default function AdminDashboard() {
               {item.details && (
                 <div className="mt-4 max-h-32 overflow-y-auto pr-2">
                   {item.details.length === 0 ? (
-                    <p className="text-sm text-gray-400">No data available.</p>
+                    <p className="text-sm text-gray-400"></p>
                   ) : (
                     <ul className="space-y-2 text-sm text-gray-200">
-                      {item.details.map((leave) => (
+                      {item.details.map((leave, idx) => (
                         <li
-                          key={leave.id}
+                          key={leave.id + "-" + (leave.leaveDate ? leave.leaveDate.toISOString() : idx)}
                           className="border-b border-gray-700 pb-1"
                         >
-                          <strong>{leave.employeeId}</strong>
-                          {leave.employeeName}
+                          <strong>{leave.employeeId}</strong>{" "}
+                          {leave.employeeName || leave.name}
                           <br />
                           <span className="text-xs text-gray-400">
-                            ({new Date(leave.startstartDate).toLocaleDateString()} -{" "}
-                            {new Date(leave.endstartDate).toLocaleDateString()})
+                            ({leave.leaveDate
+                              ? new Date(leave.leaveDate).toLocaleDateString()
+                              : ""}
+                            )
                           </span>
                         </li>
                       ))}
@@ -723,6 +754,119 @@ export default function AdminDashboard() {
                 />
               </PieChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+        <div className="bg-gray-800 rounded-2xl shadow-lg overflow-hidden mb-6">
+          <div className="px-5 py-4 border-b border-gray-700 flex flex-col md:flex-row justify-between md:items-center">
+            <div>
+              <h2 className="text-xl font-bold text-white flex items-center">
+                <UserCheck className="h-5 w-5 mr-2 text-blue-400" />
+                Today's Employee Status
+              </h2>
+              <p className="text-sm text-gray-400 mt-1">
+                Live attendance and working status overview
+              </p>
+            </div>
+
+            <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
+              {/* Search Input */}
+              <div className="relative w-full sm:w-60">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  className="bg-gray-700 text-white text-sm rounded-lg block w-full pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
+                  placeholder="Search employees..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
+              {/* Filter Dropdown */}
+              <select
+                className="bg-gray-700 text-white text-sm rounded-lg block p-2.5 focus:ring-blue-500 focus:border-blue-500"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+              >
+                <option value="All">All Status</option>
+                <option value="Working">Working</option>
+                <option value="On Leave">On Leave</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left table-auto">
+              <thead className="text-xs uppercase bg-gray-700 sticky top-0 z-10">
+                <tr>
+                  <th className="px-6 py-3">Employee</th>
+                  <th className="px-6 py-3">Department</th>
+                  <th className="px-6 py-3">Position</th>
+                  <th className="px-6 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {attendanceData.length > 0 ? (
+                  attendanceData.map((employee, index) => (
+                    <tr
+                      key={index}
+                      className={`border-b border-gray-700 ${index % 2 === 0 ? "bg-gray-800" : "bg-gray-750"
+                        } hover:bg-gray-700 transition-colors`}
+                    >
+                      <td className="px-6 py-4 flex items-center whitespace-nowrap">
+                        <span className="font-medium text-white">
+                          {employee.firstName} {employee.lastName}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-gray-300">{employee.department}</td>
+                      <td className="px-6 py-4 text-gray-300">{employee.position}</td>
+                      <td className="px-6 py-4">
+                        <span
+                          title={employee.status}
+                          className={`flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium w-max ${employee.status === "Present"
+                              ? "bg-green-900 text-green-300"
+                              : "bg-yellow-900 text-yellow-300"
+                            }`}
+                        >
+                          <span
+                            className={`w-2 h-2 rounded-full ${employee.status === "Present"
+                                ? "bg-green-400"
+                                : "bg-yellow-400"
+                              }`}
+                          ></span>
+                          {employee.status}
+                        </span>
+                      </td>
+                      {/* <td className="px-6 py-4 text-gray-300">{employee.checkIn}</td> */}
+                    </tr>
+                  ))
+                ) : (
+                  <tr className="text-center">
+                    <td colSpan="6" className="px-6 py-6 text-gray-500">
+                      No attendance records found for today.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="px-5 py-4 bg-gray-800 border-t border-gray-700 flex flex-col sm:flex-row justify-between items-center">
+            <div className="flex items-center space-x-2">
+              <button
+                className="px-3 py-1 bg-gray-700 rounded-md text-sm hover:bg-gray-600 disabled:opacity-50"
+              // disabled={currentPage === 1}
+              >
+                Previous
+              </button>
+              <button
+                className="px-3 py-1 bg-blue-600 rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
+              // disabled={currentPage * pageSize >= filteredEmployees.length}
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
 
@@ -910,119 +1054,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="bg-gray-800 rounded-2xl shadow-lg overflow-hidden mb-6">
-          <div className="px-5 py-4 border-b border-gray-700 flex flex-col md:flex-row justify-between md:items-center">
-            <div>
-              <h2 className="text-xl font-bold text-white flex items-center">
-                <UserCheck className="h-5 w-5 mr-2 text-blue-400" />
-                Today's Employee Status
-              </h2>
-              <p className="text-sm text-gray-400 mt-1">
-                Live attendance and working status overview
-              </p>
-            </div>
-
-            <div className="mt-4 md:mt-0 flex flex-col sm:flex-row gap-3">
-              {/* Search Input */}
-              <div className="relative w-full sm:w-60">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  type="text"
-                  className="bg-gray-700 text-white text-sm rounded-lg block w-full pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
-                  placeholder="Search employees..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-
-              {/* Filter Dropdown */}
-              <select
-                className="bg-gray-700 text-white text-sm rounded-lg block p-2.5 focus:ring-blue-500 focus:border-blue-500"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="All">All Status</option>
-                <option value="Working">Working</option>
-                <option value="On Leave">On Leave</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left table-auto">
-              <thead className="text-xs uppercase bg-gray-700 sticky top-0 z-10">
-                <tr>
-                  <th className="px-6 py-3">Employee</th>
-                  <th className="px-6 py-3">Department</th>
-                  <th className="px-6 py-3">Position</th>
-                  <th className="px-6 py-3">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {attendanceData.length > 0 ? (
-                  attendanceData.map((employee, index) => (
-                    <tr
-                      key={index}
-                      className={`border-b border-gray-700 ${index % 2 === 0 ? "bg-gray-800" : "bg-gray-750"
-                        } hover:bg-gray-700 transition-colors`}
-                    >
-                      <td className="px-6 py-4 flex items-center whitespace-nowrap">
-                        <span className="font-medium text-white">
-                          {employee.firstName} {employee.lastName}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-gray-300">{employee.department}</td>
-                      <td className="px-6 py-4 text-gray-300">{employee.position}</td>
-                      <td className="px-6 py-4">
-                        <span
-                          title={employee.status}
-                          className={`flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium w-max ${employee.status === "Present"
-                              ? "bg-green-900 text-green-300"
-                              : "bg-yellow-900 text-yellow-300"
-                            }`}
-                        >
-                          <span
-                            className={`w-2 h-2 rounded-full ${employee.status === "Present"
-                                ? "bg-green-400"
-                                : "bg-yellow-400"
-                              }`}
-                          ></span>
-                          {employee.status}
-                        </span>
-                      </td>
-                      {/* <td className="px-6 py-4 text-gray-300">{employee.checkIn}</td> */}
-                    </tr>
-                  ))
-                ) : (
-                  <tr className="text-center">
-                    <td colSpan="6" className="px-6 py-6 text-gray-500">
-                      No attendance records found for today.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="px-5 py-4 bg-gray-800 border-t border-gray-700 flex flex-col sm:flex-row justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <button
-                className="px-3 py-1 bg-gray-700 rounded-md text-sm hover:bg-gray-600 disabled:opacity-50"
-              // disabled={currentPage === 1}
-              >
-                Previous
-              </button>
-              <button
-                className="px-3 py-1 bg-blue-600 rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
-              // disabled={currentPage * pageSize >= filteredEmployees.length}
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-xl p-6 transition-transform hover:scale-[1.01]">
             <h4 className="text-lg font-semibold text-white mb-5 flex items-center gap-2">

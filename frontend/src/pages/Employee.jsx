@@ -273,11 +273,6 @@ export default function Employee() {
 
     const validateForm = () => {
         const newErrors = {};
-
-        // Simplified validation logic
-        if (!formData.profileImage) {
-            newErrors.profileImage = "Profile image is required";
-        }
         if (formData.password !== formData.confirmPassword) {
             newErrors.confirmPassword = "Passwords do not match";
         }

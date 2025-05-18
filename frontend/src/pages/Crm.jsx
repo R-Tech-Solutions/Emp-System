@@ -876,106 +876,73 @@ function LeadCard({ lead, onEdit, onStageTransition }) {
     return stageFlow[currentStage] || null;
   };
 
-  const validateStageTransition = (currentStage, targetStage) => {
-    const errors = [];
+ const validateStageTransition = (lead, targetStage) => {
+  const errors = [];
 
-    // Cannot skip stages
-    const stageOrder = [
-      "New",
-      "Qualified",
-      "Proposal Sent",
-      "Negotiation",
-      "Won",
-      "Lost",
-    ];
-    const currentIndex = stageOrder.indexOf(currentStage);
-    const targetIndex = stageOrder.indexOf(targetStage);
+  // Only keep the stage skipping validation (if you want to prevent skipping stages)
+  const stageOrder = [
+    "New",
+    "Qualified",
+    "Proposal Sent",
+    "Negotiation",
+    "Won",
+    "Lost",
+  ];
+  const currentIndex = stageOrder.indexOf(lead.stage);
+  const targetIndex = stageOrder.indexOf(targetStage);
 
-    if (targetStage !== "Lost" && targetIndex > currentIndex + 1) {
-      errors.push(`Cannot skip from ${currentStage} to ${targetStage}`);
-    }
+  if (targetStage !== "Lost" && targetIndex > currentIndex + 1) {
+    errors.push(`Cannot skip from ${lead.stage} to ${targetStage}`);
+  }
 
-    // Stage-specific validations
-    if (targetStage === "Qualified") {
-      if (!lead.contactAttempts || lead.contactAttempts.length === 0) {
-        errors.push("At least one contact attempt must be logged");
-      }
-    }
+  return errors;
+};
 
-    if (targetStage === "Proposal Sent") {
-      if (!lead.proposalDocument) {
-        errors.push("Proposal document must be attached");
-      }
-    }
+ const renderStageActions = () => {
+  if (lead.stage === "Won" || lead.stage === "Lost") {
+    return null;
+  }
 
-    if (targetStage === "Negotiation") {
-      if (!lead.nextFollowUp) {
-        errors.push("Follow-up date must be set");
-      }
-    }
+  const nextStage = getNextStage(lead.stage);
 
-    return errors;
-  };
+  if (!nextStage) {
+    return null;
+  }
 
-  const renderStageActions = () => {
-    if (lead.stage === "Won" || lead.stage === "Lost") {
-      return null;
-    }
-
-    const nextStage = getNextStage(lead.stage);
-
-    if (!nextStage) {
-      return null;
-    }
-
-    if (Array.isArray(nextStage)) {
-      return (
-        <div className="flex gap-2 mt-3">
-          <button
-            className="w-full text-xs h-8 bg-green-600 hover:bg-green-700 text-white rounded-md flex items-center justify-center"
-            onClick={() => onStageTransition(lead, "Won")}
-          >
-            <Check size={12} className="mr-1" /> Close Won
-          </button>
-          <button
-            className="w-full text-xs h-8 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center justify-center"
-            onClick={() => onStageTransition(lead, "Lost")}
-          >
-            <X size={12} className="mr-1" /> Close Lost
-          </button>
-        </div>
-      );
-    }
-
-    const buttonText = {
-      Qualified: "Mark as Qualified",
-      "Proposal Sent": "Submit Proposal",
-      Negotiation: "Begin Negotiation",
-    };
-
-    const validationErrors = validateStageTransition(lead.stage, nextStage);
-
+  if (Array.isArray(nextStage)) {
     return (
-      <div className="mt-3">
-        {validationErrors.length > 0 && (
-          <div className="mb-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-xs">
-            <ValidationIndicator lead={lead} nextStage={nextStage} />
-          </div>
-        )}
+      <div className="flex gap-2 mt-3">
         <button
-          className={`w-full text-xs h-8 rounded-md flex items-center justify-center ${
-            validationErrors.length > 0
-              ? "bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-700 text-white"
-          }`}
-          onClick={() => onStageTransition(lead, nextStage)}
-          disabled={validationErrors.length > 0}
+          className="w-full text-xs h-8 bg-green-600 hover:bg-green-700 text-white rounded-md flex items-center justify-center"
+          onClick={() => onStageTransition(lead, "Won")}
         >
-          <ArrowRight size={12} className="mr-1" /> {buttonText[nextStage]}
+          <Check size={12} className="mr-1" /> Close Won
+        </button>
+        <button
+          className="w-full text-xs h-8 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center justify-center"
+          onClick={() => onStageTransition(lead, "Lost")}
+        >
+          <X size={12} className="mr-1" /> Close Lost
         </button>
       </div>
     );
+  }
+
+  const buttonText = {
+    Qualified: "Mark as Qualified",
+    "Proposal Sent": "Submit Proposal",
+    Negotiation: "Begin Negotiation",
   };
+
+  return (
+    <button
+      className="w-full text-xs h-8 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center justify-center mt-3"
+      onClick={() => onStageTransition(lead, nextStage)}
+    >
+      <ArrowRight size={12} className="mr-1" /> {buttonText[nextStage]}
+    </button>
+  );
+}; 
 
   const renderStageIndicators = () => {
     const indicators = [];
@@ -1776,10 +1743,28 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts }) {
               </div>
               <div className="space-y-2">
                 <label
+                  htmlFor="assignedToDepartment"
+                  className="block text-sm font-medium"
+                >
+                  Department
+                </label>
+                <select
+                  id="assignedToDepartment"
+                  value={formData.assignedToDepartment || ""}
+                  onChange={(e) =>
+                    handleSelectChange("assignedToDepartment", e.target.value)
+                  }
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                >
+                  <option value="">Select the Department</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label
                   htmlFor="assignedTo"
                   className="block text-sm font-medium"
                 >
-                  Assign to Salesperson
+                  Assign to 
                 </label>
                 <select
                   id="assignedTo"
@@ -1789,12 +1774,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts }) {
                   }
                   className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
                 >
-                  <option value="">Select a salesperson</option>
-                  {salespeople.map((person) => (
-                    <option key={person.id} value={person.id}>
-                      {person.name}
-                    </option>
-                  ))}
+                  <option value="">Select the employee</option>
                 </select>
               </div>
               <div className="space-y-2">
@@ -1804,22 +1784,15 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts }) {
                 >
                   Lead Source
                 </label>
-                <select
+                <input
                   id="leadSource"
+                  name="leadSource"
+                  type="text"
                   value={formData.leadSource || ""}
-                  onChange={(e) =>
-                    handleSelectChange("leadSource", e.target.value)
-                  }
+                  onChange={handleChange}
                   className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
                 >
-                  <option value="">Select a source</option>
-                  <option value="website">Website</option>
-                  <option value="referral">Referral</option>
-                  <option value="social_media">Social Media</option>
-                  <option value="email">Email Campaign</option>
-                  <option value="event">Event</option>
-                  <option value="other">Other</option>
-                </select>
+                </input>
               </div>
               <div className="space-y-2">
                 <label
@@ -2269,16 +2242,43 @@ export default function CrmPipeline() {
     setIsLeadFormOpen(true);
   };
 
-  const handleStageTransition = (lead, nextStage) => {
-    // Validate the transition
+ const handleStageTransition = (lead, nextStage) => {
+  // For simple transitions (New → Qualified, Qualified → Proposal Sent, etc.)
+  if (nextStage !== "Won" && nextStage !== "Lost") {
+    const now = new Date().toISOString();
+    const assignedPerson = salespeople.find(
+      (sp) => sp.id === lead.assignedTo
+    );
+    const assignedName = assignedPerson?.name || "System";
+
+    // Create history entry
+    const historyEntry = {
+      stage: nextStage,
+      date: now,
+      notes: `Stage changed to ${nextStage}`,
+      changedBy: assignedName,
+    };
+
+    // Update lead
+    const updatedLead = {
+      ...lead,
+      stage: nextStage,
+      stageHistory: [...(lead.stageHistory || []), historyEntry],
+    };
+
+    // Update state
+    setLeads(leads.map((l) => (l.id === updatedLead.id ? updatedLead : l)));
+    showToast(`${lead.opportunityName} has moved to ${nextStage}.`);
+  } 
+  // For Won/Lost, still show the dialog
+  else {
     const errors = validateStageTransition(lead, nextStage);
     setStageValidationErrors(errors);
-
-    // Open the dialog
     setTransitioningLead(lead);
     setTargetStage(nextStage);
     setIsStageTransitionDialogOpen(true);
-  };
+  }
+};
 
   const validateStageTransition = (lead, targetStage) => {
     const errors = [];
@@ -2516,7 +2516,7 @@ export default function CrmPipeline() {
           <>
             {/* Top Controls */}
             <div className="mb-6 flex justify-between items-center">
-              <h2 className="text-xl font-bold">Sales Pipeline</h2>
+            
               <button
                 onClick={() => {
                   setEditingLead(null);

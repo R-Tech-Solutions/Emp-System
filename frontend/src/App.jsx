@@ -18,8 +18,9 @@ import Assets from "./pages/Stocks.jsx";
 import Timesheets from "./pages/Timesheets.jsx";
 import Payrol from "./pages/Payroll.jsx";
 import New from "./pages/new.jsx";
-import Crm from "./pages/Crm"
-import Products from "./pages/Product.jsx"
+import Crm from "./pages/Crm";
+import Products from "./pages/Product.jsx";
+import Quatation from "./pages/Quatation.jsx";
 
 function App() {
   const { theme } = useTheme();
@@ -125,55 +126,63 @@ function App() {
                 </ProtectedRoute>
               }
             /><Route
-            path="assets"
-            element={
-              <ProtectedRoute>
-                <Assets />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="timesheets"
-            element={
-              <ProtectedRoute>
-                <Timesheets />
-              </ProtectedRoute>
-            }
-          />
-           <Route
-            path="new"
-            element={
-              <ProtectedRoute>
-                <New />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="payroll"
-            element={
-              <ProtectedRoute>
-                <Payrol />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="crm"
-            element={
-              <ProtectedRoute>
-                <Crm />
-              </ProtectedRoute>
-            }
-          />
-          
-          <Route
-            path="products"
-            element={
-              <ProtectedRoute>
-                <Products />
-              </ProtectedRoute>
-            }
-          />
-          {" "}
+              path="assets"
+              element={
+                <ProtectedRoute>
+                  <Assets />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="timesheets"
+              element={
+                <ProtectedRoute>
+                  <Timesheets />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="new"
+              element={
+                <ProtectedRoute>
+                  <New />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="payroll"
+              element={
+                <ProtectedRoute>
+                  <Payrol />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="crm"
+              element={
+                <ProtectedRoute>
+                  <Crm />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="products"
+              element={
+                <ProtectedRoute>
+                  <Products />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="quatation"
+              element={
+                <ProtectedRoute>
+                  <Quatation />
+                </ProtectedRoute>
+              }
+            />
+            {" "}
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
