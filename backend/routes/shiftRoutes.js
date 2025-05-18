@@ -32,7 +32,6 @@ router.get('/debug', async (req, res) => {
     snapshot.forEach(doc => {
       shifts.push({ id: doc.id, ...doc.data() });
     });
-    console.log("Debug route - shifts fetched:", shifts); // Log fetched shifts
     res.status(200).json(shifts);
   } catch (error) {
     console.error("Error in debug route:", error); // Log the error

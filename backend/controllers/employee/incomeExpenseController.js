@@ -49,7 +49,7 @@ class IncomeExpenseController {
       const { typeId } = req.params;
       const { type, amount, note, originalType } = req.body;
 
-      console.log("Received fields from frontend:", { typeId, type, amount, note, originalType });
+
 
       if (!typeId || !type || amount == null || !note) {
         return res.status(400).json({ success: false, message: "Missing required fields" });
@@ -57,7 +57,7 @@ class IncomeExpenseController {
 
       if (type !== originalType) {
         // Type has changed, delete the old entry and create a new one
-        console.log("Type changed from", originalType, "to", type);
+      
 
         // Delete the old entry
         await IncomeExpense.delete(typeId);
@@ -89,7 +89,7 @@ class IncomeExpenseController {
         return res.status(400).json({ success: false, message: 'Missing typeId' });
       }
 
-      console.log("Deleting with typeId:", typeId);
+      
 
       const deletedData = await IncomeExpense.delete(typeId);
       res.status(200).json({ success: true, data: deletedData });

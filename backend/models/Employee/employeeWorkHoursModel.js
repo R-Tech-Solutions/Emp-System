@@ -151,7 +151,7 @@ class EmployeeWorkHours {
           { merge: true }
         );
 
-      console.log(`Monthly total for ${employeeId} updated successfully.`);
+   
     } catch (error) {
       console.error(`Error calculating monthly total for ${employeeId}:`, error);
       throw new Error('Error calculating monthly total');

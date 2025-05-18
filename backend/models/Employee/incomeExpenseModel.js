@@ -107,8 +107,7 @@ class IncomeExpense {
 
   static async update(typeId, updatedEntry) {
     try {
-      console.log("Updating entry with typeId:", typeId);
-      console.log("Updated entry data:", updatedEntry);
+     
 
       const snapshot = await db.collection('incomeExpenses').get();
 
@@ -155,8 +154,6 @@ class IncomeExpense {
 
       // Save the updated document
       await documentToUpdate.ref.set({ ...data, updatedAt: new Date().toISOString() });
-
-      console.log("Successfully updated entry:", updatedItem);
       return { success: true };
     } catch (error) {
       console.error('Error updating income/expense entry:', error);

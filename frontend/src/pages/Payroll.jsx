@@ -1073,8 +1073,7 @@ function App() {
 
   const handleEditIncomeExpense = async (typeId, updatedEntry) => {
     try {
-      console.log("typeId:", typeId);
-      console.log("updatedEntry:", updatedEntry);
+    
 
       if (!typeId || !updatedEntry) {
         console.error("Missing typeId or updatedEntry", {
@@ -1088,9 +1087,6 @@ function App() {
       const newType = updatedEntry.type; // New type after editing
 
       if (existingType !== newType) {
-        // Type has changed, delete the old entry and create a new one
-        console.log("Type changed from", existingType, "to", newType);
-
         // Delete the old entry
         await fetch(`${backEndURL}/api/income-expenses/${typeId}`, {
           method: "DELETE",
@@ -1130,7 +1126,7 @@ function App() {
           updatedAt: new Date().toISOString(),
         };
 
-        console.log("Payload being sent to the backend:", payload);
+      
 
         const response = await fetch(
           `${backEndURL}/api/income-expenses/${typeId}`,
@@ -2302,7 +2298,7 @@ function App() {
             entry={{ ...editEntry, originalType: editEntry.type }}
             onClose={() => setEditModalVisible(false)} // Close the modal
             onSave={(updatedEntry) => {
-              console.log("Edit entry being saved:", editEntry); // Log the entry being edited
+             
 
               // Determine typeId and typert default App;
               const isIncome = !!editEntry?.income_id;

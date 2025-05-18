@@ -21,7 +21,7 @@ const testEmail = async () => {
       subject: 'Test Email',
       text: 'This is a test email to verify SMTP credentials.',
     });
-    console.log('Test email sent successfully!');
+   
   } catch (error) {
     console.error('Error sending test email:', error.message);
   }

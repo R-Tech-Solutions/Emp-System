@@ -193,7 +193,7 @@ class Employee {
 
   static async delete(id) {
     try {
-        console.log(`Fetching employee with ID: ${id}`); // Log the ID being fetched
+        
         const employeeRef = db.collection('employees').doc(id);
         const employeeDoc = await employeeRef.get();
 
@@ -203,8 +203,7 @@ class Employee {
         }
 
         const employeeData = employeeDoc.data();
-        console.log(`Employee data fetched:`, employeeData); // Log the fetched data
-
+        
         // Delete profile image from Firebase Storage
         if (employeeData.profileImage) {
           const fileName = employeeData.profileImage.split('/').pop();
@@ -212,7 +211,7 @@ class Employee {
         }
 
         if (employeeData.authUid) {
-            console.log(`Deleting employee from Firebase Auth with UID: ${employeeData.authUid}`); // Log the UID
+        
             try {
                 // Delete from authentication
                 await auth.deleteUser(employeeData.authUid);
@@ -224,11 +223,10 @@ class Employee {
             console.warn(`No authUid found for employee with ID: ${id}`); // Log missing authUid
         }
 
-        console.log(`Deleting employee document from Firestore with ID: ${id}`); // Log Firestore deletion
+
         // Then delete from Firestore
         await employeeRef.delete();
 
-        console.log(`Successfully deleted employee with ID: ${id}`); // Log success
         return { id };
     } catch (error) {
         console.error(`Error deleting employee with ID: ${id}`, error); // Log the full error

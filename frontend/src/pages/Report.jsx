@@ -581,7 +581,7 @@ export default function ReportsDashboard() {
   const [loadingShifts, setLoadingShifts] = useState(false);
 
   const fetchShiftsForTask = async (employeeId) => {
-    console.log("Fetching shifts for employee ID:", employeeId); // Debug log
+   
     setLoadingShifts(true);
     setShiftData([]); // Clear previous shift data
     try {
@@ -592,7 +592,7 @@ export default function ReportsDashboard() {
           (shift) => shift.employeeId === employeeId
         );
 
-        console.log("Filtered shifts for employee:", filteredShifts); // Debug log
+      
 
         // Group shifts by date and task name
         const groupedShifts = filteredShifts.reduce((acc, shift) => {
@@ -639,7 +639,7 @@ export default function ReportsDashboard() {
 
   // Modify the "View" button functionality to fetch shifts for all tasks of the employee
   const handleViewTask = (employee) => {
-    console.log("View button clicked for employee:", employee); // Debug log
+    
     setSelectedTaskEmployee(employee);
     fetchShiftsForTask(employee.id); // Fetch shifts for the selected employee
   };

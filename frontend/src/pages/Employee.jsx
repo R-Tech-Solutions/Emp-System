@@ -86,7 +86,7 @@ export default function Employee() {
         const fetchDepartments = async () => {
             try {
                 const response = await axios.get(`${backEndURL}/api/departments`);
-                // console.log("Employment Departments Response:", response.data); 
+
                 setDepartments(response.data.map(department => department.name));
             } catch (error) {
                 console.error("Error fetching departments:", error);
@@ -100,7 +100,7 @@ export default function Employee() {
         const fetchEmploymentTypes = async () => {
             try {
                 const response = await axios.get(`${backEndURL}/api/employment-types`);
-                // console.log("Employment Types Response:", response.data); // Log the response to inspect its structure
+            
                 setEmploymentTypes(response.data.map(type => type.type || type.Type)); // Adjust mapping based on actual field name
             } catch (error) {
                 console.error("Error fetching employment types:", error);

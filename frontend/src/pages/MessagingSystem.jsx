@@ -234,7 +234,7 @@ export default function AdminDashboard() {
         members: newGroup.members,
       };
 
-      console.log('Creating group with payload:', payload); // Log the payload
+    
 
       const response = await axios.post(`${backEndURL}/api/groups`, payload);
 

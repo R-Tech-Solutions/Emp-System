@@ -171,7 +171,7 @@ export default function TimesheetPage() {
                 totalHours: totalSeconds,
               }),
             });
-            console.log(`Work hours for employee ${employeeId} saved successfully.`);
+           
           } catch (error) {
             console.error(`Error updating daily work hours for ${employeeId}:`, error);
           }
@@ -190,7 +190,7 @@ export default function TimesheetPage() {
   useEffect(() => {
     const interval = setInterval(() => {
       if (Object.keys(employeeWorkHours).length > 0) {
-        console.log("Auto-saving work hours...");
+       
         const today = new Date().toISOString().split("T")[0];
 
         Object.entries(employeeWorkHours).forEach(async ([employeeId, totalSeconds]) => {
@@ -204,7 +204,7 @@ export default function TimesheetPage() {
                 totalHours: totalSeconds,
               }),
             });
-            console.log(`Auto-saved work hours for employee ${employeeId}.`);
+         
           } catch (error) {
             console.error(`Error auto-saving work hours for ${employeeId}:`, error);
           }

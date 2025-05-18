@@ -56,7 +56,7 @@ export default function AssetManagement() {
     const fetchEmployees = async () => {
       try {
         const response = await axios.get(`${backEndURL}/api/employees`);
-        console.log("Employee API response:", response.data);
+      
 
         // Handle different response structures
         const employeeArray = Array.isArray(response.data)

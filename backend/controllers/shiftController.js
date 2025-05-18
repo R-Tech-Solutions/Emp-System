@@ -5,15 +5,13 @@ class ShiftController {
   static async createShift(req, res) {
     try {
       const shiftData = req.body;
-      console.log("Creating new shift with data:", shiftData);
-
+     
       if (!shiftData.date || !shiftData.employeeId || !shiftData.taskId || !shiftData.taskName) {
         return res.status(400).json({ error: "Missing required fields: date, employeeId, taskId, or taskName" });
       }
 
       const shiftRef = await db.collection('shifts').add(shiftData);
-      console.log("Shift created with ID:", shiftRef.id);
-
+   
       res.status(201).json({
         id: shiftRef.id,
         ...shiftData
@@ -37,7 +35,7 @@ class ShiftController {
         });
       });
 
-      console.log("Total shifts fetched:", shifts.length);
+   
       res.status(200).json(shifts);
     } catch (error) {
       console.error("Error fetching shifts:", error);

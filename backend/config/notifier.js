@@ -26,7 +26,6 @@ const sendEmployeeCredentialsSMS = async (phoneNumber, email, password, employee
     if (response.data.status !== 'success') {
       throw new Error(`Failed to send SMS: ${response.data.message}`);
     }
-    console.log(`SMS sent successfully to ${phoneNumber}`);
   } catch (error) {
     console.error(`Error sending SMS to ${phoneNumber}:`, error.response?.data || error.message);
     throw new Error('Failed to send SMS. Please try again.');
