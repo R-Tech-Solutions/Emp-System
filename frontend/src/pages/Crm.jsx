@@ -20,6 +20,7 @@ import {
   FileText,
   DollarSign,
 } from "lucide-react";
+import { backEndURL } from '../Backendurl';
 
 // Utility function to conditionally join class names
 function cn(...classes) {
@@ -140,9 +141,8 @@ function getRandomName() {
     "Wilson",
   ];
 
-  return `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${
-    lastNames[Math.floor(Math.random() * lastNames.length)]
-  }`;
+  return `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]
+    }`;
 }
 
 // Inside the LeadCard component, add these SVG graphics after the imports but before the component definition:
@@ -613,13 +613,12 @@ function StageTransitionDialog({
           <button
             onClick={handleSubmit}
             disabled={validationErrors.length > 0}
-            className={`px-4 py-2 text-white rounded-md text-sm font-medium ${
-              validationErrors.length > 0
-                ? "bg-gray-400 cursor-not-allowed"
-                : nextStage === "Lost"
+            className={`px-4 py-2 text-white rounded-md text-sm font-medium ${validationErrors.length > 0
+              ? "bg-gray-400 cursor-not-allowed"
+              : nextStage === "Lost"
                 ? "bg-red-600 hover:bg-red-700"
                 : "bg-blue-600 hover:bg-blue-700"
-            }`}
+              }`}
           >
             Confirm
           </button>
@@ -876,73 +875,73 @@ function LeadCard({ lead, onEdit, onStageTransition }) {
     return stageFlow[currentStage] || null;
   };
 
- const validateStageTransition = (lead, targetStage) => {
-  const errors = [];
+  const validateStageTransition = (lead, targetStage) => {
+    const errors = [];
 
-  // Only keep the stage skipping validation (if you want to prevent skipping stages)
-  const stageOrder = [
-    "New",
-    "Qualified",
-    "Proposal Sent",
-    "Negotiation",
-    "Won",
-    "Lost",
-  ];
-  const currentIndex = stageOrder.indexOf(lead.stage);
-  const targetIndex = stageOrder.indexOf(targetStage);
+    // Only keep the stage skipping validation (if you want to prevent skipping stages)
+    const stageOrder = [
+      "New",
+      "Qualified",
+      "Proposal Sent",
+      "Negotiation",
+      "Won",
+      "Lost",
+    ];
+    const currentIndex = stageOrder.indexOf(lead.stage);
+    const targetIndex = stageOrder.indexOf(targetStage);
 
-  if (targetStage !== "Lost" && targetIndex > currentIndex + 1) {
-    errors.push(`Cannot skip from ${lead.stage} to ${targetStage}`);
-  }
+    if (targetStage !== "Lost" && targetIndex > currentIndex + 1) {
+      errors.push(`Cannot skip from ${lead.stage} to ${targetStage}`);
+    }
 
-  return errors;
-};
-
- const renderStageActions = () => {
-  if (lead.stage === "Won" || lead.stage === "Lost") {
-    return null;
-  }
-
-  const nextStage = getNextStage(lead.stage);
-
-  if (!nextStage) {
-    return null;
-  }
-
-  if (Array.isArray(nextStage)) {
-    return (
-      <div className="flex gap-2 mt-3">
-        <button
-          className="w-full text-xs h-8 bg-green-600 hover:bg-green-700 text-white rounded-md flex items-center justify-center"
-          onClick={() => onStageTransition(lead, "Won")}
-        >
-          <Check size={12} className="mr-1" /> Close Won
-        </button>
-        <button
-          className="w-full text-xs h-8 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center justify-center"
-          onClick={() => onStageTransition(lead, "Lost")}
-        >
-          <X size={12} className="mr-1" /> Close Lost
-        </button>
-      </div>
-    );
-  }
-
-  const buttonText = {
-    Qualified: "Mark as Qualified",
-    "Proposal Sent": "Submit Proposal",
-    Negotiation: "Begin Negotiation",
+    return errors;
   };
 
-  return (
-    <button
-      className="w-full text-xs h-8 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center justify-center mt-3"
-      onClick={() => onStageTransition(lead, nextStage)}
-    >
-      <ArrowRight size={12} className="mr-1" /> {buttonText[nextStage]}
-    </button>
-  );
-}; 
+  const renderStageActions = () => {
+    if (lead.stage === "Won" || lead.stage === "Lost") {
+      return null;
+    }
+
+    const nextStage = getNextStage(lead.stage);
+
+    if (!nextStage) {
+      return null;
+    }
+
+    if (Array.isArray(nextStage)) {
+      return (
+        <div className="flex gap-2 mt-3">
+          <button
+            className="w-full text-xs h-8 bg-green-600 hover:bg-green-700 text-white rounded-md flex items-center justify-center"
+            onClick={() => onStageTransition(lead, "Won")}
+          >
+            <Check size={12} className="mr-1" /> Close Won
+          </button>
+          <button
+            className="w-full text-xs h-8 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center justify-center"
+            onClick={() => onStageTransition(lead, "Lost")}
+          >
+            <X size={12} className="mr-1" /> Close Lost
+          </button>
+        </div>
+      );
+    }
+
+    const buttonText = {
+      Qualified: "Mark as Qualified",
+      "Proposal Sent": "Submit Proposal",
+      Negotiation: "Begin Negotiation",
+    };
+
+    return (
+      <button
+        className="w-full text-xs h-8 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center justify-center mt-3"
+        onClick={() => onStageTransition(lead, nextStage)}
+      >
+        <ArrowRight size={12} className="mr-1" /> {buttonText[nextStage]}
+      </button>
+    );
+  };
 
   const renderStageIndicators = () => {
     const indicators = [];
@@ -1015,7 +1014,7 @@ function LeadCard({ lead, onEdit, onStageTransition }) {
         "bg-white dark:bg-gray-800 rounded-lg border shadow-sm transition-all relative",
         expanded ? "ring-1 ring-blue-500" : "",
         lead.stage === "Won" &&
-          "border-green-500 bg-green-50 dark:bg-green-900/20",
+        "border-green-500 bg-green-50 dark:bg-green-900/20",
         lead.stage === "Lost" && "border-red-500 bg-red-50 dark:bg-red-900/20",
         lead.isExistingClient && "border-l-4 border-l-blue-500"
       )}
@@ -1065,41 +1064,37 @@ function LeadCard({ lead, onEdit, onStageTransition }) {
           <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
             <div className="flex border-b border-gray-200 dark:border-gray-700">
               <button
-                className={`flex-1 py-1 px-2 text-xs font-medium ${
-                  activeTab === "details"
-                    ? "border-b-2 border-blue-500"
-                    : "text-gray-500 dark:text-gray-400"
-                }`}
+                className={`flex-1 py-1 px-2 text-xs font-medium ${activeTab === "details"
+                  ? "border-b-2 border-blue-500"
+                  : "text-gray-500 dark:text-gray-400"
+                  }`}
                 onClick={() => setActiveTab("details")}
               >
                 Details
               </button>
               <button
-                className={`flex-1 py-1 px-2 text-xs font-medium ${
-                  activeTab === "actions"
-                    ? "border-b-2 border-blue-500"
-                    : "text-gray-500 dark:text-gray-400"
-                }`}
+                className={`flex-1 py-1 px-2 text-xs font-medium ${activeTab === "actions"
+                  ? "border-b-2 border-blue-500"
+                  : "text-gray-500 dark:text-gray-400"
+                  }`}
                 onClick={() => setActiveTab("actions")}
               >
                 Actions
               </button>
               <button
-                className={`flex-1 py-1 px-2 text-xs font-medium ${
-                  activeTab === "notes"
-                    ? "border-b-2 border-blue-500"
-                    : "text-gray-500 dark:text-gray-400"
-                }`}
+                className={`flex-1 py-1 px-2 text-xs font-medium ${activeTab === "notes"
+                  ? "border-b-2 border-blue-500"
+                  : "text-gray-500 dark:text-gray-400"
+                  }`}
                 onClick={() => setActiveTab("notes")}
               >
                 Notes
               </button>
               <button
-                className={`flex-1 py-1 px-2 text-xs font-medium ${
-                  activeTab === "history"
-                    ? "border-b-2 border-blue-500"
-                    : "text-gray-500 dark:text-gray-400"
-                }`}
+                className={`flex-1 py-1 px-2 text-xs font-medium ${activeTab === "history"
+                  ? "border-b-2 border-blue-500"
+                  : "text-gray-500 dark:text-gray-400"
+                  }`}
                 onClick={() => setActiveTab("history")}
               >
                 History
@@ -1592,22 +1587,20 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts }) {
                 <div className="flex space-x-4 mb-4">
                   <button
                     type="button"
-                    className={`px-4 py-2 text-sm font-medium ${
-                      activeTab === "basic"
-                        ? "border-b-2 border-blue-500 text-blue-600"
-                        : "text-gray-500"
-                    }`}
+                    className={`px-4 py-2 text-sm font-medium ${activeTab === "basic"
+                      ? "border-b-2 border-blue-500 text-blue-600"
+                      : "text-gray-500"
+                      }`}
                     onClick={() => setActiveTab("basic")}
                   >
                     Basic Information
                   </button>
                   <button
                     type="button"
-                    className={`px-4 py-2 text-sm font-medium ${
-                      activeTab === "notes"
-                        ? "border-b-2 border-blue-500 text-blue-600"
-                        : "text-gray-500"
-                    }`}
+                    className={`px-4 py-2 text-sm font-medium ${activeTab === "notes"
+                      ? "border-b-2 border-blue-500 text-blue-600"
+                      : "text-gray-500"
+                      }`}
                     onClick={() => setActiveTab("notes")}
                   >
                     Internal Notes
@@ -1764,7 +1757,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts }) {
                   htmlFor="assignedTo"
                   className="block text-sm font-medium"
                 >
-                  Assign to 
+                  Assign to
                 </label>
                 <select
                   id="assignedTo"
@@ -1904,95 +1897,54 @@ function ContactForm({ contact, onSave, onCancel }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave({
-      ...formData,
-      id: contact?.id || `contact-${Date.now()}`,
-      createdAt: contact?.createdAt || new Date().toISOString(),
-    });
+    // Only include id if editing
+    const data = contact
+      ? { ...formData, id: contact.id, createdAt: contact.createdAt }
+      : { ...formData, createdAt: new Date().toISOString() };
+    onSave(data);
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-2xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 sm:p-10 max-w-3xl w-full min-h-[500px] mx-auto transition-all duration-300">
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-2xl sm:text-3xl font-semibold text-gray-800 dark:text-gray-100">
           {contact ? "Edit Contact" : "Add New Contact"}
         </h2>
         <button
           onClick={onCancel}
-          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          className="text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-white transition-colors"
         >
-          <X size={20} />
+          <X size={24} />
         </button>
       </div>
 
       <form onSubmit={handleSubmit}>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="name" className="block text-sm font-medium">
-              Name *
-            </label>
-            <input
-              id="name"
-              name="name"
-              value={formData.name || ""}
-              onChange={handleChange}
-              required
-              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-            />
-          </div>
-          <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-medium">
-              Email *
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              value={formData.email || ""}
-              onChange={handleChange}
-              required
-              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-            />
-          </div>
-          <div className="space-y-2">
-            <label htmlFor="phone" className="block text-sm font-medium">
-              Phone *
-            </label>
-            <input
-              id="phone"
-              name="phone"
-              value={formData.phone || ""}
-              onChange={handleChange}
-              required
-              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-            />
-          </div>
-          <div className="space-y-2">
-            <label htmlFor="company" className="block text-sm font-medium">
-              Company
-            </label>
-            <input
-              id="company"
-              name="company"
-              value={formData.company || ""}
-              onChange={handleChange}
-              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-            />
-          </div>
-          <div className="space-y-2">
-            <label htmlFor="website" className="block text-sm font-medium">
-              Website
-            </label>
-            <input
-              id="website"
-              name="website"
-              value={formData.website || ""}
-              onChange={handleChange}
-              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-            />
-          </div>
-          <div className="space-y-2">
-            <label htmlFor="notes" className="block text-sm font-medium">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {[
+            { id: "name", label: "Name *", type: "text", required: true },
+            { id: "email", label: "Email *", type: "email", required: true },
+            { id: "phone", label: "Phone *", type: "text", required: true },
+            { id: "company", label: "Company", type: "text" },
+            { id: "website", label: "Website", type: "text" },
+          ].map(({ id, label, type, required }) => (
+            <div key={id} className="space-y-1">
+              <label htmlFor={id} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {label}
+              </label>
+              <input
+                id={id}
+                name={id}
+                type={type}
+                required={required}
+                value={formData[id] || ""}
+                onChange={handleChange}
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition"
+              />
+            </div>
+          ))}
+
+          <div className="sm:col-span-2 space-y-1">
+            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Notes
             </label>
             <textarea
@@ -2002,21 +1954,22 @@ function ContactForm({ contact, onSave, onCancel }) {
               onChange={handleChange}
               rows={3}
               placeholder="Additional notes about this contact"
-              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition"
             />
           </div>
         </div>
-        <div className="mt-6 flex justify-end space-x-3">
+
+        <div className="mt-8 flex justify-end space-x-4">
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-sm font-medium"
+            className="px-5 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
+            className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
           >
             {contact ? "Update Contact" : "Add Contact"}
           </button>
@@ -2140,7 +2093,7 @@ function DeleteConfirmationDialog({ isOpen, onClose, onConfirm }) {
         <p className="text-gray-500 dark:text-gray-400 mb-4">
           This will permanently delete this contact. This action cannot be
           undone.
-        </p>
+               </p>
         <div className="flex justify-end space-x-3">
           <button
             onClick={onClose}
@@ -2174,8 +2127,8 @@ function Toast({ message, type, onClose }) {
     type === "success"
       ? "bg-green-500"
       : type === "error"
-      ? "bg-red-500"
-      : "bg-blue-500";
+        ? "bg-red-500"
+        : "bg-blue-500";
 
   return (
     <div
@@ -2218,8 +2171,18 @@ export default function CrmPipeline() {
   useEffect(() => {
     // Initialize with sample data
     setSalespeople(generateSampleSalespeople());
-    setContacts(generateSampleContacts());
+    fetchContacts();
   }, []);
+
+  const fetchContacts = async () => {
+    try {
+      const res = await fetch(`${backEndURL}/api/contacts`);
+      const data = await res.json();
+      setContacts(data);
+    } catch (err) {
+      setContacts([]);
+    }
+  };
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -2242,43 +2205,43 @@ export default function CrmPipeline() {
     setIsLeadFormOpen(true);
   };
 
- const handleStageTransition = (lead, nextStage) => {
-  // For simple transitions (New → Qualified, Qualified → Proposal Sent, etc.)
-  if (nextStage !== "Won" && nextStage !== "Lost") {
-    const now = new Date().toISOString();
-    const assignedPerson = salespeople.find(
-      (sp) => sp.id === lead.assignedTo
-    );
-    const assignedName = assignedPerson?.name || "System";
+  const handleStageTransition = (lead, nextStage) => {
+    // For simple transitions (New → Qualified, Qualified → Proposal Sent, etc.)
+    if (nextStage !== "Won" && nextStage !== "Lost") {
+      const now = new Date().toISOString();
+      const assignedPerson = salespeople.find(
+        (sp) => sp.id === lead.assignedTo
+      );
+      const assignedName = assignedPerson?.name || "System";
 
-    // Create history entry
-    const historyEntry = {
-      stage: nextStage,
-      date: now,
-      notes: `Stage changed to ${nextStage}`,
-      changedBy: assignedName,
-    };
+      // Create history entry
+      const historyEntry = {
+        stage: nextStage,
+        date: now,
+        notes: `Stage changed to ${nextStage}`,
+        changedBy: assignedName,
+      };
 
-    // Update lead
-    const updatedLead = {
-      ...lead,
-      stage: nextStage,
-      stageHistory: [...(lead.stageHistory || []), historyEntry],
-    };
+      // Update lead
+      const updatedLead = {
+        ...lead,
+        stage: nextStage,
+        stageHistory: [...(lead.stageHistory || []), historyEntry],
+      };
 
-    // Update state
-    setLeads(leads.map((l) => (l.id === updatedLead.id ? updatedLead : l)));
-    showToast(`${lead.opportunityName} has moved to ${nextStage}.`);
-  } 
-  // For Won/Lost, still show the dialog
-  else {
-    const errors = validateStageTransition(lead, nextStage);
-    setStageValidationErrors(errors);
-    setTransitioningLead(lead);
-    setTargetStage(nextStage);
-    setIsStageTransitionDialogOpen(true);
-  }
-};
+      // Update state
+      setLeads(leads.map((l) => (l.id === updatedLead.id ? updatedLead : l)));
+      showToast(`${lead.opportunityName} has moved to ${nextStage}.`);
+    }
+    // For Won/Lost, still show the dialog
+    else {
+      const errors = validateStageTransition(lead, nextStage);
+      setStageValidationErrors(errors);
+      setTransitioningLead(lead);
+      setTargetStage(nextStage);
+      setIsStageTransitionDialogOpen(true);
+    }
+  };
 
   const validateStageTransition = (lead, targetStage) => {
     const errors = [];
@@ -2441,8 +2404,8 @@ export default function CrmPipeline() {
     setIsContactFormOpen(true);
   };
 
-  const handleDeleteContact = (contactId) => {
-    setContactToDelete(contactId);
+  const handleDeleteContact = (id) => {
+    setContactToDelete(id);
     setIsDeleteDialogOpen(true);
   };
 
@@ -2487,21 +2450,19 @@ export default function CrmPipeline() {
             <div className="flex space-x-2">
               <button
                 onClick={() => setActiveView("pipeline")}
-                className={`px-4 py-2 rounded-md text-sm font-medium ${
-                  activeView === "pipeline"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                }`}
+                className={`px-4 py-2 rounded-md text-sm font-medium ${activeView === "pipeline"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                  }`}
               >
                 Pipeline
               </button>
               <button
                 onClick={() => setActiveView("contacts")}
-                className={`px-4 py-2 rounded-md text-sm font-medium flex items-center ${
-                  activeView === "contacts"
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                }`}
+                className={`px-4 py-2 rounded-md text-sm font-medium flex items-center ${activeView === "contacts"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                  }`}
               >
                 <Users size={16} className="mr-1" /> Contacts
               </button>
@@ -2516,7 +2477,7 @@ export default function CrmPipeline() {
           <>
             {/* Top Controls */}
             <div className="mb-6 flex justify-between items-center">
-            
+
               <button
                 onClick={() => {
                   setEditingLead(null);

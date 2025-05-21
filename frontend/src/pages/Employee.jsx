@@ -187,7 +187,7 @@ export default function Employee() {
         if (name === 'employeeId') return;
 
         if (type === "file") {
-            if (name === "profileImage" && files[0]) {
+            if (name === "profileImages" && files[0]) {
                 setPreviewImage(URL.createObjectURL(files[0]));
             }
 
@@ -293,12 +293,12 @@ export default function Employee() {
                 const updatedFormData = { ...formData };
 
                 // Convert profile image to Base64 if it exists and is a valid File object
-                if (formData.profileImage instanceof File) {
-                    updatedFormData.profileImage = await new Promise((resolve, reject) => {
+                if (formData.profileImages instanceof File) {
+                    updatedFormData.profileImages = await new Promise((resolve, reject) => {
                         const reader = new FileReader();
                         reader.onloadend = () => resolve(reader.result.split(",")[1]); // Extract Base64 string
                         reader.onerror = reject;
-                        reader.readAsDataURL(formData.profileImage);
+                        reader.readAsDataURL(formData.profileImages);
                     });
                 }
 
@@ -361,7 +361,7 @@ export default function Employee() {
             employmentType: "",
             contractPeriod: "",
             employmentStatus: "",
-            profileImage: null,
+            profileImages: null,
             payMethod: "", // Add pay method field
             hasEpfEtf: "", // Add EPF/ETF field
             hourlyRate: "", // Add hourly rate field
@@ -389,14 +389,14 @@ export default function Employee() {
 
         setFormData({
             ...employee,
-            profileImage: null, // Reset profileImage for new upload
+            profileImages: null, // Reset profileImage for new upload
             bankName: employee.bankName || "", // Populate bank name
             bankBranch: employee.bankBranch || "", // Populate bank branch
             bankNumber: employee.bankNumber || "", // Populate bank number
         });
 
-        if (employee.profileImage) {
-            setPreviewImage(employee.profileImage); // Use the profileImage URL for preview
+        if (employee.profileImages) {
+            setPreviewImage(employee.profileImages); // Use the profileImage URL for preview
         }
     };
 
@@ -537,9 +537,9 @@ export default function Employee() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             {/* Profile Header */}
                             <div className="md:col-span-2 flex items-center gap-6 border-b pb-6 mb-6">
-                                {selectedEmployee.profileImage && (
+                                {selectedEmployee.profileImages && (
                                     <img
-                                        src={selectedEmployee.profileImage}
+                                        src={selectedEmployee.profileImages}
                                         alt="Profile"
                                         className="w-28 h-28 rounded-full border-4 border-blue-500 shadow-md"
                                     />
@@ -679,7 +679,7 @@ export default function Employee() {
                         <div className="p-6">
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 {/* Profile Image Upload */}
-                                <div className="flex flex-col items-center mb-6">
+                                {/* <div className="flex flex-col items-center mb-6">
                                     <div className="relative w-32 h-32 mb-4 cursor-pointer group" onClick={triggerFileInput}>
                                         <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-purple-200 dark:border-purple-900 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
                                             {previewImage ? (
@@ -698,18 +698,18 @@ export default function Employee() {
                                     </div>
                                     <input
                                         ref={fileInputRef}
-                                        id="profileImage"
-                                        name="profileImage"
+                                        id="profileImages"
+                                        name="profileImages"
                                         type="file"
                                         accept="image/*"
                                         onChange={handleChange}
                                         className="hidden"
                                     />
                                     <span className="text-sm text-gray-500 dark:text-gray-400">Click to upload profile image</span>
-                                    {errors.profileImage && (
-                                        <p className="text-red-500 text-sm mt-1">{errors.profileImage}</p>
+                                    {errors.profileImages && (
+                                        <p className="text-red-500 text-sm mt-1">{errors.profileImages}</p>
                                     )}
-                                </div>
+                                </div> */}
 
                                 {/* Tabs */}
                                 <div className="border-b dark:border-gray-700">
@@ -1711,9 +1711,9 @@ export default function Employee() {
                                             >
                                                 <td className="px-4 py-4">
                                                     <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                                                        {employee.profileImage ? (
+                                                        {employee.profileImages ? (
                                                             <img
-                                                                src={employee.profileImage} // Use the profileImage URL directly
+                                                                src={employee.profileImages} // Use the profileImage URL directly
                                                                 alt={`${employee.firstName || ''} ${employee.lastName || ''}`}
                                                                 className="w-full h-full object-cover"
                                                             />

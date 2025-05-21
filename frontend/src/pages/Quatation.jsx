@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import axios from "axios"
 import {
   Send,
   Printer,
@@ -18,6 +19,7 @@ import {
   DollarSign,
   Tag,
 } from "lucide-react"
+import { backEndURL } from "../Backendurl"
 
 export default function QuotationManagement() {
   // State for active tab
@@ -79,9 +81,9 @@ export default function QuotationManagement() {
   const [paymentTerms, setPaymentTerms] = useState("Immediate")
   const [termsConditions, setTermsConditions] = useState(
     "1. Prices are valid for 30 days from the date of quotation.\n" +
-      "2. Delivery timeline will be confirmed upon order confirmation.\n" +
-      "3. Payment terms as specified above.\n" +
-      "4. Warranty as per manufacturer's policy.",
+    "2. Delivery timeline will be confirmed upon order confirmation.\n" +
+    "3. Payment terms as specified above.\n" +
+    "4. Warranty as per manufacturer's policy.",
   )
 
   // State for product lines
@@ -109,13 +111,22 @@ export default function QuotationManagement() {
   ])
 
   // State for products (mock data initially)
-  const [products, setProducts] = useState([
-    { name: "Product A", price: 1000, description: "Description for Product A", category: "General" },
-    { name: "Product B", price: 2500, description: "Description for Product B", category: "Electronics" },
-    { name: "Product C", price: 750, description: "Description for Product C", category: "Office" },
-    { name: "Service X", price: 5000, description: "Description for Service X", category: "Services" },
-    { name: "Maintenance Plan", price: 1200, description: "Description for Maintenance Plan", category: "Services" },
-  ])
+  const [products, setProducts] = useState([])
+
+  // Fetch products from backend
+  useEffect(() => {
+    fetchProducts()
+    // eslint-disable-next-line
+  }, [])
+
+  const fetchProducts = async () => {
+    try {
+      const res = await axios.get(`${backEndURL}/api/products`)
+      setProducts(res.data)
+    } catch (err) {
+      addActivity("Failed to fetch products from server.")
+    }
+  }
 
   // Calculate totals
   const untaxedAmount = productLines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0)
@@ -297,28 +308,17 @@ export default function QuotationManagement() {
   }
 
   // Handle creating a new product
-  const handleCreateProduct = () => {
-    if (!newProduct.name || newProduct.price <= 0) {
-      return
+  const handleCreateProduct = async () => {
+    if (!newProduct.name || newProduct.price <= 0) return
+    try {
+      const res = await axios.post(`${backEndURL}/api/products`, newProduct)
+      setProducts([...products, res.data])
+      setCreateProductModalOpen(false)
+      addActivity(`Created new product: ${newProduct.name}`)
+      setNewProduct({ name: "", price: 0, description: "", category: "General" })
+    } catch (err) {
+      addActivity("Failed to create product.")
     }
-
-    // Add the new product to the products list
-    const updatedProducts = [...products, { ...newProduct }]
-    setProducts(updatedProducts)
-
-    // Close the modal
-    setCreateProductModalOpen(false)
-
-    // Add activity
-    addActivity(`Created new product: ${newProduct.name}`)
-
-    // Reset the new product form
-    setNewProduct({
-      name: "",
-      price: 0,
-      description: "",
-      category: "General",
-    })
   }
 
   // Handle new product input changes
@@ -358,17 +358,15 @@ export default function QuotationManagement() {
         <div className="container mx-auto">
           <div className="flex border-b border-gray-700 mb-4">
             <button
-              className={`px-4 py-2 font-medium ${
-                activeTab === "new" ? "text-blue-400 border-b-2 border-blue-400" : "text-gray-400 hover:text-gray-300"
-              }`}
+              className={`px-4 py-2 font-medium ${activeTab === "new" ? "text-blue-400 border-b-2 border-blue-400" : "text-gray-400 hover:text-gray-300"
+                }`}
               onClick={() => setActiveTab("new")}
             >
               New Quotation
             </button>
             <button
-              className={`px-4 py-2 font-medium ${
-                activeTab === "all" ? "text-blue-400 border-b-2 border-blue-400" : "text-gray-400 hover:text-gray-300"
-              }`}
+              className={`px-4 py-2 font-medium ${activeTab === "all" ? "text-blue-400 border-b-2 border-blue-400" : "text-gray-400 hover:text-gray-300"
+                }`}
               onClick={() => setActiveTab("all")}
             >
               View All Quotations
@@ -503,8 +501,40 @@ export default function QuotationManagement() {
                         </div>
                       </div>
                     </div>
-
-                    {/* Expiration */}
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Email</label>
+                      <div className="relative">                        <input
+                          type="email"
+                          value={customerEmail}
+                          onChange={(e) => setCustomerEmail(e.target.value)}
+                          placeholder="customer@example.com"
+                          className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Project</label>
+                      <div className="relative">
+                        <select
+                          value={customer}
+                          onChange={(e) => {
+                            setCustomer(e.target.value)
+                            addActivity(`Selected customer: ${e.target.value}`)
+                          }}
+                          className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-3 pr-10 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">Select a Project Of the customer </option>
+                          {/* {customers.map((cust, index) => (
+                            <option key={index} value={cust}>
+                              {cust}
+                            </option>
+                          ))} */}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                          <ChevronDown size={16} className="text-gray-400" />
+                        </div>
+                      </div>
+                    </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">Expiration</label>
                       <div className="relative">
@@ -515,7 +545,7 @@ export default function QuotationManagement() {
                           className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                          <Calendar size={16} className="text-gray-400" />
+                          {/* <Calendar size={16} className="text-gray-400" /> */}
                         </div>
                       </div>
                     </div>
@@ -556,7 +586,6 @@ export default function QuotationManagement() {
                           <option value="60 Days">60 Days</option>
                         </select>
                         <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                          <DollarSign size={16} className="text-gray-400" />
                         </div>
                       </div>
                     </div>
@@ -626,9 +655,6 @@ export default function QuotationManagement() {
                                           {product.name}
                                         </option>
                                       ))}
-                                      <option value="create_new" className="font-semibold text-blue-400">
-                                        + Create New Product
-                                      </option>
                                     </select>
                                     <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                                       <ChevronDown size={14} className="text-gray-400" />
@@ -708,9 +734,6 @@ export default function QuotationManagement() {
                     >
                       <Plus size={16} className="mr-1" /> Create new product
                     </button>
-                    <button className="flex items-center text-sm text-blue-400 hover:text-blue-300">
-                      <Search size={16} className="mr-1" /> Catalog
-                    </button>
                   </div>
                 </div>
 
@@ -742,27 +765,6 @@ export default function QuotationManagement() {
                         <span>Rs {totalAmount.toLocaleString()}</span>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column - Activity Panel */}
-              <div className="w-full lg:w-80">
-                <div className="bg-gray-800 rounded-lg p-4 sticky top-6">
-                  <h2 className="text-lg font-semibold mb-4 flex items-center">
-                    <MessageSquare size={18} className="mr-2" /> Activity
-                  </h2>
-
-                  <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
-                    {activities.map((activity) => (
-                      <div key={activity.id} className="border-l-2 border-gray-700 pl-3">
-                        <div className="flex justify-between text-sm">
-                          <span className="font-medium">{activity.user}</span>
-                          <span className="text-gray-400">{activity.time}</span>
-                        </div>
-                        <p className="text-gray-300">{activity.message}</p>
-                      </div>
-                    ))}
                   </div>
                 </div>
               </div>
@@ -820,13 +822,12 @@ export default function QuotationManagement() {
                       <td className="py-4 text-right">Rs {quotation.amount.toLocaleString()}</td>
                       <td className="py-4">
                         <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            quotation.stage === "Quotation"
-                              ? "bg-gray-600 text-gray-200"
-                              : quotation.stage === "Quotation Sent"
-                                ? "bg-blue-600 text-blue-100"
-                                : "bg-green-600 text-green-100"
-                          }`}
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${quotation.stage === "Quotation"
+                            ? "bg-gray-600 text-gray-200"
+                            : quotation.stage === "Quotation Sent"
+                              ? "bg-blue-600 text-blue-100"
+                              : "bg-green-600 text-green-100"
+                            }`}
                         >
                           {quotation.stage}
                         </span>

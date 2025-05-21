@@ -26,7 +26,7 @@ export default function AttendancePage() {
   // Fetch employees and attendance data
     useEffect(() => {
     const fetchEmployees = async () => {
-      setLoading(true); // Show loader
+      setLoading(true); 
       try {
         const response = await fetch(`${backEndURL}/api/employees`);
         const data = await response.json();
@@ -36,12 +36,12 @@ export default function AttendancePage() {
       } catch (error) {
         console.error("Error fetching employees:", error);
       } finally {
-        setLoading(false); // Hide loader
+        setLoading(false);
       }
     };
 
     const fetchAttendance = async () => {
-      setLoading(true); // Show loader
+      setLoading(true);
       try {
         const response = await fetch(`${backEndURL}/api/employee-work-hours`);
         if (!response.ok) {
