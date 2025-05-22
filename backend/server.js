@@ -23,6 +23,7 @@ const incomeExpenseRoutes = require('./routes/employee/incomeExpenseRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
 const productRoutes = require('./routes/productRoutes');
 const contactRoutes = require('./routes/ContactRoutes');
+const crmRoutes = require('./routes/CrmRoutes');
 
 dotenv.config();
 
@@ -54,6 +55,7 @@ app.use('/api/income-expenses', incomeExpenseRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/contacts', contactRoutes);
+app.use('/api/crm', crmRoutes);
 
 app.get('/', (req, res) => {
     res.send('Hello World!'); 

@@ -2270,7 +2270,7 @@ export default function CrmPipeline() {
   const [filterStage, setFilterStage] = useState(null);
   const [filterSalesperson, setFilterSalesperson] = useState(null);
 
-  const [activeView, setActiveView] = useState("pipeline"); // "pipeline" or "contacts"
+  const [activeView, setActiveView] = useState("pipeline");
   const [isLeadFormOpen, setIsLeadFormOpen] = useState(false);
   const [isContactFormOpen, setIsContactFormOpen] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
@@ -2287,6 +2287,27 @@ export default function CrmPipeline() {
 
   const [toast, setToast] = useState(null);
   const [allEmployees, setAllEmployees] = useState([]);
+
+  useEffect(() => {
+    setIsLeadFormOpen(false);
+    setEditingLead(null);
+    setActiveView("pipeline");
+    fetchLeads();
+    setSalespeople(generateSampleSalespeople());
+    fetchContacts();
+    fetchEmployees();
+    // eslint-disable-next-line
+  }, []);
+
+  const fetchLeads = async () => {
+    try {
+      const res = await fetch(`${backEndURL}/api/crm`);
+      const data = await res.json();
+      setLeads(data); // or setLeads(data.data) if you wrap in {data: ...}
+    } catch (err) {
+      setLeads([]);
+    }
+  };
 
   useEffect(() => {
     // Initialize with sample data
@@ -2321,16 +2342,36 @@ export default function CrmPipeline() {
     setToast({ message, type });
   };
 
-  const handleAddLead = (lead) => {
-    if (editingLead) {
-      setLeads(leads.map((l) => (l.id === lead.id ? lead : l)));
-      showToast(`${lead.opportunityName} has been updated.`);
-    } else {
-      setLeads([...leads, { ...lead, id: `lead-${Date.now()}`, stage: "New" }]);
-      showToast(`${lead.opportunityName} has been added to the pipeline.`);
+  const handleAddLead = async (lead) => {
+    try {
+      if (editingLead) {
+        // Update existing lead (PUT)
+        const res = await fetch(`${backEndURL}/api/crm/${lead.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(lead),
+        });
+        if (!res.ok) throw new Error("Failed to update lead");
+        const updated = await res.json();
+        setLeads((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
+        showToast(`${lead.opportunityName} has been updated.`);
+      } else {
+        // Create new lead (POST)
+        const res = await fetch(`${backEndURL}/api/crm`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(lead),
+        });
+        if (!res.ok) throw new Error("Failed to add lead");
+        const created = await res.json();
+        setLeads((prev) => [...prev, created]);
+        showToast(`${lead.opportunityName} has been added to the pipeline.`);
+      }
+      setIsLeadFormOpen(false);
+      setEditingLead(null);
+    } catch (err) {
+      showToast("Failed to save lead. Please try again.", "error");
     }
-    setIsLeadFormOpen(false);
-    setEditingLead(null);
   };
 
   const handleEditLead = (lead) => {
@@ -2338,41 +2379,20 @@ export default function CrmPipeline() {
     setIsLeadFormOpen(true);
   };
 
-  const handleStageTransition = (lead, nextStage) => {
-    // For simple transitions (New → Qualified, Qualified → Proposal Sent, etc.)
-    if (nextStage !== "Won" && nextStage !== "Lost") {
-      const now = new Date().toISOString();
-      const assignedPerson = salespeople.find(
-        (sp) => sp.id === lead.assignedTo
-      );
-      const assignedName = assignedPerson?.name || "System";
-
-      // Create history entry
-      const historyEntry = {
-        stage: nextStage,
-        date: now,
-        notes: `Stage changed to ${nextStage}`,
-        changedBy: assignedName,
-      };
-
-      // Update lead
-      const updatedLead = {
-        ...lead,
-        stage: nextStage,
-        stageHistory: [...(lead.stageHistory || []), historyEntry],
-      };
-
-      // Update state
-      setLeads(leads.map((l) => (l.id === updatedLead.id ? updatedLead : l)));
-      showToast(`${lead.opportunityName} has moved to ${nextStage}.`);
-    }
-    // For Won/Lost, still show the dialog
-    else {
-      const errors = validateStageTransition(lead, nextStage);
-      setStageValidationErrors(errors);
-      setTransitioningLead(lead);
-      setTargetStage(nextStage);
-      setIsStageTransitionDialogOpen(true);
+  const handleStageTransition = async (lead, nextStage) => {
+    try {
+      const updatedLead = { ...lead, stage: nextStage };
+      const res = await fetch(`${backEndURL}/api/crm/${lead.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedLead),
+      });
+      if (!res.ok) throw new Error("Failed to update stage");
+      const updated = await res.json();
+      setLeads((prev) => prev.map((l) => (l.id === updated.id ? updated : l)));
+      showToast(`${lead.opportunityName} moved to ${nextStage}.`);
+    } catch (err) {
+      showToast("Failed to update stage.", "error");
     }
   };
 
