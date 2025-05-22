@@ -13,7 +13,6 @@ export default function ProductManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 10;
 
-  // Product form states
   const [newProduct, setNewProduct] = useState({
     name: "",
     description: "",

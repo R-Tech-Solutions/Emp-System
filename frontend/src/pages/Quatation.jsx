@@ -88,7 +88,7 @@ export default function QuotationManagement() {
 
   // State for product lines
   const [productLines, setProductLines] = useState([
-    { id: 1, product: "", quantity: 1, unitPrice: 0, taxes: 0, amount: 0 },
+    { id: 1, product: "", quantity: 1, salesPrice: 0, taxes: 0, amount: 0 },
   ])
 
   // State for modals
@@ -104,8 +104,6 @@ export default function QuotationManagement() {
     description: "",
     category: "General",
   })
-
-  // State for activity logs
   const [activities, setActivities] = useState([
     { id: 1, time: "Just now", message: "Creating a new quotation...", user: "You" },
   ])
@@ -121,11 +119,16 @@ export default function QuotationManagement() {
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [project, setProject] = useState("");
 
+  // Add state for createdBy
+  const [createdBy, setCreatedBy] = useState("");
+
   // Fetch products from backend
   useEffect(() => {
     fetchProducts()
     fetchContacts()
     fetchCrmLeads()
+    const email = sessionStorage.getItem("email") || "";
+    setCreatedBy(email);
     // eslint-disable-next-line
   }, [])
 
@@ -157,8 +160,8 @@ export default function QuotationManagement() {
   };
 
   // Calculate totals
-  const untaxedAmount = productLines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0)
-  const taxAmount = productLines.reduce((sum, line) => sum + (line.quantity * line.unitPrice * line.taxes) / 100, 0)
+  const untaxedAmount = productLines.reduce((sum, line) => sum + line.quantity * line.salesPrice, 0)
+  const taxAmount = productLines.reduce((sum, line) => sum + (line.quantity * line.salesPrice * line.taxes) / 100, 0)
   const totalAmount = untaxedAmount + taxAmount
 
   // Handle product line changes
@@ -169,8 +172,8 @@ export default function QuotationManagement() {
           const updatedLine = { ...line, [field]: value }
 
           // Recalculate amount
-          if (field === "quantity" || field === "unitPrice") {
-            updatedLine.amount = updatedLine.quantity * updatedLine.unitPrice
+          if (field === "quantity" || field === "salesPrice") {
+            updatedLine.amount = updatedLine.quantity * updatedLine.salesPrice
           }
 
           return updatedLine
@@ -183,7 +186,7 @@ export default function QuotationManagement() {
   // Add new product line
   const addProductLine = () => {
     const newId = productLines.length > 0 ? Math.max(...productLines.map((line) => line.id)) + 1 : 1
-    setProductLines([...productLines, { id: newId, product: "", quantity: 1, unitPrice: 0, taxes: 0, amount: 0 }])
+    setProductLines([...productLines, { id: newId, product: "", quantity: 1, salesPrice: 0, taxes: 0, amount: 0 }])
 
     // Add activity
     addActivity("Added a new product line")
@@ -231,12 +234,52 @@ export default function QuotationManagement() {
     }
   }
 
-  // Handle confirm quotation
-  const handleConfirmQuotation = () => {
-    setStage("Sales Order")
-    addActivity("Quotation confirmed as Sales Order")
+  // Helper to build the payload for the API
+  const buildQuotationPayload = () => ({
+    Quatation_Id: "", // will be set by backend
+    Customer: customer,
+    Email: customerEmail,
+    Project: project,
+    CreatedBy: createdBy,
+    Pricelist: pricelist,
+    PaymentTerms: paymentTerms,
+    Expiration: expirationDate,
+    OrderLines: productLines
+      .filter(line => !line.isSection && !line.isNote)
+      .map(line => ({
+        Product: line.product,
+        Quantity: line.quantity,
+        UnitPrice: line.salesPrice,
+        Taxes: line.taxes,
+        Amount: line.amount,
+      })),
+    TermsConditions: termsConditions,
+    UntaxedAmount: untaxedAmount,
+    TaxesAmount: taxAmount,
+    Total: totalAmount,
+    Status: "Sales Order",
+    createdAt: new Date().toISOString(),
+  });
 
-    // Update in quotations list
+  // Handle confirm quotation
+  const handleConfirmQuotation = async () => {
+    setStage("Sales Order");
+    addActivity("Quotation confirmed as Sales Order");
+
+    // Build payload
+    const payload = buildQuotationPayload();
+
+    try {
+      // POST to backend
+      await axios.post(`${backEndURL}/api/quotation`, payload);
+      addActivity("Quotation saved to database");
+      // Optionally, fetch quotations again to update the list
+      fetchQuotations();
+    } catch (err) {
+      addActivity("Failed to save quotation to database");
+    }
+
+    // ... existing code for updating local state ...
     if (!quotations.some((q) => q.id === "S00001")) {
       const newQuotation = {
         id: "S00001",
@@ -245,15 +288,16 @@ export default function QuotationManagement() {
         amount: totalAmount,
         stage: "Sales Order",
         products: productLines.filter((line) => !line.isSection && !line.isNote).length,
-      }
-      setQuotations([newQuotation, ...quotations])
+      };
+      setQuotations([newQuotation, ...quotations]);
     } else {
-      // Update existing quotation
       setQuotations(
-        quotations.map((q) => (q.id === "S00001" ? { ...q, stage: "Sales Order", amount: totalAmount } : q)),
-      )
+        quotations.map((q) =>
+          q.id === "S00001" ? { ...q, stage: "Sales Order", amount: totalAmount } : q
+        )
+      );
     }
-  }
+  };
 
   // Handle print
   const handlePrint = () => {
@@ -275,7 +319,7 @@ export default function QuotationManagement() {
           .map((line) => {
             if (line.isSection) return `Section: ${line.sectionName}`
             if (line.isNote) return `Note: ${line.note}`
-            return `Product: ${line.product || "Not specified"}, Quantity: ${line.quantity}, Unit Price: Rs ${line.unitPrice}, Taxes: ${line.taxes}%, Amount: Rs ${line.amount}`
+            return `Product: ${line.product || "Not specified"}, Quantity: ${line.quantity}, Unit Price: Rs ${line.salesPrice}, Taxes: ${line.taxes}%, Amount: Rs ${line.amount}`
           })
           .join("\n")}
         
@@ -416,6 +460,34 @@ export default function QuotationManagement() {
     }
   };
 
+  // Fetch quotations from backend
+  const fetchQuotations = async () => {
+    try {
+      const res = await axios.get(`${backEndURL}/api/quotation`);
+      // Map backend data to frontend format if needed
+      setQuotations(
+        res.data.map((q) => ({
+          id: q.Quatation_Id || q.id,
+          customer: q.Customer,
+          date: q.createdAt ? new Date(q.createdAt).toISOString().split("T")[0] : "",
+          amount: q.Total,
+          stage: q.Status,
+          products: q.OrderLines ? q.OrderLines.length : 0,
+        }))
+      );
+    } catch (err) {
+      addActivity("Failed to fetch quotations from database");
+    }
+  };
+
+  // Fetch quotations when switching to "all" tab
+  useEffect(() => {
+    if (activeTab === "all") {
+      fetchQuotations();
+    }
+    // eslint-disable-next-line
+  }, [activeTab]);
+
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
       {/* Header */}
@@ -443,12 +515,7 @@ export default function QuotationManagement() {
               <h1 className="text-xl font-bold">New Quotation</h1>
 
               <div className="flex space-x-2">
-                <button
-                  onClick={() => setSendModalOpen(true)}
-                  className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm"
-                >
-                  <Send size={16} className="mr-2" /> Send
-                </button>
+
 
                 <button
                   onClick={handlePrint}
@@ -597,7 +664,8 @@ export default function QuotationManagement() {
                       <label className="block text-sm font-medium mb-1">Created by</label>
                       <input
                         type="text"
-                        value=""
+                        value={createdBy}
+                        readOnly
                         className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
@@ -671,7 +739,7 @@ export default function QuotationManagement() {
                           <th className="pb-2 font-medium text-right">Unit Price</th>
                           <th className="pb-2 font-medium text-right">Taxes (%)</th>
                           <th className="pb-2 font-medium text-right">Amount</th>
-                          <th className="pb-2 w-10"></th>
+                          <th className="pb-2 w-10">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -708,8 +776,8 @@ export default function QuotationManagement() {
                                           const selectedProduct = products.find((p) => p.name === e.target.value)
                                           updateProductLine(line.id, "product", e.target.value)
                                           if (selectedProduct) {
-                                            updateProductLine(line.id, "unitPrice", selectedProduct.price)
-                                            updateProductLine(line.id, "amount", selectedProduct.price * line.quantity)
+                                            updateProductLine(line.id, "salesPrice", selectedProduct.salesPrice)
+                                            updateProductLine(line.id, "amount", selectedProduct.salesPrice * line.quantity)
                                           }
                                         }
                                       }}
@@ -742,9 +810,9 @@ export default function QuotationManagement() {
                                   <input
                                     type="number"
                                     min="0"
-                                    value={line.unitPrice}
+                                    value={line.salesPrice}
                                     onChange={(e) =>
-                                      updateProductLine(line.id, "unitPrice", Number.parseFloat(e.target.value) || 0)
+                                      updateProductLine(line.id, "salesPrice", Number.parseFloat(e.target.value) || 0)
                                     }
                                     className="w-full bg-gray-700 border border-gray-600 rounded-md py-1 px-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
                                   />
@@ -770,6 +838,10 @@ export default function QuotationManagement() {
                                     <X size={16} />
                                   </button>
                                 </td>
+
+
+
+
                               </>
                             )}
                           </tr>
@@ -898,18 +970,13 @@ export default function QuotationManagement() {
                           {quotation.stage}
                         </span>
                       </td>
-                      <td className="py-4">
-                        <div className="flex space-x-2">
-                          <button className="text-gray-400 hover:text-blue-400" title="View">
-                            <Eye size={16} />
-                          </button>
-                          <button className="text-gray-400 hover:text-green-400" title="Edit">
-                            <FileText size={16} />
-                          </button>
-                          <button className="text-gray-400 hover:text-red-400" title="Delete">
-                            <X size={16} />
-                          </button>
-                        </div>
+                      <td>
+                        <button
+                          onClick={() => setSendModalOpen(true)}
+                          className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm"
+                        >
+                          <Send size={16} className="mr-2" /> Send
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -952,7 +1019,7 @@ export default function QuotationManagement() {
                 <label className="block text-sm font-medium mb-1">Subject</label>
                 <input
                   type="text"
-                  value={`R-Tech Solutions Order (Ref S00001)`}
+                  value={`R-Tech Solutions Order `}
                   readOnly
                   className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -963,7 +1030,7 @@ export default function QuotationManagement() {
                 <textarea
                   value={`Hello,
 
-Your order S00001 amounting in ${totalAmount.toLocaleString()} Rs has been confirmed.  
+Your order amounting in ${totalAmount.toLocaleString()} Rs has been confirmed.  
 Thank you for your trust!
 
 Do not hesitate to contact us if you have any questions.  
@@ -1040,11 +1107,11 @@ Shinan`}
               <table className="w-full mb-6">
                 <thead>
                   <tr className="border-b border-gray-300">
-                    <th className="text-left py-2 font-medium">Product</th>
-                    <th className="text-right py-2 font-medium">Quantity</th>
-                    <th className="text-right py-2 font-medium">Unit Price</th>
-                    <th className="text-right py-2 font-medium">Taxes</th>
-                    <th className="text-right py-2 font-medium">Amount</th>
+                    <th className="py-2 font-medium">Product</th>
+                    <th className="py-2 font-medium">Quantity</th>
+                    <th className="py-2 font-medium">Unit Price</th>
+                    <th className="py-2 font-medium">Taxes</th>
+                    <th className="py-2 font-medium">Amount</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1069,10 +1136,10 @@ Shinan`}
                       return (
                         <tr key={line.id} className="border-b border-gray-200">
                           <td className="py-3">{line.product || "Not specified"}</td>
-                          <td className="py-3 text-right">{line.quantity}</td>
-                          <td className="py-3 text-right">Rs {line.unitPrice.toLocaleString()}</td>
-                          <td className="py-3 text-right">{line.taxes}%</td>
-                          <td className="py-3 text-right font-medium">Rs {line.amount.toLocaleString()}</td>
+                          <td className="py-3 ">{line.quantity}</td>
+                          <td className="py-3 ">Rs {line.salesPrice.toLocaleString()}</td>
+                          <td className="py-3 ">{line.taxes}%</td>
+                          <td className="py-3 font-medium">Rs {line.amount.toLocaleString()}</td>
                         </tr>
                       )
                     }

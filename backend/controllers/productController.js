@@ -23,6 +23,23 @@ async function uploadImageToStorage(file) {
   return fileRef.publicUrl();
 }
 
+// Helper to delete image from Firebase Storage by URL
+async function deleteImageFromStorage(imageUrl) {
+  if (!imageUrl) return;
+  try {
+    // Extract the file path after the bucket domain
+    const match = imageUrl.match(/\/products\/[^?]+/);
+    if (!match) return;
+    const filePath = match[0].replace(/^\//, "");
+    const bucket = storage.bucket();
+    const fileRef = bucket.file(filePath);
+    await fileRef.delete();
+  } catch (err) {
+    // Log but do not throw, so product update/delete can continue
+    console.error("Error deleting image from storage:", err.message);
+  }
+}
+
 // Multer middleware for multipart/form-data
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -70,7 +87,11 @@ exports.updateProduct = [upload.single("image"), async (req, res) => {
     const doc = await docRef.get();
     if (!doc.exists) return res.status(404).json({ error: "Product not found" });
     let imageUrl = doc.data().imageUrl || "";
+    // If a new image is uploaded, delete the old one
     if (req.file) {
+      if (imageUrl) {
+        await deleteImageFromStorage(imageUrl);
+      }
       imageUrl = await uploadImageToStorage(req.file);
     }
     const updatedData = productData({ ...req.body, imageUrl });
@@ -88,6 +109,11 @@ exports.deleteProduct = async (req, res) => {
     const docRef = db.collection(COLLECTION_NAME).doc(req.params.id);
     const doc = await docRef.get();
     if (!doc.exists) return res.status(404).json({ error: "Product not found" });
+    // Delete image from storage if exists
+    const imageUrl = doc.data().imageUrl || "";
+    if (imageUrl) {
+      await deleteImageFromStorage(imageUrl);
+    }
     await docRef.delete();
     res.json({ message: "Product deleted" });
   } catch (err) {
