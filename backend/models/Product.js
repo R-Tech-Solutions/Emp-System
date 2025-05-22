@@ -10,7 +10,9 @@ function productData({
   reference,
   internalNotes,
   productType,
-  imageUrl
+  imageUrl,
+  barcode,
+  toWeighWithScale
 }) {
   return {
     name,
@@ -23,6 +25,8 @@ function productData({
     internalNotes: internalNotes || "",
     productType: productType || "Goods",
     imageUrl: imageUrl || "",
+    barcode: barcode || "",
+    toWeighWithScale: !!toWeighWithScale,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };

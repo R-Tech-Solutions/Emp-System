@@ -25,6 +25,8 @@ export default function ProductManagement() {
     internalNotes: "",
     productType: "Goods",
     image: null,
+    barcode: "",
+    toWeighWithScale: false,
   });
 
   // Modal and edit states
@@ -52,6 +54,8 @@ export default function ProductManagement() {
     const newErrors = {};
     if (!product.name.trim()) newErrors.name = "Product name is required";
     if (product.salesPrice <= 0) newErrors.salesPrice = "Sales price must be greater than 0";
+    // Barcode required if Goods
+    if (product.productType === "Goods" && !product.barcode.trim()) newErrors.barcode = "Barcode is required for Goods";
     return newErrors;
   };
 
@@ -185,6 +189,8 @@ export default function ProductManagement() {
         internalNotes: "",
         productType: "Goods",
         image: null,
+        barcode: "",
+        toWeighWithScale: false,
       });
       setErrors({});
     } catch (err) {
@@ -330,7 +336,35 @@ export default function ProductManagement() {
                         ))}
                       </select>
                     </div>
-
+                    {/* Barcode and Scale fields for Goods */}
+                    {newProduct.productType === "Goods" && (
+                      <>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="toWeighWithScale"
+                            checked={!!newProduct.toWeighWithScale}
+                            onChange={e => handleNewProductChange("toWeighWithScale", e.target.checked)}
+                            className="form-checkbox h-4 w-4 text-blue-600"
+                          />
+                          <label htmlFor="toWeighWithScale" className="text-sm font-medium">
+                            To Weigh With Scale?
+                          </label>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Barcode <span className="text-red-400">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={newProduct.barcode}
+                            onChange={e => handleNewProductChange("barcode", e.target.value)}
+                            className={`w-full bg-gray-700 border ${errors.barcode ? 'border-red-500' : 'border-gray-600'} rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                          />
+                          {errors.barcode && <p className="mt-1 text-sm text-red-400">{errors.barcode}</p>}
+                        </div>
+                      </>
+                    )}
                     <div>
                       <label className="block text-sm font-medium mb-1">
                         Product Name <span className="text-red-400">*</span>
@@ -467,6 +501,8 @@ export default function ProductManagement() {
                     internalNotes: "",
                     productType: "Goods",
                     image: null,
+                    barcode: "",
+                    toWeighWithScale: false,
                   });
                   setErrors({});
                 }}
@@ -565,6 +601,8 @@ export default function ProductManagement() {
                         {renderSortIcon('sku')}
                       </div>
                     </th>
+                    <th className="pb-3 font-medium">Barcode</th>
+                    <th className="pb-3 font-medium">Weigh With Scale?</th>
                     <th className="pb-3 font-medium">Image</th>
                     <th className="pb-3 font-medium">Actions</th>
                   </tr>
@@ -599,6 +637,12 @@ export default function ProductManagement() {
                         <td className="py-4">Rs {typeof product.salesPrice === 'number' ? product.salesPrice.toLocaleString() : '0'}</td>
                         <td className="py-4">Rs {typeof product.costPrice === 'number' ? product.costPrice.toLocaleString() : '0'}</td>
                         <td className="py-4">{product.sku || '-'}</td>
+                        <td className="py-4">{product.barcode || '-'}</td>
+                        <td className="py-4">
+                          {product.productType === "Goods"
+                            ? (product.toWeighWithScale ? "Yes" : "No")
+                            : "-"}
+                        </td>
                         <td className="py-4">
                           {product.imageUrl ? (
                             <img src={product.imageUrl} alt={product.name} className="h-10 w-10 rounded-md object-cover" />
@@ -767,7 +811,35 @@ export default function ProductManagement() {
                         ))}
                       </select>
                     </div>
-
+                    {/* Barcode and Scale fields for Goods */}
+                    {editProduct.productType === "Goods" && (
+                      <>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="editToWeighWithScale"
+                            checked={!!editProduct.toWeighWithScale}
+                            onChange={e => handleEditProductChange("toWeighWithScale", e.target.checked)}
+                            className="form-checkbox h-4 w-4 text-blue-600"
+                          />
+                          <label htmlFor="editToWeighWithScale" className="text-sm font-medium">
+                            To Weigh With Scale?
+                          </label>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Barcode <span className="text-red-400">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={editProduct.barcode}
+                            onChange={e => handleEditProductChange("barcode", e.target.value)}
+                            className={`w-full bg-gray-700 border ${errors.barcode ? 'border-red-500' : 'border-gray-600'} rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                          />
+                          {errors.barcode && <p className="mt-1 text-sm text-red-400">{errors.barcode}</p>}
+                        </div>
+                      </>
+                    )}
                     <div>
                       <label className="block text-sm font-medium mb-1">
                         Product Name <span className="text-red-400">*</span>

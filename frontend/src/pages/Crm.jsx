@@ -1863,45 +1863,39 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts }) {
 
 // Contact Form Component
 function ContactForm({ contact, onSave, onCancel }) {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    company: "",
-    website: "",
-    notes: "",
-  });
-
-  useEffect(() => {
-    if (contact) {
-      setFormData(contact);
-    } else {
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        company: "",
-        website: "",
-        notes: "",
-      });
-    }
-  }, [contact]);
+  const [formData, setFormData] = useState(contact || {});
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Only include id if editing
-    const data = contact
-      ? { ...formData, id: contact.id, createdAt: contact.createdAt }
-      : { ...formData, createdAt: new Date().toISOString() };
-    onSave(data);
+    setError("");
+    setLoading(true);
+    try {
+      const method = contact ? "PUT" : "POST";
+      const url = contact
+        ? `${backEndURL}/api/contacts/${contact.id}`
+        : `${backEndURL}/api/contacts`;
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to save contact");
+      }
+      const saved = await res.json();
+      onSave(saved);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -1917,7 +1911,9 @@ function ContactForm({ contact, onSave, onCancel }) {
           <X size={24} />
         </button>
       </div>
-
+      {error && (
+        <div className="bg-red-100 text-red-700 px-3 py-2 rounded mb-4 text-sm">{error}</div>
+      )}
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {[
@@ -1958,18 +1954,19 @@ function ContactForm({ contact, onSave, onCancel }) {
             />
           </div>
         </div>
-
         <div className="mt-8 flex justify-end space-x-4">
           <button
             type="button"
             onClick={onCancel}
             className="px-5 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+            disabled={loading}
           >
             Cancel
           </button>
           <button
             type="submit"
             className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+            disabled={loading}
           >
             {contact ? "Update Contact" : "Add Contact"}
           </button>
@@ -1982,6 +1979,27 @@ function ContactForm({ contact, onSave, onCancel }) {
 // Contacts Table Component
 function ContactsTable({ contacts, onEdit, onDelete }) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [deletingId, setDeletingId] = useState(null);
+  const [error, setError] = useState("");
+
+  const handleDelete = async (id) => {
+    setDeletingId(id);
+    setError("");
+    try {
+      const res = await fetch(`${backEndURL}/api/contacts/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to delete contact");
+      }
+      onDelete(id);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const filteredContacts = contacts.filter(
     (contact) =>
@@ -2005,7 +2023,9 @@ function ContactsTable({ contacts, onEdit, onDelete }) {
           />
         </div>
       </div>
-
+      {error && (
+        <div className="bg-red-100 text-red-700 px-3 py-2 rounded mb-2 text-sm">{error}</div>
+      )}
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-900">
@@ -2053,8 +2073,9 @@ function ContactsTable({ contacts, onEdit, onDelete }) {
                         <span className="sr-only">Edit</span>
                       </button>
                       <button
-                        onClick={() => onDelete(contact.id)}
+                        onClick={() => handleDelete(contact.id)}
                         className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                        disabled={deletingId === contact.id}
                       >
                         <Trash2 size={16} />
                         <span className="sr-only">Delete</span>
@@ -2280,6 +2301,12 @@ export default function CrmPipeline() {
     if (targetStage === "Negotiation") {
       if (!lead.nextFollowUp) {
         errors.push("Follow-up date must be set");
+      }
+    }
+
+    if (targetStage === "Won" || targetStage === "Lost") {
+      if (!lead.dealValue) {
+        errors.push("Deal value must be specified");
       }
     }
 
