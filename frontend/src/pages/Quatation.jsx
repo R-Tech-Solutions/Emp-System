@@ -594,6 +594,14 @@ export default function QuotationManagement() {
                       </div>
                     </div>
                     <div>
+                      <label className="block text-sm font-medium mb-1">Created by</label>
+                      <input
+                        type="text"
+                        value=""
+                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
                       <label className="block text-sm font-medium mb-1">Expiration</label>
                       <div className="relative">
                         <input
