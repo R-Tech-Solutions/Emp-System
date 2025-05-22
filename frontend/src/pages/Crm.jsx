@@ -1468,7 +1468,21 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  // Helper function to save a new contact to the backend
+  const saveContact = async (contactData) => {
+    const res = await fetch(`${backEndURL}/api/contacts`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(contactData),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Failed to save contact");
+    }
+    return await res.json();
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Find the salesperson name based on the ID
@@ -1489,15 +1503,35 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts }) {
       ];
     }
 
-    onSave({
-      ...formData,
-      id: lead?.id || Date.now().toString(),
-      stage: lead?.stage || "New",
-      assignedToName: assignedSalesperson?.name || "",
-      isExistingClient: clientType === "existing",
-      stageHistory,
-    });
+    try {
+      if (clientType === "new") {
+        const contactData = {
+          name: formData.clientName,
+          email: formData.email,
+          phone: formData.phone,
+          company: formData.company,
+          website: formData.website,
+          notes: "Created from lead form",
+        };
+
+        await saveContact(contactData);
+      }
+
+      // Proceed to save the lead
+      onSave({
+        ...formData,
+        id: lead?.id || Date.now().toString(),
+        stage: formData.stage || "New",
+        assignedToName: assignedSalesperson?.name || "",
+        isExistingClient: clientType === "existing",
+        stageHistory,
+      });
+    } catch (error) {
+      console.error("Error saving contact or lead:", error);
+      alert("Failed to save new contact. Please try again.");
+    }
   };
+
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-3xl mx-auto">
@@ -2114,7 +2148,7 @@ function DeleteConfirmationDialog({ isOpen, onClose, onConfirm }) {
         <p className="text-gray-500 dark:text-gray-400 mb-4">
           This will permanently delete this contact. This action cannot be
           undone.
-               </p>
+        </p>
         <div className="flex justify-end space-x-3">
           <button
             onClick={onClose}
