@@ -720,7 +720,7 @@ function ValidationIndicator({ lead, nextStage }) {
   );
 }
 
-// Add a new NotesManager component after the ValidationIndicator component
+
 
 // Notes Manager Component
 function NotesManager({ notes = [], onAddNote, onEditNote, title = "Notes" }) {
@@ -1371,7 +1371,7 @@ function KanbanBoard({ leads, onEditLead, onStageTransition }) {
 }
 
 // Lead Form Component
-function LeadForm({ lead, onSave, onCancel, salespeople, contacts }) {
+function LeadForm({ lead, onSave, onCancel, salespeople, contacts, allEmployees = [] }) {
   const [formData, setFormData] = useState({
     opportunityName: "",
     clientName: "",
@@ -1395,6 +1395,8 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts }) {
 
   const [clientType, setClientType] = useState("new");
   const [activeTab, setActiveTab] = useState("basic");
+  const [departments, setDepartments] = useState([]);
+  const [employeesByDepartment, setEmployeesByDepartment] = useState([]);
 
   useEffect(() => {
     if (lead) {
@@ -1425,6 +1427,24 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts }) {
     }
   }, [lead]);
 
+  useEffect(() => {
+    // Extract unique departments from allEmployees
+    const uniqueDepartments = [
+      ...new Set(allEmployees.map(emp => emp.department).filter(Boolean))
+    ];
+    setDepartments(uniqueDepartments);
+
+    // If a department is already selected, update employeesByDepartment
+    if (formData.assignedToDepartment) {
+      const filtered = allEmployees.filter(
+        emp => emp.department === formData.assignedToDepartment
+      );
+      setEmployeesByDepartment(filtered);
+    } else {
+      setEmployeesByDepartment([]);
+    }
+  }, [allEmployees, formData.assignedToDepartment]);
+
   const handleChange = (e) => {
     const { name, value, type } = e.target;
     setFormData((prev) => ({
@@ -1434,14 +1454,28 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts }) {
   };
 
   const handleSelectChange = (name, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-      assignedToName:
-        name === "assignedTo"
-          ? salespeople.find((sp) => sp.id === value)?.name || ""
-          : prev.assignedToName,
-    }));
+    if (name === "assignedTo") {
+      const emp = allEmployees.find((e) => e.id === value);
+      setFormData((prev) => ({
+        ...prev,
+        assignedTo: value,
+        assignedToName: emp ? `${emp.firstName} ${emp.lastName}` : "",
+        AssighnedToEmail: emp ? emp.email : "", // <-- set email here
+      }));
+    } else if (name === "assignedToDepartment") {
+      setFormData((prev) => ({
+        ...prev,
+        assignedToDepartment: value,
+        assignedTo: "",
+        assignedToName: "",
+        AssighnedToEmail: "", // clear email when department changes
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const handleClientTypeChange = (value) => {
@@ -1534,7 +1568,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts }) {
 
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-3xl mx-auto">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-auto mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold">
           {lead ? "Edit Lead" : "Add New Lead"}
@@ -1546,7 +1580,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts }) {
           <X size={20} />
         </button>
       </div>
-      <div className="max-h-[400px] max-w-[800px] overflow-y-auto pr-2">
+      <div className="max-h-[500px] max-w-[1000px] overflow-y-auto pr-2">
         <form onSubmit={handleSubmit}>
           <div className="space-y-6">
             <div className="space-y-2">
@@ -1784,6 +1818,11 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts }) {
                   className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
                 >
                   <option value="">Select the Department</option>
+                  {departments.map((dept) => (
+                    <option key={dept} value={dept}>
+                      {dept}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="space-y-2">
@@ -1800,9 +1839,34 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts }) {
                     handleSelectChange("assignedTo", e.target.value)
                   }
                   className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  // disabled={!formData.assignedToDepartment}
                 >
                   <option value="">Select the employee</option>
+                  {employeesByDepartment.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.firstName} {emp.lastName}
+                    </option>
+                  ))}
                 </select>
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor="AssighnedToEmail"
+                  className="block text-sm font-medium"
+                >
+                  Assighned Email
+                </label>
+                <input
+                  id="AssighnedToEmail"
+                  name="AssighnedToEmail"
+                  type="text"
+                  value={formData.AssighnedToEmail || ""}
+                  onChange={handleChange}
+                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  readOnly
+                >
+                </input>
               </div>
               <div className="space-y-2">
                 <label
@@ -2222,11 +2286,13 @@ export default function CrmPipeline() {
   const [stageValidationErrors, setStageValidationErrors] = useState([]);
 
   const [toast, setToast] = useState(null);
+  const [allEmployees, setAllEmployees] = useState([]);
 
   useEffect(() => {
     // Initialize with sample data
     setSalespeople(generateSampleSalespeople());
     fetchContacts();
+    fetchEmployees();
   }, []);
 
   const fetchContacts = async () => {
@@ -2236,6 +2302,18 @@ export default function CrmPipeline() {
       setContacts(data);
     } catch (err) {
       setContacts([]);
+    }
+  };
+
+  const fetchEmployees = async () => {
+    try {
+      const res = await fetch(`${backEndURL}/api/employees`);
+      const data = await res.json();
+      if (data.success) {
+        setAllEmployees(data.data);
+      }
+    } catch (err) {
+      setAllEmployees([]);
     }
   };
 
@@ -2650,6 +2728,7 @@ export default function CrmPipeline() {
             }}
             salespeople={salespeople}
             contacts={contacts}
+            allEmployees={allEmployees}
           />
         </div>
       )}
