@@ -2293,7 +2293,6 @@ export default function CrmPipeline() {
     setEditingLead(null);
     setActiveView("pipeline");
     fetchLeads();
-    setSalespeople(generateSampleSalespeople());
     fetchContacts();
     fetchEmployees();
     // eslint-disable-next-line
@@ -2310,8 +2309,6 @@ export default function CrmPipeline() {
   };
 
   useEffect(() => {
-    // Initialize with sample data
-    setSalespeople(generateSampleSalespeople());
     fetchContacts();
     fetchEmployees();
   }, []);

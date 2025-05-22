@@ -113,9 +113,19 @@ export default function QuotationManagement() {
   // State for products (mock data initially)
   const [products, setProducts] = useState([])
 
+  // State for contacts and crm leads
+  const [contacts, setContacts] = useState([]);
+  const [crmLeads, setCrmLeads] = useState([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState("");
+  const [selectedCustomerEmail, setSelectedCustomerEmail] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [project, setProject] = useState("");
+
   // Fetch products from backend
   useEffect(() => {
     fetchProducts()
+    fetchContacts()
+    fetchCrmLeads()
     // eslint-disable-next-line
   }, [])
 
@@ -127,6 +137,24 @@ export default function QuotationManagement() {
       addActivity("Failed to fetch products from server.")
     }
   }
+
+  const fetchContacts = async () => {
+    try {
+      const res = await axios.get(`${backEndURL}/api/contacts`);
+      setContacts(res.data);
+    } catch (err) {
+      // handle error
+    }
+  };
+
+  const fetchCrmLeads = async () => {
+    try {
+      const res = await axios.get(`${backEndURL}/api/crm`);
+      setCrmLeads(res.data);
+    } catch (err) {
+      // handle error
+    }
+  };
 
   // Calculate totals
   const untaxedAmount = productLines.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0)
@@ -351,6 +379,43 @@ export default function QuotationManagement() {
   // Product categories
   const productCategories = ["General", "Electronics", "Office", "Services", "Hardware", "Software"]
 
+  // When customer is selected, set name and email
+  const handleCustomerChange = (e) => {
+    const contactId = e.target.value;
+    setSelectedCustomerId(contactId);
+    const contact = contacts.find((c) => c.id === contactId);
+    if (contact) {
+      setCustomer(contact.name);
+      setCustomerEmail(contact.email);
+      setSelectedCustomerEmail(contact.email);
+      setProject(""); // reset project when customer changes
+      setSelectedProjectId("");
+    } else {
+      setCustomer("");
+      setCustomerEmail("");
+      setSelectedCustomerEmail("");
+      setProject("");
+      setSelectedProjectId("");
+    }
+  };
+
+  // Filter projects (leads) by selected customer email
+  const filteredProjects = crmLeads.filter(
+    (lead) => lead.email && lead.email === selectedCustomerEmail
+  );
+
+  // When project is selected, set project name
+  const handleProjectChange = (e) => {
+    const projectId = e.target.value;
+    setSelectedProjectId(projectId);
+    const lead = crmLeads.find((l) => l.id === projectId);
+    if (lead) {
+      setProject(lead.opportunityName);
+    } else {
+      setProject("");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
       {/* Header */}
@@ -482,17 +547,14 @@ export default function QuotationManagement() {
                       <label className="block text-sm font-medium mb-1">Customer</label>
                       <div className="relative">
                         <select
-                          value={customer}
-                          onChange={(e) => {
-                            setCustomer(e.target.value)
-                            addActivity(`Selected customer: ${e.target.value}`)
-                          }}
+                          value={selectedCustomerId}
+                          onChange={handleCustomerChange}
                           className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-3 pr-10 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                           <option value="">Select a customer</option>
-                          {customers.map((cust, index) => (
-                            <option key={index} value={cust}>
-                              {cust}
+                          {contacts.map((contact) => (
+                            <option key={contact.id} value={contact.id}>
+                              {contact.name}
                             </option>
                           ))}
                         </select>
@@ -503,32 +565,28 @@ export default function QuotationManagement() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">Email</label>
-                      <div className="relative">                        <input
-                          type="email"
-                          value={customerEmail}
-                          onChange={(e) => setCustomerEmail(e.target.value)}
-                          placeholder="customer@example.com"
-                          className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
+                      <input
+                        type="email"
+                        value={customerEmail}
+                        readOnly
+                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">Project</label>
                       <div className="relative">
                         <select
-                          value={customer}
-                          onChange={(e) => {
-                            setCustomer(e.target.value)
-                            addActivity(`Selected customer: ${e.target.value}`)
-                          }}
+                          value={selectedProjectId}
+                          onChange={handleProjectChange}
                           className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-3 pr-10 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          disabled={!selectedCustomerEmail}
                         >
-                          <option value="">Select a Project Of the customer </option>
-                          {/* {customers.map((cust, index) => (
-                            <option key={index} value={cust}>
-                              {cust}
+                          <option value="">Select a Project of the customer</option>
+                          {filteredProjects.map((lead) => (
+                            <option key={lead.id} value={lead.id}>
+                              {lead.opportunityName}
                             </option>
-                          ))} */}
+                          ))}
                         </select>
                         <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                           <ChevronDown size={16} className="text-gray-400" />
