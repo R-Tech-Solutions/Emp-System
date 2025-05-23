@@ -23,3 +23,18 @@ exports.getAllQuotations = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch quotations' });
   }
 };
+
+// Get a single quotation by ID
+exports.getQuotationById = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const quotation = await QuotationModel.getById(id);
+    if (!quotation) {
+      return res.status(404).json({ error: "Quotation not found" });
+    }
+    res.json(quotation);
+  } catch (err) {
+    console.error('Get Quotation By ID Error:', err);
+    res.status(500).json({ error: 'Failed to fetch quotation' });
+  }
+};

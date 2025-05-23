@@ -20,6 +20,8 @@ import {
   Tag,
 } from "lucide-react"
 import { backEndURL } from "../Backendurl"
+import { pdf } from "@react-pdf/renderer"
+import QuotationPDF from "../components/QuotationPDF"
 
 export default function QuotationManagement() {
   // State for active tab
@@ -96,6 +98,7 @@ export default function QuotationManagement() {
   const [previewModalOpen, setPreviewModalOpen] = useState(false)
   const [createProductModalOpen, setCreateProductModalOpen] = useState(false)
   const [customerEmail, setCustomerEmail] = useState("")
+  const [quotationToSend, setQuotationToSend] = useState(null)
 
   // State for new product
   const [newProduct, setNewProduct] = useState({
@@ -299,57 +302,32 @@ export default function QuotationManagement() {
     }
   };
 
-  // Handle print
-  const handlePrint = () => {
-    addActivity("Generating PDF for download")
+  // Print a specific quotation as PDF
+  const handlePrint = async (quotation) => {
+    try {
+      // Fetch the latest quotation details from backend by ID
+      // Use Quatation_Id or id as available
+      const id = quotation.Quatation_Id || quotation.id;
+      const res = await axios.get(`${backEndURL}/api/quotation/${id}`);
+      const backendQuotation = res.data;
 
-    // In a real application, you would use a library like jsPDF or html2pdf
-    // This is a simulation of PDF download
-    setTimeout(() => {
-      // Create a blob that simulates a PDF file
-      const pdfContent = `
-        Customer Information:
-        Customer: ${customer || "Not specified"}
-        Expiration: ${new Date(expirationDate).toLocaleDateString()}
-        Pricelist: ${pricelist}
-        Payment Terms: ${paymentTerms}
-        
-        Order Lines:
-        ${productLines
-          .map((line) => {
-            if (line.isSection) return `Section: ${line.sectionName}`
-            if (line.isNote) return `Note: ${line.note}`
-            return `Product: ${line.product || "Not specified"}, Quantity: ${line.quantity}, Unit Price: Rs ${line.salesPrice}, Taxes: ${line.taxes}%, Amount: Rs ${line.amount}`
-          })
-          .join("\n")}
-        
-        Terms & Conditions:
-        ${termsConditions}
-        
-        Untaxed Amount: Rs ${untaxedAmount.toLocaleString()}
-        Taxes: Rs ${taxAmount.toLocaleString()}
-        Total: Rs ${totalAmount.toLocaleString()}
-      `
-
-      const blob = new Blob([pdfContent], { type: "application/pdf" })
-      const url = URL.createObjectURL(blob)
-
-      // Create a link and trigger download
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `Quotation-S00001.pdf`
-      document.body.appendChild(a)
-      a.click()
-
-      // Clean up
+      // Generate and download the PDF with backend data
+      const blob = await pdf(<QuotationPDF quotation={backendQuotation} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Quotation-${backendQuotation.Quatation_Id || backendQuotation.id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
       setTimeout(() => {
-        document.body.removeChild(a)
-        URL.revokeObjectURL(url)
-      }, 0)
-
-      addActivity("PDF downloaded successfully")
-    }, 500)
-  }
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 0);
+      addActivity("PDF downloaded successfully");
+    } catch (err) {
+      addActivity("Failed to fetch quotation from database for PDF");
+    }
+  };
 
   // Add a section
   const addSection = () => {
@@ -473,6 +451,7 @@ export default function QuotationManagement() {
           amount: q.Total,
           stage: q.Status,
           products: q.OrderLines ? q.OrderLines.length : 0,
+          email: q.Email || "",
         }))
       );
     } catch (err) {
@@ -487,6 +466,47 @@ export default function QuotationManagement() {
     }
     // eslint-disable-next-line
   }, [activeTab]);
+
+  // Add this function inside your component
+  const handleSendQuotationEmail = async () => {
+    if (!quotationToSend?.email) return;
+
+    // 1. Fetch full quotation details from backend
+    const res = await axios.get(`${backEndURL}/api/quotation/${quotationToSend.id}`);
+    const backendQuotation = res.data;
+
+    // 2. Generate PDF as blob
+    const pdfBlob = await pdf(<QuotationPDF quotation={backendQuotation} />).toBlob();
+
+    // 3. Convert blob to base64
+    const arrayBuffer = await pdfBlob.arrayBuffer();
+    const pdfBase64 = btoa(
+      new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
+
+    // 4. Prepare email content
+    const subject = `R-Tech Solutions Order ${backendQuotation.Quatation_Id || backendQuotation.id}`;
+    const message = `
+      <p>Hello,</p>
+      <p>Your order amounting in ${backendQuotation.Total?.toLocaleString()} Rs has been confirmed.<br/>
+      Thank you for your trust!<br/>
+      Do not hesitate to contact us if you have any questions.</p>
+    `;
+
+    // 5. Send to backend
+    await axios.post(`${backEndURL}/api/quotation/send-mail`, {
+      quotationId: backendQuotation.Quatation_Id || backendQuotation.id,
+      to: backendQuotation.Email,
+      subject,
+      message,
+      pdfBase64,
+    });
+
+    // 6. UI feedback
+    addActivity(`Quotation sent to ${backendQuotation.Email} (with PDF)`);
+    setSendModalOpen(false);
+    setQuotationToSend(null);
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
@@ -515,28 +535,12 @@ export default function QuotationManagement() {
               <h1 className="text-xl font-bold">New Quotation</h1>
 
               <div className="flex space-x-2">
-
-
-                <button
-                  onClick={handlePrint}
-                  className="flex items-center px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-md text-sm"
-                >
-                  <Printer size={16} className="mr-2" /> Print
-                </button>
-
                 <button
                   onClick={handleConfirmQuotation}
                   className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 rounded-md text-sm"
                   disabled={stage === "Sales Order"}
                 >
                   <Check size={16} className="mr-2" /> Confirm
-                </button>
-
-                <button
-                  onClick={() => setPreviewModalOpen(true)}
-                  className="flex items-center px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-md text-sm"
-                >
-                  <Eye size={16} className="mr-2" /> Preview
                 </button>
               </div>
             </div>
@@ -838,10 +842,6 @@ export default function QuotationManagement() {
                                     <X size={16} />
                                   </button>
                                 </td>
-
-
-
-
                               </>
                             )}
                           </tr>
@@ -971,12 +971,23 @@ export default function QuotationManagement() {
                         </span>
                       </td>
                       <td>
-                        <button
-                          onClick={() => setSendModalOpen(true)}
-                          className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm"
-                        >
-                          <Send size={16} className="mr-2" /> Send
-                        </button>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handlePrint(quotation)}
+                            className="flex items-center px-3 py-2 bg-green-700 hover:bg-green-600 rounded-md text-sm text-white"
+                          >
+                            <Printer size={16} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setQuotationToSend(quotation);
+                              setSendModalOpen(true);
+                            }}
+                            className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm text-white"
+                          >
+                            <Send size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -998,7 +1009,7 @@ export default function QuotationManagement() {
       )}
 
       {/* Send Modal */}
-      {sendModalOpen && (
+      {sendModalOpen && quotationToSend && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-gray-800 rounded-lg p-6 w-full max-w-2xl">
             <h2 className="text-xl font-bold mb-4">Send Quotation</h2>
@@ -1008,9 +1019,8 @@ export default function QuotationManagement() {
                 <label className="block text-sm font-medium mb-1">To</label>
                 <input
                   type="email"
-                  value={customerEmail}
-                  onChange={(e) => setCustomerEmail(e.target.value)}
-                  placeholder="customer@example.com"
+                  value={quotationToSend.email || ""}
+                  readOnly
                   className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -1019,7 +1029,7 @@ export default function QuotationManagement() {
                 <label className="block text-sm font-medium mb-1">Subject</label>
                 <input
                   type="text"
-                  value={`R-Tech Solutions Order `}
+                  value={`R-Tech Solutions Order ${quotationToSend.id || ""}`}
                   readOnly
                   className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -1029,15 +1039,11 @@ export default function QuotationManagement() {
                 <label className="block text-sm font-medium mb-1">Message</label>
                 <textarea
                   value={`Hello,
-
-Your order amounting in ${totalAmount.toLocaleString()} Rs has been confirmed.  
+Your order amounting in ${quotationToSend.amount?.toLocaleString()} Rs has been confirmed.  
 Thank you for your trust!
-
-Do not hesitate to contact us if you have any questions.  
---  
-Shinan`}
-                  readOnly
+Do not hesitate to contact us if you have any questions.`}
                   rows={8}
+                  readOnly
                   className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -1048,8 +1054,30 @@ Shinan`}
                     <FileText size={24} className="text-gray-300" />
                   </div>
                   <div>
-                    <p className="font-medium">Order - S00001.pdf</p>
+                    <p className="font-medium">Order - {quotationToSend.id}.pdf</p>
                     <p className="text-sm text-gray-400">Attachment preview</p>
+                    <button
+                      className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-white text-xs"
+                      onClick={async () => {
+                        // Fetch full quotation details and download PDF
+                        const res = await axios.get(`${backEndURL}/api/quotation/${quotationToSend.id}`);
+                        const backendQuotation = res.data;
+                        const blob = await pdf(<QuotationPDF quotation={backendQuotation} />).toBlob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `Quotation-${backendQuotation.Quatation_Id || backendQuotation.id}.pdf`;
+                        document.body.appendChild(a);
+                        a.click();
+                        setTimeout(() => {
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                        }, 0);
+                      }}
+                      type="button"
+                    >
+                      Download PDF
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1057,15 +1085,18 @@ Shinan`}
 
             <div className="flex justify-end space-x-2 mt-6">
               <button
-                onClick={() => setSendModalOpen(false)}
+                onClick={() => {
+                  setSendModalOpen(false);
+                  setQuotationToSend(null);
+                }}
                 className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md"
               >
                 Discard
               </button>
               <button
-                onClick={handleSendQuotation}
+                onClick={handleSendQuotationEmail}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md"
-                disabled={!customerEmail}
+                disabled={!quotationToSend.email}
               >
                 Send
               </button>
@@ -1146,7 +1177,6 @@ Shinan`}
                   })}
                 </tbody>
               </table>
-
               <div className="flex justify-end mb-8">
                 <div className="w-64">
                   <div className="flex justify-between py-1">
