@@ -17,6 +17,7 @@ export default function ProductManagement() {
     name: "",
     description: "",
     salesPrice: 0,
+    salesPricePercent: 0,
     costPrice: 0,
     sku: "",
     category: "General",
@@ -26,6 +27,11 @@ export default function ProductManagement() {
     image: null,
     barcode: "",
     toWeighWithScale: false,
+    marginPrice: 0,
+    marginPricePercent: 0,
+    retailPrice: 0,
+    retailPricePercent: 0,
+    quantity: 0,
   });
 
   // Modal and edit states
@@ -42,6 +48,12 @@ export default function ProductManagement() {
   // Constants
   const productCategories = ["General", "Electronics", "Office", "Services", "Hardware", "Software"];
   const productTypes = ["Goods", "Service"];
+
+  // Helper to calculate margin percentage
+  const getMarginPercent = (price, cost) => {
+    if (!cost || cost === 0) return 0;
+    return (((price - cost) / price) * 100).toFixed(2);
+  };
 
   // Utility functions
   const addActivity = (message) => {
@@ -75,6 +87,7 @@ export default function ProductManagement() {
 
   useEffect(() => {
     fetchProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Filter and sort products
@@ -117,8 +130,141 @@ export default function ProductManagement() {
     setCurrentPage(1);
   };
 
-  // Form handlers
+  // Helper to sync price and percent for all price types
+  // const syncPricePercent = (type, value, isPercent) => {
+  //   setNewProduct(prev => {
+  //     const cost = parseFloat(prev.costPrice) || 0;
+
+  //     let price = prev[type];
+  //     let percent = prev[`${type}Percent`];
+
+  //     if (isPercent) {
+  //       // Update from % -> calculate price using margin formula
+  //       percent = value;
+  //       price = cost > 0 ? (cost / (1 - percent / 100)).toFixed(2) : 0;
+  //     } else {
+  //       // Update from price -> calculate margin %
+  //       price = value;
+  //       percent = cost > 0 && price > 0 ? (((price - cost) / price) * 100).toFixed(2) : 0;
+  //     }
+
+  //     return {
+  //       ...prev,
+  //       [type]: parseFloat(price),
+  //       [`${type}Percent`]: parseFloat(percent),
+  //     };
+  //   });
+  // };
+  const syncPricePercent = (type, value, isPercent) => {
+    setNewProduct(prev => {
+      const cost = parseFloat(prev.costPrice) || 0;
+      let price, percent;
+
+      if (isPercent) {
+        percent = value;
+        if (type === 'marginPrice' || type === 'salesPrice' || type === 'retailPrice') {
+          price = cost / (1 - percent / 100);
+        } else {
+          // Calculate price based on markup (cost price)
+          price = cost * (1 + percent / 100);
+        }
+      } else {
+        price = value;
+        // Calculate margin percentage (on selling price)
+        if (type === 'marginPrice' || type === 'salesPrice' || type === 'retailPrice') {
+          percent = ((price - cost) / price) * 100;
+        } else {
+          percent = ((price - cost) / cost) * 100;
+        }
+      }
+      return {
+        ...prev,
+        [type]: parseFloat(price), // Round DOWN to nearest whole number
+        [`${type}Percent`]: parseFloat(percent.toFixed(2)), // Keep percentage as float with 2 decimals
+      };
+    });
+  };
+
+  
+  function syncEditPricePercent(field, value, isPercent) {
+    setEditProduct(prev => {
+      let updated = { ...prev };
+      const cost = parseFloat(prev.costPrice) || 0;
+      let price, percent;
+
+      if (isPercent) {
+        percent = value;
+        // Calculate price using margin formula for all price types
+        price = cost > 0 && percent < 100 ? cost / (1 - percent / 100) : 0;
+      } else {
+        price = value;
+        // Calculate margin percent for all price types
+        percent = cost > 0 && price > 0 ? ((price - cost) / price) * 100 : 0;
+      }
+
+      if (field === 'marginPrice') {
+        updated.marginPrice = parseFloat(price);
+        updated.marginPricePercent = parseFloat(percent.toFixed(2));
+      } else if (field === 'retailPrice') {
+        updated.retailPrice = parseFloat(price);
+        updated.retailPricePercent = parseFloat(percent.toFixed(2));
+      } else if (field === 'salesPrice') {
+        updated.salesPrice = parseFloat(price);
+        updated.salesPricePercent = parseFloat(percent.toFixed(2));
+      }
+      return updated;
+    });
+  }
+
   const handleNewProductChange = (field, value) => {
+    if (field === "marginPrice") {
+      setNewProduct(prev => ({
+        ...prev,
+        marginPrice: value,
+        marginPricePercent: prev.costPrice ? (((value - prev.costPrice) / value) * 100).toFixed(2) : 0
+      }));
+      return;
+    }
+    if (field === "marginPricePercent") {
+      setNewProduct(prev => ({
+        ...prev,
+        marginPricePercent: value,
+        marginPrice: prev.costPrice ? (prev.costPrice / (1 - value / 100)).toFixed(2) : 0
+      }));
+      return;
+    }
+    if (field === "retailPrice") {
+      setNewProduct(prev => ({
+        ...prev,
+        retailPrice: value,
+        retailPricePercent: prev.costPrice ? (((value - prev.costPrice) / value) * 100).toFixed(2) : 0
+      }));
+      return;
+    }
+    if (field === "retailPricePercent") {
+      setNewProduct(prev => ({
+        ...prev,
+        retailPricePercent: value,
+        retailPrice: prev.costPrice ? (parseFloat(prev.costPrice) + (parseFloat(prev.costPrice) * value / 100)).toFixed(2) : 0
+      }));
+      return;
+    }
+    if (field === "salesPrice") {
+      setNewProduct(prev => ({
+        ...prev,
+        salesPrice: value,
+        salesPricePercent: prev.costPrice ? (((value - prev.costPrice) / value) * 100).toFixed(2) : 0
+      }));
+      return;
+    }
+    if (field === "salesPricePercent") {
+      setNewProduct(prev => ({
+        ...prev,
+        salesPricePercent: value,
+        salesPrice: prev.costPrice ? (parseFloat(prev.costPrice) + (parseFloat(prev.costPrice) * value / 100)).toFixed(2) : 0
+      }));
+      return;
+    }
     setNewProduct({
       ...newProduct,
       [field]: value,
@@ -163,12 +309,14 @@ export default function ProductManagement() {
     setIsLoading(true);
     try {
       const formData = new FormData();
+      // Add all fields to formData for backend
       Object.entries(newProduct).forEach(([key, value]) => {
+        // Only append if not null/undefined
         if (value !== null && value !== undefined) {
           formData.append(key, value);
         }
       });
-
+      // Send to backend
       const res = await axios.post(`${backEndURL}/api/products`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -181,6 +329,7 @@ export default function ProductManagement() {
         name: "",
         description: "",
         salesPrice: 0,
+        salesPricePercent: 0,
         costPrice: 0,
         sku: "",
         category: "General",
@@ -190,6 +339,11 @@ export default function ProductManagement() {
         image: null,
         barcode: "",
         toWeighWithScale: false,
+        marginPrice: 0,
+        marginPricePercent: 0,
+        retailPrice: 0,
+        retailPricePercent: 0,
+        quantity: 0,
       });
       setErrors({});
     } catch (err) {
@@ -392,13 +546,12 @@ export default function ProductManagement() {
 
               {/* Right Column */}
               <div className="space-y-4">
-                {/* Pricing */}
                 <div>
                   <h3 className="text-sm font-medium mb-3">Pricing</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium mb-1">
-                        Sales Price <span className="text-red-400">*</span>
+                        Cost Price <span className="text-red-400">*</span>
                       </label>
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">Rs</span>
@@ -406,26 +559,93 @@ export default function ProductManagement() {
                           type="number"
                           min="0"
                           step="0.01"
-                          value={newProduct.salesPrice}
-                          onChange={(e) => handleNewProductChange("salesPrice", parseFloat(e.target.value) || 0)}
-                          className={`w-full bg-gray-700 border ${errors.salesPrice ? 'border-red-500' : 'border-gray-600'} rounded-md py-2 pl-8 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                          value={newProduct.costPrice}
+                          onChange={e => handleNewProductChange("costPrice", parseFloat(e.target.value) || 0)}
+                          className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-8 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                       </div>
-                      {errors.salesPrice && <p className="mt-1 text-sm text-red-400">{errors.salesPrice}</p>}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Cost Price</label>
-                      <div className="relative">
-                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">Rs</span>
+                      <label className="block text-sm font-medium mb-1">
+                        Wholesale Price
+                      </label>
+                      <div className="flex gap-2">
+                        <div className="relative w-2/3">
+                          <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">Rs</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={newProduct.marginPrice}
+                            onChange={e => syncPricePercent('marginPrice', parseFloat(e.target.value) || 0, false)}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-8 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
                         <input
                           type="number"
                           min="0"
                           step="0.01"
-                          value={newProduct.costPrice}
-                          onChange={(e) => handleNewProductChange("costPrice", parseFloat(e.target.value) || 0)}
-                          className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-8 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          value={newProduct.marginPricePercent}
+                          onChange={e => syncPricePercent('marginPrice', parseFloat(e.target.value) || 0, true)}
+                          className="w-1/3 bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="%"
                         />
                       </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Retail Price
+                      </label>
+                      <div className="flex gap-2">
+                        <div className="relative w-2/3">
+                          <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">Rs</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            value={newProduct.retailPrice}
+                            onChange={e => syncPricePercent('retailPrice', parseFloat(e.target.value) || 0, false)}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-8 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={newProduct.retailPricePercent}
+                          onChange={e => syncPricePercent('retailPrice', parseFloat(e.target.value) || 0, true)}
+                          className="w-1/3 bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="%"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Sales Price <span className="text-red-400">*</span>
+                      </label>
+                      <div className="flex gap-2">
+                        <div className="relative w-2/3">
+                          <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">Rs</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={newProduct.salesPrice}
+                            onChange={e => syncPricePercent('salesPrice', parseFloat(e.target.value) || 0, false)}
+                            className={`w-full bg-gray-700 border ${errors.salesPrice ? 'border-red-500' : 'border-gray-600'} rounded-md py-2 pl-8 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                          />
+                        </div>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={newProduct.salesPricePercent}
+                          onChange={e => syncPricePercent('salesPrice', parseFloat(e.target.value) || 0, true)}
+                          className="w-1/3 bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="%"
+                        />
+                      </div>
+                      {errors.salesPrice && <p className="mt-1 text-sm text-red-400">{errors.salesPrice}</p>}
                     </div>
                   </div>
                 </div>
@@ -439,7 +659,17 @@ export default function ProductManagement() {
                       <input
                         type="text"
                         value={newProduct.sku}
-                        onChange={(e) => handleNewProductChange("sku", e.target.value)}
+                        onChange={e => handleNewProductChange("sku", e.target.value)}
+                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Quantity</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={newProduct.quantity}
+                        onChange={e => handleNewProductChange("quantity", parseInt(e.target.value) || 0)}
                         className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
@@ -447,7 +677,7 @@ export default function ProductManagement() {
                       <label className="block text-sm font-medium mb-1">Category</label>
                       <select
                         value={newProduct.category}
-                        onChange={(e) => handleNewProductChange("category", e.target.value)}
+                        onChange={e => handleNewProductChange("category", e.target.value)}
                         className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       >
                         {productCategories.map((category) => (
@@ -493,6 +723,7 @@ export default function ProductManagement() {
                     name: "",
                     description: "",
                     salesPrice: 0,
+                    salesPricePercent: 0,
                     costPrice: 0,
                     sku: "",
                     category: "General",
@@ -502,6 +733,11 @@ export default function ProductManagement() {
                     image: null,
                     barcode: "",
                     toWeighWithScale: false,
+                    marginPrice: 0,
+                    marginPricePercent: 0,
+                    retailPrice: 0,
+                    retailPricePercent: 0,
+                    quantity: 0,
                   });
                   setErrors({});
                 }}
@@ -557,6 +793,16 @@ export default function ProductManagement() {
                   <tr className="text-left text-gray-400 border-b border-gray-700">
                     <th
                       className="pb-3 font-medium cursor-pointer hover:text-gray-300"
+                      onClick={() => requestSort('sku')}
+                    >
+                      <div className="flex items-center">
+                        SKU
+                        {renderSortIcon('sku')}
+                      </div>
+                    </th>
+                    <th className="pb-3 font-medium">Image</th>
+                    <th
+                      className="pb-3 font-medium cursor-pointer hover:text-gray-300"
                       onClick={() => requestSort('name')}
                     >
                       <div className="flex items-center">
@@ -591,25 +837,16 @@ export default function ProductManagement() {
                         {renderSortIcon('costPrice')}
                       </div>
                     </th>
-                    <th
-                      className="pb-3 font-medium cursor-pointer hover:text-gray-300"
-                      onClick={() => requestSort('sku')}
-                    >
-                      <div className="flex items-center">
-                        SKU
-                        {renderSortIcon('sku')}
-                      </div>
-                    </th>
+
                     <th className="pb-3 font-medium">Barcode</th>
                     <th className="pb-3 font-medium">Weigh With Scale?</th>
-                    <th className="pb-3 font-medium">Image</th>
                     <th className="pb-3 font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {isLoading ? (
                     <tr>
-                      <td colSpan="7" className="py-4 text-center">
+                      <td colSpan="9" className="py-4 text-center">
                         <div className="flex justify-center">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                         </div>
@@ -617,13 +854,28 @@ export default function ProductManagement() {
                     </tr>
                   ) : currentProducts.length === 0 ? (
                     <tr>
-                      <td colSpan="7" className="py-4 text-center text-gray-400">
+                      <td colSpan="9" className="py-4 text-center text-gray-400">
                         No products found
                       </td>
                     </tr>
                   ) : (
                     currentProducts.map((product) => (
                       <tr key={product.id} className="border-b border-gray-700 hover:bg-gray-750">
+                        <td className="py-4">{product.sku || '-'}</td>
+                        <td className="py-4">
+                          {product.imageUrl ? (
+                            <img
+                              src={product.imageUrl}
+                              alt={product.name}
+                              className="h-10 w-10 rounded-md object-cover"
+                              onError={(e) => { e.target.src = 'fallback-image-url'; }}
+                            />
+                          ) : (
+                            <div className="h-10 w-10 rounded-md bg-gray-700 flex items-center justify-center">
+                              <span className="text-xs text-gray-400">No image</span>
+                            </div>
+                          )}
+                        </td>
                         <td className="py-4 font-medium">
                           <div>{product.name}</div>
                           <div className="text-sm text-gray-400">{product.description}</div>
@@ -633,24 +885,13 @@ export default function ProductManagement() {
                             {product.category}
                           </span>
                         </td>
-                        <td className="py-4">Rs {typeof product.salesPrice === 'number' ? product.salesPrice.toLocaleString() : '0'}</td>
-                        <td className="py-4">Rs {typeof product.costPrice === 'number' ? product.costPrice.toLocaleString() : '0'}</td>
-                        <td className="py-4">{product.sku || '-'}</td>
+                        <td className="py-4">Rs {product.salesPrice?.toLocaleString() || '0'}</td>
+                        <td className="py-4">Rs {product.costPrice?.toLocaleString() || '0'}</td>
                         <td className="py-4">{product.barcode || '-'}</td>
                         <td className="py-4">
-                          {product.productType === "Goods"
-                            ? (product.toWeighWithScale ? "Yes" : "No")
-                            : "-"}
+                          {product.productType === "Goods" ? (product.toWeighWithScale ? "Yes" : "No") : "-"}
                         </td>
-                        <td className="py-4">
-                          {product.imageUrl ? (
-                            <img src={product.imageUrl} alt={product.name} className="h-10 w-10 rounded-md object-cover" />
-                          ) : (
-                            <div className="h-10 w-10 rounded-md bg-gray-700 flex items-center justify-center">
-                              <span className="text-xs text-gray-400">No image</span>
-                            </div>
-                          )}
-                        </td>
+
                         <td className="py-4">
                           <div className="flex space-x-2">
                             <button
@@ -742,8 +983,8 @@ export default function ProductManagement() {
 
       {/* Edit Product Modal */}
       {editModalOpen && editProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-screen overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 ">
+          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-4xl w-[1800px] max-h-screen h-[1000px]  overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-semibold">Edit Product</h2>
               <button
@@ -865,15 +1106,13 @@ export default function ProductManagement() {
                 </div>
               </div>
 
-              {/* Right Column */}
               <div className="space-y-4">
-                {/* Pricing */}
                 <div>
                   <h3 className="text-sm font-medium mb-3">Pricing</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium mb-1">
-                        Sales Price <span className="text-red-400">*</span>
+                        Cost Price <span className="text-red-400">*</span>
                       </label>
                       <div className="relative">
                         <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">Rs</span>
@@ -881,26 +1120,93 @@ export default function ProductManagement() {
                           type="number"
                           min="0"
                           step="0.01"
-                          value={editProduct.salesPrice}
-                          onChange={(e) => handleEditProductChange("salesPrice", parseFloat(e.target.value) || 0)}
-                          className={`w-full bg-gray-700 border ${errors.salesPrice ? 'border-red-500' : 'border-gray-600'} rounded-md py-2 pl-8 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                          value={editProduct.costPrice}
+                          onChange={e => handleEditProductChange("costPrice", parseFloat(e.target.value) || 0)}
+                          className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-8 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                       </div>
-                      {errors.salesPrice && <p className="mt-1 text-sm text-red-400">{errors.salesPrice}</p>}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Cost Price</label>
-                      <div className="relative">
-                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">Rs</span>
+                      <label className="block text-sm font-medium mb-1">
+                        Wholesale Price
+                      </label>
+                      <div className="flex gap-2">
+                        <div className="relative w-2/3">
+                          <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">Rs</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={editProduct.marginPrice}
+                            onChange={e => syncEditPricePercent('marginPrice', parseFloat(e.target.value) || 0, false)}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-8 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
                         <input
                           type="number"
                           min="0"
                           step="0.01"
-                          value={editProduct.costPrice}
-                          onChange={(e) => handleEditProductChange("costPrice", parseFloat(e.target.value) || 0)}
-                          className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-8 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          value={editProduct.marginPricePercent}
+                          onChange={e => syncEditPricePercent('marginPrice', parseFloat(e.target.value) || 0, true)}
+                          className="w-1/3 bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="%"
                         />
                       </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Retail Price
+                      </label>
+                      <div className="flex gap-2">
+                        <div className="relative w-2/3">
+                          <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">Rs</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={editProduct.retailPrice}
+                            onChange={e => syncEditPricePercent('retailPrice', parseFloat(e.target.value) || 0, false)}
+                            className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-8 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={editProduct.retailPricePercent}
+                          onChange={e => syncEditPricePercent('retailPrice', parseFloat(e.target.value) || 0, true)}
+                          className="w-1/3 bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="%"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Sales Price <span className="text-red-400">*</span>
+                      </label>
+                      <div className="flex gap-2">
+                        <div className="relative w-2/3">
+                          <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">Rs</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={editProduct.salesPrice}
+                            onChange={e => syncEditPricePercent('salesPrice', parseFloat(e.target.value) || 0, false)}
+                            className={`w-full bg-gray-700 border ${errors.salesPrice ? 'border-red-500' : 'border-gray-600'} rounded-md py-2 pl-8 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                          />
+                        </div>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={editProduct.salesPricePercent}
+                          onChange={e => syncEditPricePercent('salesPrice', parseFloat(e.target.value) || 0, true)}
+                          className="w-1/3 bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="%"
+                        />
+                      </div>
+                      {errors.salesPrice && <p className="mt-1 text-sm text-red-400">{errors.salesPrice}</p>}
                     </div>
                   </div>
                 </div>
@@ -914,7 +1220,17 @@ export default function ProductManagement() {
                       <input
                         type="text"
                         value={editProduct.sku}
-                        onChange={(e) => handleEditProductChange("sku", e.target.value)}
+                        onChange={e => handleEditProductChange("sku", e.target.value)}
+                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Quantity</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={editProduct.quantity}
+                        onChange={e => handleEditProductChange("quantity", parseInt(e.target.value) || 0)}
                         className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
@@ -922,7 +1238,7 @@ export default function ProductManagement() {
                       <label className="block text-sm font-medium mb-1">Category</label>
                       <select
                         value={editProduct.category}
-                        onChange={(e) => handleEditProductChange("category", e.target.value)}
+                        onChange={e => handleEditProductChange("category", e.target.value)}
                         className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       >
                         {productCategories.map((category) => (

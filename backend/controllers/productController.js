@@ -51,8 +51,17 @@ exports.createProduct = [upload.single("image"), async (req, res) => {
       imageUrl = await uploadImageToStorage(req.file);
     }
     const data = productData({ ...req.body, imageUrl });
-    const docRef = await db.collection(COLLECTION_NAME).add(data);
-    res.status(201).json({ id: docRef.id, ...data });
+    const sku = data.sku && data.sku.trim();
+    if (!sku) {
+      return res.status(400).json({ error: "SKU is required and must be unique." });
+    }
+    // Check if SKU already exists
+    const existing = await db.collection(COLLECTION_NAME).doc(sku).get();
+    if (existing.exists) {
+      return res.status(409).json({ error: "A product with this SKU already exists." });
+    }
+    await db.collection(COLLECTION_NAME).doc(sku).set(data);
+    res.status(201).json({ id: sku, ...data });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
