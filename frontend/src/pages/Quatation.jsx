@@ -125,6 +125,15 @@ export default function QuotationManagement() {
   // Add state for createdBy
   const [createdBy, setCreatedBy] = useState("");
 
+  // Helper to get price field based on pricelist
+  const getProductPriceByPricelist = (product, pricelist) => {
+    if (!product) return 0;
+    if (pricelist === "Standard") return product.salesPrice || 0;
+    if (pricelist === "Wholesale") return product.marginPrice || 0;
+    if (pricelist === "Retail") return product.retailPrice || 0;
+    return product.salesPrice || 0;
+  };
+
   // Fetch products from backend
   useEffect(() => {
     fetchProducts()
@@ -694,13 +703,29 @@ export default function QuotationManagement() {
                       <div className="relative">
                         <select
                           value={pricelist}
-                          onChange={(e) => setPricelist(e.target.value)}
+                          onChange={(e) => {
+                            setPricelist(e.target.value)
+                            // Update all product lines' salesPrice based on new pricelist
+                            setProductLines((prevLines) =>
+                              prevLines.map((line) => {
+                                if (line.product && !line.isSection && !line.isNote) {
+                                  const selectedProduct = products.find((p) => p.name === line.product)
+                                  const price = getProductPriceByPricelist(selectedProduct, e.target.value)
+                                  return {
+                                    ...line,
+                                    salesPrice: price,
+                                    amount: price * line.quantity,
+                                  }
+                                }
+                                return line
+                              })
+                            )
+                          }}
                           className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-3 pr-10 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                           <option value="Standard">Standard</option>
                           <option value="Wholesale">Wholesale</option>
                           <option value="Retail">Retail</option>
-                          <option value="Premium">Premium</option>
                         </select>
                         <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                           <Tag size={16} className="text-gray-400" />
@@ -780,8 +805,9 @@ export default function QuotationManagement() {
                                           const selectedProduct = products.find((p) => p.name === e.target.value)
                                           updateProductLine(line.id, "product", e.target.value)
                                           if (selectedProduct) {
-                                            updateProductLine(line.id, "salesPrice", selectedProduct.salesPrice)
-                                            updateProductLine(line.id, "amount", selectedProduct.salesPrice * line.quantity)
+                                            const price = getProductPriceByPricelist(selectedProduct, pricelist)
+                                            updateProductLine(line.id, "salesPrice", price)
+                                            updateProductLine(line.id, "amount", price * line.quantity)
                                           }
                                         }
                                       }}
