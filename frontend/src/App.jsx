@@ -21,6 +21,7 @@ import New from "./pages/new.jsx";
 import Crm from "./pages/Crm";
 import Products from "./pages/Product.jsx";
 import Quatation from "./pages/Quatation.jsx";
+import Purchase from "./pages/Purchase.jsx";
 
 function App() {
   const { theme } = useTheme();
@@ -179,6 +180,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Quatation />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="purchase"
+              element={
+                <ProtectedRoute>
+                  <Purchase />
                 </ProtectedRoute>
               }
             />

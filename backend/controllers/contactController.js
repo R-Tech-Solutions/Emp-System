@@ -3,9 +3,11 @@ const ContactModel = require('../models/ContactModel');
 const contactController = {
   async createContact(req, res) {
     try {
-      // Remove id if present in the request body
-      const { id, ...contactData } = req.body;
-      const contact = await ContactModel.create(contactData);
+      const { id, categoryType, ...contactData } = req.body;
+      if (!categoryType || !["Customer", "Supplier"].includes(categoryType)) {
+        return res.status(400).json({ error: "Category Type is required and must be Customer or Supplier" });
+      }
+      const contact = await ContactModel.create({ ...contactData, categoryType });
       res.status(201).json(contact);
     } catch (err) {
       res.status(500).json({ error: err.message });

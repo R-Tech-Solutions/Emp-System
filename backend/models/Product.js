@@ -46,7 +46,6 @@ function productData({
     marginPricePercent: marginPricePercent || 0,
     retailPrice: retailPrice || 0,
     retailPricePercent: retailPricePercent || 0,
-    quantity: quantity || 0,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };

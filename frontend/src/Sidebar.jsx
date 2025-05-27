@@ -48,6 +48,7 @@ function Sidebar() {
     { name: "CRM", path: "/crm", icon: <Users className="w-5 h-5" /> },
     { name: "Products", path: "/products", icon: <Package className="w-5 h-5" /> },
     { name: "Quotation", path: "/quatation", icon: <FileText className="w-5 h-5" /> },
+    { name: "Purchase", path: "/purchase", icon: <Package className="w-5 h-5" /> },
   ];
 
   return (

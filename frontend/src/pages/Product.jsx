@@ -31,7 +31,6 @@ export default function ProductManagement() {
     marginPricePercent: 0,
     retailPrice: 0,
     retailPricePercent: 0,
-    quantity: 0,
   });
 
   // Modal and edit states
@@ -343,7 +342,6 @@ export default function ProductManagement() {
         marginPricePercent: 0,
         retailPrice: 0,
         retailPricePercent: 0,
-        quantity: 0,
       });
       setErrors({});
     } catch (err) {
@@ -664,16 +662,6 @@ export default function ProductManagement() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Quantity</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={newProduct.quantity}
-                        onChange={e => handleNewProductChange("quantity", parseInt(e.target.value) || 0)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
                       <label className="block text-sm font-medium mb-1">Category</label>
                       <select
                         value={newProduct.category}
@@ -737,7 +725,6 @@ export default function ProductManagement() {
                     marginPricePercent: 0,
                     retailPrice: 0,
                     retailPricePercent: 0,
-                    quantity: 0,
                   });
                   setErrors({});
                 }}
@@ -1221,16 +1208,6 @@ export default function ProductManagement() {
                         type="text"
                         value={editProduct.sku}
                         onChange={e => handleEditProductChange("sku", e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Quantity</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={editProduct.quantity}
-                        onChange={e => handleEditProductChange("quantity", parseInt(e.target.value) || 0)}
                         className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>

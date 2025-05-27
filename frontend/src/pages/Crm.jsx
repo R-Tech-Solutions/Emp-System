@@ -5,7 +5,7 @@ import {
   ChevronDown,
   ChevronUp,
   Phone,
-  Mail,
+  Mail,           
   User,
   Plus,
   Edit,
@@ -25,29 +25,6 @@ import { backEndURL } from '../Backendurl';
 // Utility function to conditionally join class names
 function cn(...classes) {
   return classes.filter(Boolean).join(" ");
-}
-
-function generateSampleSalespeople() {
-  return [
-    {
-      id: "sp-1",
-      name: "Aanish",
-      email: "Aanish@company.com",
-      role: "Sales Manager",
-    },
-    {
-      id: "sp-2",
-      name: "Nihma",
-      email: "Nihma@company.com",
-      role: "Senior Sales Rep",
-    },
-    {
-      id: "sp-3",
-      name: "nashad",
-      email: "nashad@company.com",
-      role: "Sales Rep",
-    },
-  ];
 }
 
 function generateSampleContacts() {
@@ -1546,6 +1523,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts, allEmployees 
           company: formData.company,
           website: formData.website,
           notes: "Created from lead form",
+          categoryType: "Customer", // <-- Always set as Customer
         };
 
         await saveContact(contactData);
@@ -1565,8 +1543,6 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts, allEmployees 
       alert("Failed to save new contact. Please try again.");
     }
   };
-
-
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-auto mx-auto">
       <div className="flex justify-between items-center mb-6">
@@ -1961,7 +1937,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts, allEmployees 
 
 // Contact Form Component
 function ContactForm({ contact, onSave, onCancel }) {
-  const [formData, setFormData] = useState(contact || {});
+  const [formData, setFormData] = useState(contact || { categoryType: "Customer" }); // Default to Customer
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -2020,6 +1996,7 @@ function ContactForm({ contact, onSave, onCancel }) {
             { id: "phone", label: "Phone *", type: "text", required: true },
             { id: "company", label: "Company", type: "text" },
             { id: "website", label: "Website", type: "text" },
+            
           ].map(({ id, label, type, required }) => (
             <div key={id} className="space-y-1">
               <label htmlFor={id} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -2050,6 +2027,24 @@ function ContactForm({ contact, onSave, onCancel }) {
               placeholder="Additional notes about this contact"
               className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition"
             />
+          </div>
+
+          {/* Category Type Dropdown */}
+          <div className="space-y-1">
+            <label htmlFor="categoryType" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Category Type *
+            </label>
+            <select
+              id="categoryType"
+              name="categoryType"
+              value={formData.categoryType || "Customer"}
+              onChange={handleChange}
+              required
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition"
+            >
+              <option value="Customer">Customer</option>
+              <option value="Supplier">Supplier</option>
+            </select>
           </div>
         </div>
         <div className="mt-8 flex justify-end space-x-4">
@@ -2141,6 +2136,12 @@ function ContactsTable({ contacts, onEdit, onDelete }) {
                 Company
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Category Type
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Contact
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -2160,6 +2161,12 @@ function ContactsTable({ contacts, onEdit, onDelete }) {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     {contact.company || "-"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    {contact.categoryType || "-"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    {contact.contactType || "-"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <div className="flex space-x-2">
