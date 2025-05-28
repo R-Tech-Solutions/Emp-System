@@ -22,6 +22,8 @@ import Crm from "./pages/Crm";
 import Products from "./pages/Product.jsx";
 import Quatation from "./pages/Quatation.jsx";
 import Purchase from "./pages/Purchase.jsx";
+import InventoryManagement from "./pages/InventoryManagemnet.jsx";
+
 
 function App() {
   const { theme } = useTheme();
@@ -191,6 +193,16 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="inventory"
+              element={
+                <ProtectedRoute>
+                  <InventoryManagement />
+                </ProtectedRoute>
+              }
+            />
+
+
             {" "}
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

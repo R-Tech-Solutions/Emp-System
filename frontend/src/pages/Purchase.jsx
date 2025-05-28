@@ -9,7 +9,7 @@ export default function PurchaseApp() {
         {
             id: "PUR-001",
             date: "2024-01-15",
-            customerName: "John Doe",
+            name: "John Doe",
             email: "john@example.com",
             phone: "555-0123",
             items: [
@@ -27,7 +27,7 @@ export default function PurchaseApp() {
         {
             id: "PUR-002",
             date: "2024-01-14",
-            customerName: "Jane Smith",
+            name: "Jane Smith",
             email: "jane@example.com",
             phone: "555-0456",
             items: [{ name: "Bluetooth Speaker", quantity: 1, price: 149.99, total: 149.99 }],
@@ -43,9 +43,12 @@ export default function PurchaseApp() {
 
     // Form state for creating new purchase
     const [formData, setFormData] = useState({
-        customerName: "",
+        name: "",
         email: "",
         phone: "",
+        company: "",
+        website: "",
+        supplierNotes: "",
         billingAddress: "",
         billingCity: "",
         billingState: "",
@@ -74,6 +77,67 @@ export default function PurchaseApp() {
     // Add payment method and modal state
     const [paymentMethod, setPaymentMethod] = useState("Cash")
     const [cardModalOpen, setCardModalOpen] = useState(false)
+
+    // Remove static supplier list
+    // const existingSuppliers = [...];
+    const [suppliers, setSuppliers] = useState([])
+    const [supplierType, setSupplierType] = useState("new") // 'new' or 'existing'
+    const [selectedSupplierId, setSelectedSupplierId] = useState("")
+    const [loadingSuppliers, setLoadingSuppliers] = useState(false)
+    const [savingSupplier, setSavingSupplier] = useState(false)
+    const [customerSaved, setCustomerSaved] = useState(false)
+
+    // Add after other useState hooks
+    const [editingPrices, setEditingPrices] = useState({}); // { [sku]: value }
+    const [savingPriceSku, setSavingPriceSku] = useState("");
+
+    // Add state for modal and product form
+    const [productMode, setProductMode] = useState("existing"); // 'new' or 'existing'
+    const [addProductModalOpen, setAddProductModalOpen] = useState(false);
+    const [viewProductsModalOpen, setViewProductsModalOpen] = useState(false);
+    const [newProductForm, setNewProductForm] = useState({
+        name: "",
+        costPrice: "",
+        sku: "",
+        category: "General",
+        description: "",
+    });
+    const [newProductLoading, setNewProductLoading] = useState(false);
+    const [newProductError, setNewProductError] = useState("");
+    const [productSearch, setProductSearch] = useState("");
+
+    // Fetch suppliers from backend
+    useEffect(() => {
+        if (supplierType === "existing") {
+            setLoadingSuppliers(true)
+            fetch("http://localhost:3001/api/contacts")
+                .then(res => res.json())
+                .then(data => {
+                    // Only suppliers
+                    setSuppliers(Array.isArray(data) ? data.filter(s => s.categoryType === "Supplier") : [])
+                })
+                .catch(() => setSuppliers([]))
+                .finally(() => setLoadingSuppliers(false))
+        }
+    }, [supplierType])
+
+    // Auto-fill form when existing supplier is selected
+    useEffect(() => {
+        if (supplierType === "existing" && selectedSupplierId) {
+            const supplier = suppliers.find(s => s.id === selectedSupplierId)
+            if (supplier) {
+                setFormData(prev => ({
+                    ...prev,
+                    name: supplier.name || "",
+                    email: supplier.email || "",
+                    phone: supplier.phone || "",
+                    company: supplier.company || "",
+                    website: supplier.website || "",
+                    supplierNotes: supplier.supplierNotes || "",
+                }))
+            }
+        }
+    }, [supplierType, selectedSupplierId, suppliers])
 
     useEffect(() => {
         async function fetchProducts() {
@@ -119,9 +183,12 @@ export default function PurchaseApp() {
         setCurrentView("list")
         // Reset form
         setFormData({
-            customerName: "",
+            name: "",
             email: "",
             phone: "",
+            company: "",
+            website: "",
+            supplierNotes: "",
             billingAddress: "",
             billingCity: "",
             billingState: "",
@@ -176,40 +243,48 @@ export default function PurchaseApp() {
         setCartItems((prev) => prev.filter((item) => item.id !== id))
     }
 
-    const handleSubmit = (e) => {
-        e.preventDefault()
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
-        const subtotal = cartItems.reduce((sum, item) => sum + item.total, 0)
-        const shipping = 15.99
-        const tax = subtotal * 0.08
-        const grandTotal = subtotal + shipping + tax
+        const subtotal = cartItems.reduce((sum, item) => sum + item.total, 0);
+        const grandTotal = subtotal;
 
         const purchaseData = {
-            customerName: formData.customerName,
+            name: formData.name,
             email: formData.email,
             phone: formData.phone,
+            company: formData.company,
+            website: formData.website,
+            supplierNotes: formData.supplierNotes,
             items: cartItems,
             subtotal,
-            shipping,
-            tax,
             total: grandTotal,
             billingAddress: `${formData.billingAddress}, ${formData.billingCity}, ${formData.billingState} ${formData.billingZip}`,
             shippingAddress: formData.sameAsShipping
                 ? `${formData.billingAddress}, ${formData.billingCity}, ${formData.billingState} ${formData.billingZip}`
                 : `${formData.shippingAddress}, ${formData.shippingCity}, ${formData.shippingState} ${formData.shippingZip}`,
             orderNotes: formData.orderNotes,
-        }
+        };
 
-        addPurchase(purchaseData)
-    }
+        addPurchase(purchaseData);
+
+        // Send each product to inventory
+        for (const item of cartItems) {
+            await fetch('http://localhost:3001/api/inventory', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    productId: item.sku,
+                    quantity: item.quantity,
+                }),
+            });
+        }
+    };
 
     const getProductPrice = (product) => {
-        if (!product) return 0
-        if (priceList === "Standard") return Number(product.salesPrice) || 0
-        if (priceList === "Wholesale") return Number(product.marginPrice) || 0
-        if (priceList === "Retail") return Number(product.retailPrice) || 0
-        return 0
-    }
+        if (!product) return 0;
+        return Number(product.costPrice) || 0;
+    };
 
     const addProductToCart = (product) => {
         setCartItems((prev) => {
@@ -242,6 +317,121 @@ export default function PurchaseApp() {
         })
         setAddProductDropdownOpen(false)
     }
+
+    // Save customer info (POST to backend if new supplier)
+    const handleSaveCustomer = async (e) => {
+        e.preventDefault()
+        if (supplierType === "new") {
+            setSavingSupplier(true)
+            try {
+                const res = await fetch("http://localhost:3001/api/contacts", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        name: formData.name,
+                        email: formData.email,
+                        phone: formData.phone,
+                        company: formData.company,
+                        website: formData.website,
+                        supplierNotes: formData.supplierNotes,
+                        categoryType: "Supplier",
+                    })
+                })
+                if (!res.ok) throw new Error("Failed to save supplier")
+                // Optionally, you can get the new supplier and add to suppliers list
+                // const newSupplier = await res.json()
+            } catch (err) {
+                alert("Failed to save supplier. Please try again.")
+                setSavingSupplier(false)
+                return
+            }
+            setSavingSupplier(false)
+        }
+        setCustomerSaved(true)
+    }
+    // Edit customer info
+    const handleEditCustomer = () => {
+        setCustomerSaved(false)
+    }
+    // Delete customer info
+    const handleDeleteCustomer = () => {
+        setCustomerSaved(false)
+        setSupplierType("new")
+        setSelectedSupplierId("")
+        setFormData(prev => ({
+            ...prev,
+            name: "",
+            email: "",
+            phone: "",
+            company: "",
+            website: "",
+            supplierNotes: "",
+        }))
+    }
+
+    // Add this handler before renderCreatePurchase
+    const handlePriceInputChange = (sku, value) => {
+        setEditingPrices((prev) => ({ ...prev, [sku]: value }))
+    }
+
+    const handleSavePrice = async (item) => {
+        const newPrice = parseFloat(editingPrices[item.sku])
+        if (isNaN(newPrice) || newPrice <= 0) return;
+        setSavingPriceSku(item.sku);
+        // Update cart item price
+        setCartItems((prev) =>
+            prev.map((ci) =>
+                ci.sku === item.sku
+                    ? { ...ci, price: newPrice, total: newPrice * ci.quantity }
+                    : ci
+            )
+        );
+        // Update product costPrice in backend
+        try {
+            await fetch(`http://localhost:3001/api/products/${item.sku}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ costPrice: newPrice }),
+            });
+        } catch (err) {
+            // Optionally show error
+        }
+        setSavingPriceSku("");
+    };
+
+    // Handler for new product form
+    const handleNewProductFormChange = (e) => {
+        const { name, value } = e.target;
+        setNewProductForm((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleCreateNewProduct = async (e) => {
+        e.preventDefault();
+        setNewProductLoading(true);
+        setNewProductError("");
+        try {
+            const res = await fetch("http://localhost:3001/api/products", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: newProductForm.name,
+                    costPrice: Number(newProductForm.costPrice),
+                    sku: newProductForm.sku,
+                    category: newProductForm.category,
+                    description: newProductForm.description,
+                }),
+            });
+            if (!res.ok) throw new Error("Failed to create product");
+            const product = await res.json();
+            // Add to cart
+            addProductToCart(product);
+            setAddProductModalOpen(false);
+            setNewProductForm({ name: "", costPrice: "", sku: "", category: "General", description: "" });
+        } catch (err) {
+            setNewProductError("Failed to create product. Please check your input.");
+        }
+        setNewProductLoading(false);
+    };
 
     // Purchase List View
     const renderPurchaseList = () => (
@@ -323,7 +513,7 @@ export default function PurchaseApp() {
                                             <div className="font-medium text-white">{purchase.id}</div>
                                         </td>
                                         <td className="py-4 px-6">
-                                            <div className="text-white font-medium">{purchase.customerName}</div>
+                                            <div className="text-white font-medium">{purchase.name}</div>
                                             <div className="text-gray-400 text-sm">{purchase.email}</div>
                                         </td>
                                         <td className="py-4 px-6 text-gray-300">{new Date(purchase.date).toLocaleDateString()}</td>
@@ -361,9 +551,7 @@ export default function PurchaseApp() {
     // Create Purchase View
     const renderCreatePurchase = () => {
         const subtotal = cartItems.reduce((sum, item) => sum + item.total, 0)
-        const shipping = 15.99
-        const tax = subtotal * 0.08
-        const grandTotal = subtotal + shipping + tax
+        const grandTotal = subtotal
 
         // Card Modal overlay
         const CardModal = () => (
@@ -459,39 +647,45 @@ export default function PurchaseApp() {
                 </div>
                 {/* Purchase Items */}
                 <div className="bg-gray-800 rounded-lg shadow-xl p-6 mb-8">
-                    <div className="mb-4 relative">
-                        <button
-                            type="button"
-                            onClick={() => setAddProductDropdownOpen((open) => !open)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
-                        >
-                            Add Product
-                        </button>
-                        {addProductDropdownOpen && (
-                            <div className="absolute z-10 mt-2 w-72 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-64 overflow-y-auto">
-                                {productsLoading ? (
-                                    <div className="p-4 text-gray-400">Loading products...</div>
-                                ) : products.length === 0 ? (
-                                    <div className="p-4 text-gray-400">No products found</div>
-                                ) : (
-                                    <ul>
-                                        {products.map((product) => (
-                                            <li
-                                                key={product.sku}
-                                                className="px-4 py-2 hover:bg-gray-700 cursor-pointer flex justify-between items-center"
-                                                onClick={() => addProductToCart(product)}
-                                            >
-                                                <span>{product.name}</span>
-                                                <span className="text-sm text-gray-400 ml-2">
-                                                    {priceList === "Standard" && <>${Number(product.salesPrice).toFixed(2)}</>}
-                                                    {priceList === "Wholesale" && <>${Number(product.marginPrice).toFixed(2)}</>}
-                                                    {priceList === "Retail" && <>${Number(product.retailPrice).toFixed(2)}</>}
-                                                </span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                            </div>
+                    <div className="mb-4 flex items-center space-x-8">
+                        <label className="flex items-center">
+                            <input
+                                type="radio"
+                                name="productMode"
+                                value="new"
+                                checked={productMode === "new"}
+                                onChange={() => setProductMode("new")}
+                                className="mr-2 h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                            />
+                            <span>New Product</span>
+                        </label>
+                        <label className="flex items-center">
+                            <input
+                                type="radio"
+                                name="productMode"
+                                value="existing"
+                                checked={productMode === "existing"}
+                                onChange={() => setProductMode("existing")}
+                                className="mr-2 h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                            />
+                            <span>Existing Product</span>
+                        </label>
+                        {productMode === "new" ? (
+                            <button
+                                type="button"
+                                onClick={() => setAddProductModalOpen(true)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
+                            >
+                                Add Product
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => setViewProductsModalOpen(true)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
+                            >
+                                View All Products
+                            </button>
                         )}
                     </div>
                     <h2 className="text-xl font-semibold mb-4">Order Items</h2>
@@ -499,6 +693,7 @@ export default function PurchaseApp() {
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-gray-700">
+                                    <th className="text-left py-3 px-2">Product ID</th>
                                     <th className="text-left py-3 px-2">Product</th>
                                     <th className="text-center py-3 px-2">Quantity</th>
                                     <th className="text-right py-3 px-2">Price</th>
@@ -509,6 +704,9 @@ export default function PurchaseApp() {
                             <tbody>
                                 {cartItems.map((item) => (
                                     <tr key={item.sku} className="border-b border-gray-700">
+                                        <td className="py-4 px-2">
+                                            <div className="font-medium">{item.sku}</div>
+                                        </td>
                                         <td className="py-4 px-2">
                                             <div className="font-medium">{item.name}</div>
                                         </td>
@@ -529,8 +727,26 @@ export default function PurchaseApp() {
                                                 </button>
                                             </div>
                                         </td>
-                                        <td className="text-right py-4 px-2">${item.price.toFixed(2)}</td>
-                                        <td className="text-right py-4 px-2 font-semibold">${item.total.toFixed(2)}</td>
+                                        <td className="text-right py-4 px-2">
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                value={editingPrices[item.sku] !== undefined ? editingPrices[item.sku] : item.price}
+                                                onChange={e => handlePriceInputChange(item.sku, e.target.value)}
+                                                className="text-right bg-gray-700 border border-gray-600 rounded px-2 py-1 w-24 text-white"
+                                                min="0.01"
+                                            />
+                                            <button
+                                                type="button"
+                                                className="ml-2 bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
+                                                onClick={() => handleSavePrice(item)}
+                                                disabled={savingPriceSku === item.sku}
+                                            >
+                                                {savingPriceSku === item.sku ? "Saving..." : "Save"}
+                                            </button>
+                                        </td>
+
+                                        <td className="text-right py-4 px-2 font-semibold">Rs {item.total.toFixed(2)}</td>
                                         <td className="text-center py-4 px-2">
                                             <button
                                                 onClick={() => removeItem(item.id)}
@@ -554,53 +770,165 @@ export default function PurchaseApp() {
                             <div className="bg-gray-800 rounded-lg shadow-xl p-6">
                                 <h2 className="text-xl font-semibold mb-6">Customer Information</h2>
 
-                                <div className="grid md:grid-cols-2 gap-4 mb-4">
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2">Full Name *</label>
-                                        <input
-                                            type="text"
-                                            name="customerName"
-                                            value={formData.customerName}
-                                            onChange={handleInputChange}
-                                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
-                                            required
-                                        />
+                                {/* Preview mode */}
+                                {customerSaved ? (
+                                    <div className="mb-4 p-4 bg-gray-700 rounded-lg">
+                                        <div className="mb-2 flex justify-between items-center">
+                                            <div className="font-semibold text-lg">{formData.name}</div>
+                                            <div className="space-x-2">
+                                                <button
+                                                    type="button"
+                                                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                                                    onClick={handleEditCustomer}
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
+                                                    onClick={handleDeleteCustomer}
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="text-gray-300 text-sm mb-1">Email: {formData.email}</div>
+                                        {formData.phone && <div className="text-gray-300 text-sm mb-1">Phone: {formData.phone}</div>}
+                                        {formData.company && <div className="text-gray-300 text-sm mb-1">Company: {formData.company}</div>}
+                                        {formData.website && <div className="text-gray-300 text-sm mb-1">Website: {formData.website}</div>}
+                                        {formData.supplierNotes && <div className="text-gray-300 text-sm mb-1">Notes: {formData.supplierNotes}</div>}
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2">Email Address *</label>
-                                        <input
-                                            type="email"
-                                            name="email"
-                                            value={formData.email}
-                                            onChange={handleInputChange}
-                                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="mb-6">
-                                    <label className="block text-sm font-medium mb-2">Phone Number</label>
-                                    <input
-                                        type="tel"
-                                        name="phone"
-                                        value={formData.phone}
-                                        onChange={handleInputChange}
-                                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
-                                    />
-                                </div>
-                                {/* Order Notes */}
-                                <div>
-                                    <label className="block text-sm font-medium mb-2">Order Notes (Optional)</label>
-                                    <textarea
-                                        name="orderNotes"
-                                        value={formData.orderNotes}
-                                        onChange={handleInputChange}
-                                        rows={3}
-                                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
-                                        placeholder="Any special instructions for your order..."
-                                    />
-                                </div>
+                                ) : (
+                                    <>
+                                        {/* Supplier Type Selection */}
+                                        <div className="mb-4 flex items-center space-x-8">
+                                            <label className="flex items-center">
+                                                <input
+                                                    type="radio"
+                                                    name="supplierType"
+                                                    value="new"
+                                                    checked={supplierType === "new"}
+                                                    onChange={() => { setSupplierType("new"); setSelectedSupplierId(""); setFormData(prev => ({ ...prev, name: "", email: "", phone: "", company: "", website: "", supplierNotes: "" })); }}
+                                                    className="mr-2 h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                                                />
+                                                <span>New Supplier</span>
+                                            </label>
+                                            <label className="flex items-center">
+                                                <input
+                                                    type="radio"
+                                                    name="supplierType"
+                                                    value="existing"
+                                                    checked={supplierType === "existing"}
+                                                    onChange={() => setSupplierType("existing")}
+                                                    className="mr-2 h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                                                />
+                                                <span>Existing Supplier</span>
+                                            </label>
+                                        </div>
+                                        {/* Existing Supplier Dropdown */}
+                                        {supplierType === "existing" && (
+                                            <div className="mb-4">
+                                                <label className="block text-sm font-medium mb-2">Select Supplier</label>
+                                                {loadingSuppliers ? (
+                                                    <div className="text-gray-400">Loading suppliers...</div>
+                                                ) : (
+                                                    <select
+                                                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white"
+                                                        value={selectedSupplierId}
+                                                        onChange={e => setSelectedSupplierId(e.target.value)}
+                                                    >
+                                                        <option value="">-- Select Supplier --</option>
+                                                        {suppliers.map(supplier => (
+                                                            <option key={supplier.id} value={supplier.id}>{supplier.name} {supplier.company ? `(${supplier.company})` : ""}</option>
+                                                        ))}
+                                                    </select>
+                                                )}
+                                            </div>
+                                        )}
+                                        <div className="grid md:grid-cols-2 gap-4 mb-4">
+                                            <div>
+                                                <label className="block text-sm font-medium mb-2">Full Name *</label>
+                                                <input
+                                                    type="text"
+                                                    name="name"
+                                                    value={formData.name}
+                                                    onChange={handleInputChange}
+                                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
+                                                    required
+                                                    disabled={supplierType === "existing"}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium mb-2">Email Address *</label>
+                                                <input
+                                                    type="email"
+                                                    name="email"
+                                                    value={formData.email}
+                                                    onChange={handleInputChange}
+                                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
+                                                    required
+                                                    disabled={supplierType === "existing"}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="grid md:grid-cols-2 gap-4 mb-4">
+                                            <div>
+                                                <label className="block text-sm font-medium mb-2">Phone Number</label>
+                                                <input
+                                                    type="tel"
+                                                    name="phone"
+                                                    value={formData.phone}
+                                                    onChange={handleInputChange}
+                                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
+                                                    disabled={supplierType === "existing"}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium mb-2">Company</label>
+                                                <input
+                                                    type="text"
+                                                    name="company"
+                                                    value={formData.company}
+                                                    onChange={handleInputChange}
+                                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
+                                                    disabled={supplierType === "existing"}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="grid md:grid-cols-2 gap-4 mb-4">
+                                            <div>
+                                                <label className="block text-sm font-medium mb-2">Website</label>
+                                                <input
+                                                    type="text"
+                                                    name="website"
+                                                    value={formData.website}
+                                                    onChange={handleInputChange}
+                                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
+                                                    disabled={supplierType === "existing"}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium mb-2">Notes</label>
+                                                <input
+                                                    type="text"
+                                                    name="supplierNotes"
+                                                    value={formData.supplierNotes}
+                                                    onChange={handleInputChange}
+                                                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white"
+                                                    disabled={supplierType === "existing"}
+                                                />
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-md transition duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                            onClick={handleSaveCustomer}
+                                            disabled={savingSupplier}
+                                        >
+                                            {savingSupplier ? "Saving..." : "Save"}
+                                        </button>
+                                    </>
+                                )}
                             </div>
 
                             {/* Payment Information */}
@@ -623,17 +951,6 @@ export default function PurchaseApp() {
                                         <input
                                             type="radio"
                                             name="paymentMethod"
-                                            value="Card"
-                                            checked={paymentMethod === "Card"}
-                                            onChange={() => setPaymentMethod("Card")}
-                                            className="mr-2 h-4 w-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
-                                        />
-                                        <span>Card</span>
-                                    </label>
-                                    <label className="flex items-center">
-                                        <input
-                                            type="radio"
-                                            name="paymentMethod"
                                             value="SupplierAcc"
                                             checked={paymentMethod === "SupplierAcc"}
                                             onChange={() => setPaymentMethod("SupplierAcc")}
@@ -645,9 +962,6 @@ export default function PurchaseApp() {
                                 {/* Card fields only shown in modal now */}
                                 {paymentMethod === "Cash" && (
                                     <div className="text-green-400 mb-4">You have selected to pay by cash.</div>
-                                )}
-                                {paymentMethod === "Card" && (
-                                    <div className="text-blue-400 mb-4">You have selected to pay by card. Click below to enter card details.</div>
                                 )}
                                 {paymentMethod === "SupplierAcc" && (
                                     <div className="text-blue-400 mb-4">Credit to SupplierAcc.</div>
@@ -663,20 +977,12 @@ export default function PurchaseApp() {
                                 <div className="space-y-3 mb-6">
                                     <div className="flex justify-between">
                                         <span className="text-gray-400">Subtotal</span>
-                                        <span>${subtotal.toFixed(2)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-400">Shipping</span>
-                                        <span>${shipping.toFixed(2)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-400">Tax</span>
-                                        <span>${tax.toFixed(2)}</span>
+                                        <span>RS {subtotal.toFixed(2)}</span>
                                     </div>
                                     <div className="border-t border-gray-700 pt-3">
                                         <div className="flex justify-between text-lg font-semibold">
                                             <span>Total</span>
-                                            <span>${grandTotal.toFixed(2)}</span>
+                                            <span>RS {grandTotal.toFixed(2)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -686,15 +992,6 @@ export default function PurchaseApp() {
                                         className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-md transition duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-800"
                                     >
                                         Pay by Cash
-                                    </button>
-                                )}
-                                {paymentMethod === "Card" && (
-                                    <button
-                                        type="button"
-                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-md transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
-                                        onClick={() => setCardModalOpen(true)}
-                                    >
-                                        Pay by Card
                                     </button>
                                 )}
                                 {paymentMethod === "SupplierAcc" && (
@@ -714,6 +1011,151 @@ export default function PurchaseApp() {
                     </div>
                 </form>
                 {cardModalOpen && <CardModal />}
+
+                {/* Add Product Modal */}
+                {addProductModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                        <div className="bg-gray-900 rounded-lg shadow-2xl p-8 w-full max-w-md relative">
+                            <button
+                                className="absolute top-2 right-2 text-gray-400 hover:text-white text-2xl font-bold"
+                                onClick={() => setAddProductModalOpen(false)}
+                                aria-label="Close"
+                            >
+                                &times;
+                            </button>
+                            <h2 className="text-xl font-semibold mb-6 text-white">Add New Product</h2>
+                            <form onSubmit={handleCreateNewProduct} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">Product Name *</label>
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        value={newProductForm.name}
+                                        onChange={handleNewProductFormChange}
+                                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">Cost Price *</label>
+                                    <input
+                                        type="number"
+                                        name="costPrice"
+                                        value={newProductForm.costPrice}
+                                        onChange={handleNewProductFormChange}
+                                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white"
+                                        required
+                                        min="0.01"
+                                        step="0.01"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">SKU</label>
+                                    <input
+                                        type="text"
+                                        name="sku"
+                                        value={newProductForm.sku}
+                                        onChange={handleNewProductFormChange}
+                                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">Category</label>
+                                    <select
+                                        name="category"
+                                        value={newProductForm.category}
+                                        onChange={handleNewProductFormChange}
+                                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white"
+                                    >
+                                        <option value="General">General</option>
+                                        <option value="Electronics">Electronics</option>
+                                        <option value="Office">Office</option>
+                                        <option value="Services">Services</option>
+                                        <option value="Hardware">Hardware</option>
+                                        <option value="Software">Software</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">Description</label>
+                                    <textarea
+                                        name="description"
+                                        value={newProductForm.description}
+                                        onChange={handleNewProductFormChange}
+                                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white"
+                                        rows={2}
+                                    />
+                                </div>
+                                {newProductError && <div className="text-red-500 text-sm">{newProductError}</div>}
+                                <button
+                                    type="submit"
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-md transition duration-200"
+                                    disabled={newProductLoading}
+                                >
+                                    {newProductLoading ? "Creating..." : "Create Product & Add to Cart"}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* View All Products Modal */}
+                {viewProductsModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                        <div className="bg-gray-900 rounded-lg shadow-2xl p-8 w-full max-w-2xl relative">
+                            <button
+                                className="absolute top-2 right-2 text-gray-400 hover:text-white text-2xl font-bold"
+                                onClick={() => setViewProductsModalOpen(false)}
+                                aria-label="Close"
+                            >
+                                &times;
+                            </button>
+                            <h2 className="text-xl font-semibold mb-6 text-white">All Products</h2>
+                            <input
+                                type="text"
+                                placeholder="Search by name..."
+                                value={productSearch}
+                                onChange={e => setProductSearch(e.target.value)}
+                                className="w-full mb-4 px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white"
+                            />
+                            <div className="overflow-y-auto max-h-96">
+                                <table className="w-full text-white">
+                                    <thead>
+                                        <tr className="bg-gray-700">
+                                            <th className="py-2 px-2 text-left">Name</th>
+                                            <th className="py-2 px-2 text-left">SKU</th>
+                                            <th className="py-2 px-2 text-left">Category</th>
+                                            <th className="py-2 px-2 text-left">Cost Price</th>
+                                            <th className="py-2 px-2 text-left">Description</th>
+                                            <th className="py-2 px-2 text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {products.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase())).map(product => (
+                                            <tr key={product.sku} className="border-b border-gray-700">
+                                                <td className="py-2 px-2">{product.name}</td>
+                                                <td className="py-2 px-2">{product.sku}</td>
+                                                <td className="py-2 px-2">{product.category}</td>
+                                                <td className="py-2 px-2">{product.costPrice}</td>
+                                                <td className="py-2 px-2">{product.description}</td>
+                                                <td className="py-2 px-2 text-center">
+                                                    <button
+                                                        className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
+                                                        onClick={() => {
+                                                            addProductToCart(product);
+                                                            setViewProductsModalOpen(false);
+                                                        }}
+                                                    >
+                                                        Add to Cart
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         )
     }
@@ -775,7 +1217,7 @@ export default function PurchaseApp() {
                                 <div>
                                     <h3 className="font-medium mb-2">Customer Information</h3>
                                     <div className="text-gray-300 space-y-1">
-                                        <p>{purchase.customerName}</p>
+                                        <p>{purchase.name}</p>
                                         <p>{purchase.email}</p>
                                         {purchase.phone && <p>{purchase.phone}</p>}
                                     </div>
@@ -814,8 +1256,8 @@ export default function PurchaseApp() {
                                                     <div className="font-medium">{item.name}</div>
                                                 </td>
                                                 <td className="text-center py-4 px-2">{item.quantity}</td>
-                                                <td className="text-right py-4 px-2">${item.price.toFixed(2)}</td>
-                                                <td className="text-right py-4 px-2 font-semibold">${item.total.toFixed(2)}</td>
+                                                <td className="text-right py-4 px-2">Rs {item.price.toFixed(2)}</td>
+                                                <td className="text-right py-4 px-2 font-semibold">Rs {item.total.toFixed(2)}</td>
                                             </tr>
                                         ))}
                                     </tbody>

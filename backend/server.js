@@ -25,6 +25,7 @@ const productRoutes = require('./routes/productRoutes');
 const contactRoutes = require('./routes/ContactRoutes');
 const crmRoutes = require('./routes/CrmRoutes');
 const quatationRoutes = require('./routes/QuatationRoute');
+const inventoryRoutes = require('./routes/InventoryRoute');
 
 dotenv.config();
 
@@ -58,6 +59,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/crm', crmRoutes);
 app.use('/api/quotation', quatationRoutes);
+app.use('/api/inventory', inventoryRoutes);
 
 app.get('/', (req, res) => {
     res.send('Hello World!'); 
