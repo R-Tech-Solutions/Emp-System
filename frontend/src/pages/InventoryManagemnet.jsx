@@ -17,6 +17,7 @@ export default function InventoryManagement() {
         retailPrice: "",
         salesPrice: "",
     })
+    const [inventory, setInventory] = useState([]);
 
     useEffect(() => {
         async function fetchProducts() {
@@ -31,6 +32,19 @@ export default function InventoryManagement() {
         }
         fetchProducts()
     }, [])
+
+    useEffect(() => {
+        async function fetchInventory() {
+            try {
+                const res = await fetch("http://localhost:3001/api/inventory");
+                const data = await res.json();
+                setInventory(data);
+            } catch (err) {
+                setInventory([]);
+            }
+        }
+        fetchInventory();
+    }, []);
 
     const categories = ["All", ...Array.from(new Set(items.map(item => item.category || "Other")))]
 
@@ -74,15 +88,15 @@ export default function InventoryManagement() {
                 items.map((item) =>
                     item.id === editingItem.id
                         ? {
-                              ...item,
-                              ...formData,
-                              quantity,
-                              costPrice,
-                              wholesalePrice,
-                              retailPrice,
-                              salesPrice,
-                              status: getStatus(quantity),
-                          }
+                            ...item,
+                            ...formData,
+                            quantity,
+                            costPrice,
+                            wholesalePrice,
+                            retailPrice,
+                            salesPrice,
+                            status: getStatus(quantity),
+                        }
                         : item,
                 ),
             )
@@ -324,47 +338,6 @@ export default function InventoryManagement() {
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                                             Sales Price
                                         </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-700">
-                                    {filteredItems.map((item) => (
-                                        <tr key={item.sku || item.id} className="hover:bg-gray-700 transition-colors duration-200">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{item.sku}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{item.name}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{item.category}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">Rs {Number(item.costPrice || 0).toFixed(2)}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">Rs {Number(item.marginPrice || 0).toFixed(2)}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">Rs {Number(item.retailPrice || 0).toFixed(2)}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">Rs {Number(item.salesPrice || 0).toFixed(2)}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-
-                            {filteredItems.length === 0 && (
-                                <div className="text-center py-12">
-                                    <p className="text-gray-400 text-lg">No products found</p>
-                                    <p className="text-gray-500 text-sm mt-2">Try adjusting your search or filter criteria</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-                <br />
-                <div className=" gap-8">
-                    {/* Inventory Quantity Table */}
-                    <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-700">
-                            <h2 className="text-xl font-semibold text-white">Inventory Quantities</h2>
-                        </div>
-
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead className="bg-gray-700">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                            Product ID
-                                        </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                                             Quantity
                                         </th>
@@ -377,26 +350,40 @@ export default function InventoryManagement() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-700">
-                                    {filteredItems.map((item) => (
-                                        <tr key={item.sku || item.id} className="hover:bg-gray-700 transition-colors duration-200">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{item.sku}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{item.quantity}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(getStatus(Number(item.quantity)))}`}>
-                                                    {getStatus(Number(item.quantity))}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                                                Rs {Number(item.quantity || 0) * Number(item.retailPrice || 0).toFixed(2)}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {filteredItems.map((item) => {
+                                        // Find the matching inventory item
+                                        const inv = inventory.find(i => (i.productId === item.sku || i.productId === item.id));
+                                        const quantity = inv ? inv.quantity : 0;
+                                        const costPrice = Number(item.costPrice || 0);
+                                        const totalValue = quantity * costPrice;
+
+                                        return (
+                                            <tr key={item.sku || item.id} className="hover:bg-gray-700 transition-colors duration-200">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{item.sku}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{item.name}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{item.category}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">Rs {costPrice.toFixed(2)}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">Rs {Number(item.marginPrice || 0).toFixed(2)}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">Rs {Number(item.retailPrice || 0).toFixed(2)}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">Rs {Number(item.salesPrice || 0).toFixed(2)}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{quantity}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(getStatus(quantity))}`}>
+                                                        {getStatus(quantity)}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                                                    Rs {totalValue.toFixed(2)}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
 
                             {filteredItems.length === 0 && (
                                 <div className="text-center py-12">
-                                    <p className="text-gray-400 text-lg">No inventory data found</p>
+                                    <p className="text-gray-400 text-lg">No products found</p>
                                     <p className="text-gray-500 text-sm mt-2">Try adjusting your search or filter criteria</p>
                                 </div>
                             )}
