@@ -2,9 +2,8 @@ const express = require('express');
 const router = express.Router();
 const contactController = require('../controllers/contactController');
 
-// Create a new contact
 router.post('/', contactController.createContact);
-// Get all contacts
+
 router.get('/', contactController.getContacts);
 // Get a contact by ID
 router.get('/:id', contactController.getContactById);

@@ -1,6 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { Eye, FileDown, Printer, FileText } from "lucide-react";
+import * as XLSX from 'xlsx';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export default function InventoryManagement() {
     const [items, setItems] = useState([])
@@ -11,13 +15,18 @@ export default function InventoryManagement() {
     const [formData, setFormData] = useState({
         name: "",
         category: "",
-        quantity: "",
+        totalQuantity: "",
         costPrice: "",
         marginPrice: "",
         retailPrice: "",
         salesPrice: "",
     })
     const [inventory, setInventory] = useState([]);
+    const [viewProductModal, setViewProductModal] = useState(false);
+    const [selectedProduct, setSelectedProduct] = useState(null);
+    const [inventoryDetails, setInventoryDetails] = useState(null);
+    const [historySuppliers, setHistorySuppliers] = useState([]);
+    const [showValuationModal, setShowValuationModal] = useState(false);
 
     useEffect(() => {
         async function fetchProducts() {
@@ -69,15 +78,15 @@ export default function InventoryManagement() {
         }
     }
 
-    const getStatus = (quantity) => {
-        if (quantity === 0) return "Out of Stock"
-        if (quantity <= 5) return "Low Stock"
+    const getStatus = (totalQuantity) => {
+        if (totalQuantity === 0) return "Out of Stock"
+        if (totalQuantity <= 5) return "Low Stock"
         return "In Stock"
     }
 
     const handleSubmit = (e) => {
         e.preventDefault()
-        const quantity = Number.parseInt(formData.quantity)
+        const totalQuantity = Number.parseInt(formData.totalQuantity)
         const costPrice = Number.parseFloat(formData.costPrice)
         const wholesalePrice = Number.parseFloat(formData.wholesalePrice)
         const retailPrice = Number.parseFloat(formData.retailPrice)
@@ -90,12 +99,12 @@ export default function InventoryManagement() {
                         ? {
                             ...item,
                             ...formData,
-                            quantity,
+                            totalQuantity,
                             costPrice,
                             wholesalePrice,
                             retailPrice,
                             salesPrice,
-                            status: getStatus(quantity),
+                            status: getStatus(totalQuantity),
                         }
                         : item,
                 ),
@@ -105,17 +114,17 @@ export default function InventoryManagement() {
             const newItem = {
                 id: Date.now(),
                 ...formData,
-                quantity,
+                totalQuantity,
                 costPrice,
                 wholesalePrice,
                 retailPrice,
                 salesPrice,
-                status: getStatus(quantity),
+                status: getStatus(totalQuantity),
             }
             setItems([...items, newItem])
         }
 
-        setFormData({ name: "", category: "", quantity: "", costPrice: "", wholesalePrice: "", retailPrice: "", salesPrice: "" })
+        setFormData({ name: "", category: "", totalQuantity: "", costPrice: "", wholesalePrice: "", retailPrice: "", salesPrice: "" })
         setShowAddForm(false)
     }
 
@@ -124,7 +133,7 @@ export default function InventoryManagement() {
         setFormData({
             name: item.name,
             category: item.category,
-            quantity: item.quantity.toString(),
+            totalQuantity: item.totalQuantity.toString(),
             costPrice: item.costPrice.toString(),
             wholesalePrice: item.wholesalePrice.toString(),
             retailPrice: item.retailPrice.toString(),
@@ -138,15 +147,265 @@ export default function InventoryManagement() {
     }
 
     const resetForm = () => {
-        setFormData({ name: "", category: "", quantity: "", costPrice: "", wholesalePrice: "", retailPrice: "", salesPrice: "" })
+        setFormData({ name: "", category: "", totalQuantity: "", costPrice: "", wholesalePrice: "", retailPrice: "", salesPrice: "" })
         setEditingItem(null)
         setShowAddForm(false)
     }
 
-    const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
-    const totalValue = items.reduce((sum, item) => sum + item.quantity * item.retailPrice, 0)
-    const lowStockItems = items.filter((item) => item.quantity <= 5 && item.quantity > 0).length
-    const outOfStockItems = items.filter((item) => item.quantity === 0).length
+    const totalItems = items.reduce((sum, item) => sum + item.totalQuantity, 0)
+    const totalValue = items.reduce((sum, item) => sum + item.totalQuantity * item.retailPrice, 0)
+    const lowStockItems = items.filter((item) => item.totalQuantity <= 5 && item.totalQuantity > 0).length
+    const outOfStockItems = items.filter((item) => item.totalQuantity === 0).length
+
+    // Fetch supplier details for each history entry
+    const fetchSuppliersForHistory = async (history) => {
+        if (!history || history.length === 0) return [];
+        try {
+            const res = await fetch("http://localhost:3001/api/contacts");
+            const contacts = await res.json();
+            return history.map(h => ({
+                ...h,
+                supplier: contacts.find(c => c.email === h.supplierEmail) || null
+            }));
+        } catch {
+            return history.map(h => ({ ...h, supplier: null }));
+        }
+    };
+
+    // Handler for Eye icon click
+    const handleViewProduct = async (product) => {
+        setSelectedProduct(product);
+        setViewProductModal(true);
+        // Find inventory for this product
+        const inv = inventory.find(i => (i.productId === product.sku || i.productId === product.id));
+        setInventoryDetails(inv);
+        if (inv && Array.isArray(inv.history)) {
+            const historyWithSuppliers = await fetchSuppliersForHistory(inv.history);
+            setHistorySuppliers(historyWithSuppliers);
+        } else {
+            setHistorySuppliers([]);
+        }
+    };
+
+    // Calculate valuations for all products
+    const calculateValuations = () => {
+        return items.map(item => {
+            const inv = inventory.find(i => (i.productId === item.sku || i.productId === item.id));
+            const quantity = inv ? inv.totalQuantity : 0;
+            const costPrice = Number(item.costPrice || 0);
+            const wholesalePrice = Number(item.marginPrice || 0);
+            const retailPrice = Number(item.retailPrice || 0);
+            const salesPrice = Number(item.salesPrice || 0);
+
+            return {
+                id: item.sku || item.id,
+                name: item.name,
+                quantity,
+                costValuation: quantity * costPrice,
+                wholesaleValuation: quantity * wholesalePrice,
+                retailValuation: quantity * retailPrice,
+                salesValuation: quantity * salesPrice
+            };
+        });
+    };
+
+    // Calculate totals
+    const calculateTotals = (valuations) => {
+        return valuations.reduce((acc, curr) => ({
+            totalCostValuation: acc.totalCostValuation + curr.costValuation,
+            totalWholesaleValuation: acc.totalWholesaleValuation + curr.wholesaleValuation,
+            totalRetailValuation: acc.totalRetailValuation + curr.retailValuation,
+            totalSalesValuation: acc.totalSalesValuation + curr.salesValuation
+        }), {
+            totalCostValuation: 0,
+            totalWholesaleValuation: 0,
+            totalRetailValuation: 0,
+            totalSalesValuation: 0
+        });
+    };
+
+    // Export to Excel function
+    const exportToExcel = () => {
+        const valuations = calculateValuations();
+        const totals = calculateTotals(valuations);
+        
+        // Create worksheet
+        const ws = XLSX.utils.json_to_sheet([
+            ...valuations.map(v => ({
+                'Product ID': v.id,
+                'Product Name': v.name,
+                'Quantity': v.quantity,
+                'Cost Valuation': `Rs ${v.costValuation.toFixed(2)}`,
+                'Wholesale Valuation': `Rs ${v.wholesaleValuation.toFixed(2)}`,
+                'Retail Valuation': `Rs ${v.retailValuation.toFixed(2)}`,
+                'Sales Valuation': `Rs ${v.salesValuation.toFixed(2)}`
+            })),
+            {
+                'Product ID': 'Total',
+                'Product Name': '',
+                'Quantity': '',
+                'Cost Valuation': `Rs ${totals.totalCostValuation.toFixed(2)}`,
+                'Wholesale Valuation': `Rs ${totals.totalWholesaleValuation.toFixed(2)}`,
+                'Retail Valuation': `Rs ${totals.totalRetailValuation.toFixed(2)}`,
+                'Sales Valuation': `Rs ${totals.totalSalesValuation.toFixed(2)}`
+            }
+        ]);
+
+        // Create workbook
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Stock Valuation");
+
+        // Save file
+        XLSX.writeFile(wb, "Stock_Valuation.xlsx");
+    };
+
+    // Export to PDF function
+    const exportToPDF = () => {
+        const doc = new jsPDF();
+        const valuations = calculateValuations();
+        const totals = calculateTotals(valuations);
+
+        // Add title
+        doc.setFontSize(20);
+        doc.text("Stock Valuation Report", 14, 15);
+        doc.setFontSize(12);
+        doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 25);
+
+        // Add table using autoTable
+        autoTable(doc, {
+            startY: 35,
+            head: [['Product ID', 'Product Name', 'Quantity', 'Cost Valuation', 'Wholesale Valuation', 'Retail Valuation', 'Sales Valuation']],
+            body: [
+                ...valuations.map(v => [
+                    v.id,
+                    v.name,
+                    v.quantity,
+                    `Rs ${v.costValuation.toFixed(2)}`,
+                    `Rs ${v.wholesaleValuation.toFixed(2)}`,
+                    `Rs ${v.retailValuation.toFixed(2)}`,
+                    `Rs ${v.salesValuation.toFixed(2)}`
+                ]),
+                ['Total', '', '', 
+                    `Rs ${totals.totalCostValuation.toFixed(2)}`,
+                    `Rs ${totals.totalWholesaleValuation.toFixed(2)}`,
+                    `Rs ${totals.totalRetailValuation.toFixed(2)}`,
+                    `Rs ${totals.totalSalesValuation.toFixed(2)}`
+                ]
+            ],
+            theme: 'grid',
+            headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+            styles: { fontSize: 8 },
+            margin: { top: 35 }
+        });
+
+        // Save the PDF
+        doc.save("Stock_Valuation.pdf");
+    };
+
+    // Print function
+    const printValuation = () => {
+        const printWindow = window.open('', '_blank');
+        const valuations = calculateValuations();
+        const totals = calculateTotals(valuations);
+
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Stock Valuation Report</title>
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            margin: 20px;
+                            color: #333;
+                        }
+                        h1 {
+                            color: #2980b9;
+                            text-align: center;
+                            margin-bottom: 20px;
+                        }
+                        .date {
+                            text-align: right;
+                            margin-bottom: 20px;
+                            color: #666;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-bottom: 20px;
+                        }
+                        th, td {
+                            border: 1px solid #ddd;
+                            padding: 8px;
+                            text-align: left;
+                        }
+                        th {
+                            background-color: #2980b9;
+                            color: white;
+                        }
+                        tr:nth-child(even) {
+                            background-color: #f2f2f2;
+                        }
+                        .total-row {
+                            font-weight: bold;
+                            background-color: #e8e8e8;
+                        }
+                        @media print {
+                            body {
+                                margin: 0;
+                                padding: 20px;
+                            }
+                            .no-print {
+                                display: none;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>Stock Valuation Report</h1>
+                    <div class="date">Generated on: ${new Date().toLocaleString()}</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Product ID</th>
+                                <th>Product Name</th>
+                                <th>Quantity</th>
+                                <th>Cost Valuation</th>
+                                <th>Wholesale Valuation</th>
+                                <th>Retail Valuation</th>
+                                <th>Sales Valuation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${valuations.map(v => `
+                                <tr>
+                                    <td>${v.id}</td>
+                                    <td>${v.name}</td>
+                                    <td>${v.quantity}</td>
+                                    <td>Rs ${v.costValuation.toFixed(2)}</td>
+                                    <td>Rs ${v.wholesaleValuation.toFixed(2)}</td>
+                                    <td>Rs ${v.retailValuation.toFixed(2)}</td>
+                                    <td>Rs ${v.salesValuation.toFixed(2)}</td>
+                                </tr>
+                            `).join('')}
+                            <tr class="total-row">
+                                <td>Total</td>
+                                <td></td>
+                                <td></td>
+                                <td>Rs ${totals.totalCostValuation.toFixed(2)}</td>
+                                <td>Rs ${totals.totalWholesaleValuation.toFixed(2)}</td>
+                                <td>Rs ${totals.totalRetailValuation.toFixed(2)}</td>
+                                <td>Rs ${totals.totalSalesValuation.toFixed(2)}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="no-print">
+                        <button onclick="window.print()">Print</button>
+                    </div>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+    };
 
     return (
         <div className="min-h-screen bg-gray-900 text-gray-100">
@@ -203,107 +462,14 @@ export default function InventoryManagement() {
                             </select>
                         </div>
                         <button
-                            onClick={() => setShowAddForm(true)}
-                            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200"
+                            onClick={() => setShowValuationModal(true)}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
                         >
-                            Add Item
+                            Stock Valuation
                         </button>
                     </div>
                 </div>
 
-                {/* Add/Edit Form */}
-                {showAddForm && (
-                    <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-8">
-                        <h2 className="text-xl font-semibold text-white mb-4">{editingItem ? "Edit Item" : "Add New Item"}</h2>
-                        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <input
-                                type="text"
-                                placeholder="Item name"
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                required
-                                className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                            <select
-                                value={formData.category}
-                                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                required
-                                className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            >
-                                <option value="">Select category</option>
-                                {categories.slice(1).map((category) => (
-                                    <option key={category} value={category}>
-                                        {category}
-                                    </option>
-                                ))}
-                            </select>
-                            <input
-                                type="number"
-                                placeholder="Quantity"
-                                value={formData.quantity}
-                                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                                required
-                                min="0"
-                                className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                            <input
-                                type="number"
-                                placeholder="Cost Price"
-                                value={formData.costPrice}
-                                onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })}
-                                required
-                                min="0"
-                                step="0.01"
-                                className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                            <input
-                                type="number"
-                                placeholder="Wholesale Price"
-                                value={formData.wholesalePrice}
-                                onChange={(e) => setFormData({ ...formData, wholesalePrice: e.target.value })}
-                                required
-                                min="0"
-                                step="0.01"
-                                className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                            <input
-                                type="number"
-                                placeholder="Retail Price"
-                                value={formData.retailPrice}
-                                onChange={(e) => setFormData({ ...formData, retailPrice: e.target.value })}
-                                required
-                                min="0"
-                                step="0.01"
-                                className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                            <input
-                                type="number"
-                                placeholder="Sales Price"
-                                value={formData.salesPrice}
-                                onChange={(e) => setFormData({ ...formData, salesPrice: e.target.value })}
-                                required
-                                min="0"
-                                step="0.01"
-                                className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                            <div className="md:col-span-2 lg:col-span-4 flex gap-2">
-                                <button
-                                    type="submit"
-                                    className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors duration-200"
-                                >
-                                    {editingItem ? "Update Item" : "Add Item"}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={resetForm}
-                                    className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors duration-200"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                )}
 
                 {/* Tables Section */}
                 <div className=" gap-8">
@@ -339,7 +505,7 @@ export default function InventoryManagement() {
                                             Sales Price
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                            Quantity
+                                            totalQuantity
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                                             Status
@@ -347,15 +513,18 @@ export default function InventoryManagement() {
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                                             Total Value
                                         </th>
+                                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
+                                            Action
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-700">
                                     {filteredItems.map((item) => {
                                         // Find the matching inventory item
                                         const inv = inventory.find(i => (i.productId === item.sku || i.productId === item.id));
-                                        const quantity = inv ? inv.quantity : 0;
+                                        const totalQuantity = inv ? inv.totalQuantity : 0;
                                         const costPrice = Number(item.costPrice || 0);
-                                        const totalValue = quantity * costPrice;
+                                        const totalValue = totalQuantity * costPrice;
 
                                         return (
                                             <tr key={item.sku || item.id} className="hover:bg-gray-700 transition-colors duration-200">
@@ -366,21 +535,25 @@ export default function InventoryManagement() {
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">Rs {Number(item.marginPrice || 0).toFixed(2)}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">Rs {Number(item.retailPrice || 0).toFixed(2)}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">Rs {Number(item.salesPrice || 0).toFixed(2)}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{quantity}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{totalQuantity}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(getStatus(quantity))}`}>
-                                                        {getStatus(quantity)}
+                                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(getStatus(totalQuantity))}`}>
+                                                        {getStatus(totalQuantity)}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                                                     Rs {totalValue.toFixed(2)}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-center">
+                                                    <button onClick={() => handleViewProduct(item)} className="text-blue-400 hover:text-blue-200" title="View Details">
+                                                        <Eye size={20} />
+                                                    </button>
                                                 </td>
                                             </tr>
                                         );
                                     })}
                                 </tbody>
                             </table>
-
                             {filteredItems.length === 0 && (
                                 <div className="text-center py-12">
                                     <p className="text-gray-400 text-lg">No products found</p>
@@ -391,6 +564,159 @@ export default function InventoryManagement() {
                     </div>
                 </div>
             </div>
+
+            {/* Product Details Modal */}
+            {viewProductModal && selectedProduct && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                    <div className="bg-gray-900 rounded-lg shadow-2xl p-8 w-full max-w-2xl relative">
+                        <button
+                            className="absolute top-2 right-2 text-gray-400 hover:text-white text-2xl font-bold"
+                            onClick={() => setViewProductModal(false)}
+                            aria-label="Close"
+                        >
+                            &times;
+                        </button>
+                        <h2 className="text-2xl font-bold mb-4 text-white">Product Details</h2>
+                        <div className="mb-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <div className="text-gray-400 text-sm">Name</div>
+                                    <div className="text-white font-semibold">{selectedProduct.name}</div>
+                                </div>
+                                <div>
+                                    <div className="text-gray-400 text-sm">SKU</div>
+                                    <div className="text-white font-semibold">{selectedProduct.sku || selectedProduct.id}</div>
+                                </div>
+                                <div>
+                                    <div className="text-gray-400 text-sm">Category</div>
+                                    <div className="text-white font-semibold">{selectedProduct.category}</div>
+                                </div>
+                                <div>
+                                    <div className="text-gray-400 text-sm">Cost Price</div>
+                                    <div className="text-white font-semibold">Rs {selectedProduct.costPrice}</div>
+                                </div>
+                                <div>
+                                    <div className="text-gray-400 text-sm">Retail Price</div>
+                                    <div className="text-white font-semibold">Rs {selectedProduct.retailPrice}</div>
+                                </div>
+                                <div>
+                                    <div className="text-gray-400 text-sm">Sales Price</div>
+                                    <div className="text-white font-semibold">Rs {selectedProduct.salesPrice}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <h3 className="text-xl font-semibold text-white mt-6 mb-2">Inventory Details</h3>
+                        {inventoryDetails ? (
+                            <div className="mb-4">
+                                <div className="text-gray-400 text-sm">Total Quantity</div>
+                                <div className="text-white font-semibold mb-2">{inventoryDetails.totalQuantity}</div>
+                                <div className="text-gray-400 text-sm mb-1">History</div>
+                                <div className="max-h-48 overflow-y-auto">
+                                    <table className="w-full text-sm text-gray-200">
+                                        <thead>
+                                            <tr>
+                                                <th className="py-1 px-2 text-left">Date</th>
+                                                <th className="py-1 px-2 text-left">Quantity</th>
+                                                <th className="py-1 px-2 text-left">Supplier Email</th>
+                                                <th className="py-1 px-2 text-left">Supplier Name</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {historySuppliers.map((h, idx) => (
+                                                <tr key={idx}>
+                                                    <td className="py-1 px-2">{new Date(h.date).toLocaleString()}</td>
+                                                    <td className="py-1 px-2">{h.quantity}</td>
+                                                    <td className="py-1 px-2">{h.supplierEmail}</td>
+                                                    <td className="py-1 px-2">{h.supplier ? h.supplier.name : <span className="text-gray-500">Not found</span>}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-gray-400">No inventory details found for this product.</div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Stock Valuation Modal */}
+            {showValuationModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                    <div className="bg-gray-900 rounded-lg shadow-2xl p-8 w-full max-w-6xl relative">
+                        <button
+                            className="absolute top-2 right-2 text-gray-400 hover:text-white text-2xl font-bold"
+                            onClick={() => setShowValuationModal(false)}
+                            aria-label="Close"
+                        >
+                            &times;
+                        </button>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-2xl font-bold text-white">Stock Valuation</h2>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={exportToExcel}
+                                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                                >
+                                    <FileDown size={20} />
+                                    Export to Excel
+                                </button>
+                                <button
+                                    onClick={exportToPDF}
+                                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                                >
+                                    <FileText size={20} />
+                                    Export to PDF
+                                </button>
+                                <button
+                                    onClick={printValuation}
+                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                                >
+                                    <Printer size={20} />
+                                    Print
+                                </button>
+                            </div>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-gray-200">
+                                <thead className="bg-gray-800">
+                                    <tr>
+                                        <th className="px-4 py-2 text-left">ProductsID</th>
+                                        <th className="px-4 py-2 text-left">ProductsName</th>
+                                        <th className="px-4 py-2 text-right">ProductsQuantity</th>
+                                        <th className="px-4 py-2 text-right">CostValuation</th>
+                                        <th className="px-4 py-2 text-right">WholesaleValuation</th>
+                                        <th className="px-4 py-2 text-right">RetailValuation</th>
+                                        <th className="px-4 py-2 text-right">SalesValuation</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-700">
+                                    {calculateValuations().map((item) => (
+                                        <tr key={item.id} className="hover:bg-gray-800">
+                                            <td className="px-4 py-2">{item.id}</td>
+                                            <td className="px-4 py-2">{item.name}</td>
+                                            <td className="px-4 py-2 text-right">{item.quantity}</td>
+                                            <td className="px-4 py-2 text-right">Rs {item.costValuation.toFixed(2)}</td>
+                                            <td className="px-4 py-2 text-right">Rs {item.wholesaleValuation.toFixed(2)}</td>
+                                            <td className="px-4 py-2 text-right">Rs {item.retailValuation.toFixed(2)}</td>
+                                            <td className="px-4 py-2 text-right">Rs {item.salesValuation.toFixed(2)}</td>
+                                        </tr>
+                                    ))}
+                                    <tr className="bg-gray-800 font-bold">
+                                        <td className="px-4 py-2" colSpan="2">Total</td>
+                                        <td className="px-4 py-2"></td>
+                                        <td className="px-4 py-2 text-right">Rs {calculateTotals(calculateValuations()).totalCostValuation.toFixed(2)}</td>
+                                        <td className="px-4 py-2 text-right">Rs {calculateTotals(calculateValuations()).totalWholesaleValuation.toFixed(2)}</td>
+                                        <td className="px-4 py-2 text-right">Rs {calculateTotals(calculateValuations()).totalRetailValuation.toFixed(2)}</td>
+                                        <td className="px-4 py-2 text-right">Rs {calculateTotals(calculateValuations()).totalSalesValuation.toFixed(2)}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

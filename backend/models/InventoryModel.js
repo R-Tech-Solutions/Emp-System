@@ -2,20 +2,21 @@ const {db} = require('../firebaseConfig');
 const INVENTORY_COLLECTION = 'inventory';
 
 const InventoryModel = {
-  async create({ productId, quantity }) {
+  async create({ productId, quantity, supplierEmail }) {
     const docRef = db.collection(INVENTORY_COLLECTION).doc(productId);
     const doc = await docRef.get();
+    const now = new Date().toISOString();
+    let history = [];
     if (doc.exists) {
-      // If exists, update (add to) quantity
-      const current = doc.data().quantity || 0;
-      const newQuantity = current + quantity;
-      await docRef.update({ quantity: newQuantity });
-      return { id: productId, productId, quantity: newQuantity };
-    } else {
-      // If not exists, create new
-      await docRef.set({ productId, quantity });
-      return { id: productId, productId, quantity };
+      const data = doc.data();
+      history = Array.isArray(data.history) ? data.history : [];
     }
+    // Add new history entry
+    history.push({ quantity, date: now, supplierEmail });
+    // Calculate totalQuantity
+    const totalQuantity = history.reduce((sum, h) => sum + h.quantity, 0);
+    await docRef.set({ productId, totalQuantity, history }, { merge: true });
+    return { id: productId, productId, totalQuantity, history };
   },
 };
 

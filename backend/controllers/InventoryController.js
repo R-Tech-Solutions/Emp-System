@@ -2,11 +2,11 @@ const InventoryModel = require('../models/InventoryModel');
 
 exports.createInventory = async (req, res) => {
   try {
-    const { productId, quantity } = req.body;
-    if (!productId || typeof quantity !== 'number') {
-      return res.status(400).json({ error: 'Product ID and quantity are required.' });
+    const { productId, quantity, supplierEmail } = req.body;
+    if (!productId || typeof quantity !== 'number' || !supplierEmail) {
+      return res.status(400).json({ error: 'Product ID, quantity, and supplierEmail are required.' });
     }
-    const inventory = await InventoryModel.create({ productId, quantity });
+    const inventory = await InventoryModel.create({ productId, quantity, supplierEmail });
     res.status(201).json(inventory);
   } catch (err) {
     res.status(500).json({ error: 'Failed to create inventory record.' });

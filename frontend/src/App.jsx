@@ -23,7 +23,8 @@ import Products from "./pages/Product.jsx";
 import Quatation from "./pages/Quatation.jsx";
 import Purchase from "./pages/Purchase.jsx";
 import InventoryManagement from "./pages/InventoryManagemnet.jsx";
-
+import SupplierManagement from "./pages/SupplierManagement.jsx";
+import Cashbook from "./pages/Cashbook.jsx";
 
 function App() {
   const { theme } = useTheme();
@@ -202,7 +203,22 @@ function App() {
               }
             />
 
-
+            <Route
+              path="supplier"
+              element={
+                <ProtectedRoute>
+                  <SupplierManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="cashbook"
+              element={
+                <ProtectedRoute>
+                  <Cashbook />
+                </ProtectedRoute>
+              }
+            />
             {" "}
           </Route>
           <Route path="*" element={<Navigate to="/dashboard" replace />} />

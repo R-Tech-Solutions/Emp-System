@@ -50,6 +50,8 @@ function Sidebar() {
     { name: "Quotation", path: "/quatation", icon: <FileText className="w-5 h-5" /> },
     { name: "Purchase", path: "/purchase", icon: <Package className="w-5 h-5" /> },
     { name: "Inventory", path: "/inventory", icon: <Package className="w-5 h-5" /> },
+    { name: "Supplier", path: "/supplier", icon: <Package className="w-5 h-5" /> },
+    { name: "Cashbook", path: "/cashbook", icon: <Package className="w-5 h-5" /> },
   ];
 
   return (

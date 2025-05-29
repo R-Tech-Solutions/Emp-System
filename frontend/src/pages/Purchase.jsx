@@ -276,6 +276,7 @@ export default function PurchaseApp() {
                 body: JSON.stringify({
                     productId: item.sku,
                     quantity: item.quantity,
+                    supplierEmail: formData.email,
                 }),
             });
         }
@@ -1335,19 +1336,19 @@ export default function PurchaseApp() {
                                     <div className="flex justify-between text-lg font-semibold">
                                         <span>Total</span>
                                         <span>${purchase.total.toFixed(2)}</span>
-                                    </div>
+                                    </div>  
                                 </div>
                             </div>
 
                             <div className="space-y-3">
-                                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200">
+                                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200" onClick={handlePrintInvoice}>
                                     Print Invoice
                                 </button>
-                                <button className="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200">
+                                <button className="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200" onClick={handleDownloadPDF}>
                                     Download PDF
                                 </button>
                                 {purchase.status === "Processing" && (
-                                    <button className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200">
+                                    <button className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200" onClick={() => handleCancelOrder(purchase.id)}>
                                         Cancel Order
                                     </button>
                                 )}
@@ -1364,6 +1365,23 @@ export default function PurchaseApp() {
             </div>
         )
     }
+
+    const handlePrintInvoice = () => {
+        window.print();
+    };
+
+    const handleDownloadPDF = () => {
+        alert('Download PDF functionality coming soon!');
+    };
+
+    const handleCancelOrder = (purchaseId) => {
+        setPurchases((prev) =>
+            prev.map((p) =>
+                p.id === purchaseId ? { ...p, status: 'Cancelled' } : p
+            )
+        );
+    };
+
     const renderCurrentView = () => {
         switch (currentView) {
             case "create":
