@@ -18,6 +18,8 @@ import axios from "axios"
 
 export default function SupplierManagement() {
   const [suppliers, setSuppliers] = useState([])
+  const [supplierTotals, setSupplierTotals] = useState({})
+  const [supplierPaidAmounts, setSupplierPaidAmounts] = useState({})
   const [searchTerm, setSearchTerm] = useState("")
   const [filterCategory, setFilterCategory] = useState("all")
   const [showAddForm, setShowAddForm] = useState(false)
@@ -48,6 +50,7 @@ export default function SupplierManagement() {
 
   useEffect(() => {
     fetchSuppliers()
+    fetchSupplierTotals()
   }, [])
 
   const fetchSuppliers = async () => {
@@ -57,6 +60,54 @@ export default function SupplierManagement() {
       setSuppliers(supplierData)
     } catch (error) {
       console.error('Error fetching suppliers:', error)
+    }
+  }
+
+  const fetchSupplierTotals = async () => {
+    try {
+      const response = await axios.get('http://localhost:3001/api/purchase')
+      const purchases = response.data
+      
+      // Calculate totals and paid amounts for each supplier
+      const totals = {}
+      const paidAmounts = {}
+      
+      purchases.forEach(purchase => {
+        const email = purchase.customerEmail
+        
+        // Calculate total amounts for debited purchases
+        if (purchase.paymentStatus === "Debited to Supplier Account") {
+          if (!totals[email]) {
+            totals[email] = 0
+          }
+          totals[email] += purchase.total
+        }
+        
+        // Calculate paid amounts from payment history
+        if (purchase.paymentHistory && Array.isArray(purchase.paymentHistory)) {
+          if (!paidAmounts[email]) {
+            paidAmounts[email] = 0
+          }
+          
+          // Filter out $0.00 payments and sum valid payment amounts
+          const validPayments = purchase.paymentHistory.filter(payment => {
+            const amount = Number(payment.amount) || 0
+            return amount > 0 // Only include payments greater than 0
+          })
+          
+          // Sum up all valid payment amounts
+          const paymentTotal = validPayments.reduce((sum, payment) => {
+            return sum + (Number(payment.amount) || 0)
+          }, 0)
+          
+          paidAmounts[email] += paymentTotal
+        }
+      })
+      
+      setSupplierTotals(totals)
+      setSupplierPaidAmounts(paidAmounts)
+    } catch (error) {
+      console.error('Error fetching supplier totals:', error)
     }
   }
 
@@ -83,8 +134,8 @@ export default function SupplierManagement() {
   })
 
   // Calculate totals
-  const totalAmount = suppliers.reduce((sum, supplier) => sum + supplier.totalAmount, 0)
-  const totalPaid = suppliers.reduce((sum, supplier) => sum + supplier.paidAmount, 0)
+  const totalAmount = Object.values(supplierTotals).reduce((sum, amount) => sum + amount, 0)
+  const totalPaid = Object.values(supplierPaidAmounts).reduce((sum, amount) => sum + amount, 0)
   const totalPending = totalAmount - totalPaid
   const fullyPaidSuppliers = suppliers.filter((s) => s.totalAmount === s.paidAmount).length
 
@@ -360,13 +411,19 @@ export default function SupplierManagement() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-white">-</div>
+                        <div className="text-sm font-medium text-white">
+                          {formatCurrency(supplierTotals[supplier.email] || 0)}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-green-400">-</div>
+                        <div className="text-sm font-medium text-green-400">
+                          {formatCurrency(supplierPaidAmounts[supplier.email] || 0)}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-yellow-400">-</div>
+                        <div className="text-sm font-medium text-yellow-400">
+                          {formatCurrency((supplierTotals[supplier.email] || 0) - (supplierPaidAmounts[supplier.email] || 0))}
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex space-x-2">
@@ -400,40 +457,36 @@ export default function SupplierManagement() {
                           <div className="space-y-2">
                             <div className="flex justify-between items-center mb-3">
                               <h4 className="text-sm font-medium text-white">Payment History</h4>
-                              {supplier.pendingAmount === 0 ? (
-                                <span className="text-xs bg-green-600 text-white px-2 py-1 rounded-full">
-                                  Fully Paid
-                                </span>
-                              ) : (
-                                <span className="text-xs bg-yellow-600 text-white px-2 py-1 rounded-full">
-                                  {formatCurrency(supplier.pendingAmount)} Pending
-                                </span>
-                              )}
+                              <span className="text-xs bg-yellow-600 text-white px-2 py-1 rounded-full">
+                                {formatCurrency((supplierTotals[supplier.email] || 0) - (supplierPaidAmounts[supplier.email] || 0))} Pending
+                              </span>
                             </div>
                             {supplier.paymentHistory?.length > 0 ? (
                               <div className="space-y-2">
-                                {supplier.paymentHistory.map((payment) => (
-                                  <div
-                                    key={payment.id}
-                                    className="flex items-center justify-between bg-gray-800 rounded p-3"
-                                  >
-                                    <div className="flex items-center space-x-3">
-                                      {payment.method === "card" ? (
-                                        <CreditCard className="h-4 w-4 text-blue-400" />
-                                      ) : (
-                                        <Banknote className="h-4 w-4 text-green-400" />
-                                      )}
-                                      <span className="text-sm text-gray-300">
-                                        {formatCurrency(payment.amount)} via {payment.method}
-                                        {payment.cardLast4 && ` (**** ${payment.cardLast4})`}
-                                      </span>
+                                {supplier.paymentHistory
+                                  .filter(payment => (Number(payment.amount) || 0) > 0) // Only show non-zero payments
+                                  .map((payment) => (
+                                    <div
+                                      key={payment.id}
+                                      className="flex items-center justify-between bg-gray-800 rounded p-3"
+                                    >
+                                      <div className="flex items-center space-x-3">
+                                        {payment.method === "card" ? (
+                                          <CreditCard className="h-4 w-4 text-blue-400" />
+                                        ) : (
+                                          <Banknote className="h-4 w-4 text-green-400" />
+                                        )}
+                                        <span className="text-sm text-gray-300">
+                                          {formatCurrency(payment.amount)} via {payment.method}
+                                          {payment.cardLast4 && ` (**** ${payment.cardLast4})`}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center space-x-1 text-sm text-gray-400">
+                                        <Calendar className="h-3 w-3" />
+                                        <span>{payment.date}</span>
+                                      </div>
                                     </div>
-                                    <div className="flex items-center space-x-1 text-sm text-gray-400">
-                                      <Calendar className="h-3 w-3" />
-                                      <span>{payment.date}</span>
-                                    </div>
-                                  </div>
-                                ))}
+                                  ))}
                               </div>
                             ) : (
                               <p className="text-gray-400 text-sm">No payment history available</p>
@@ -465,7 +518,7 @@ export default function SupplierManagement() {
             <div className="mb-4 p-3 bg-gray-700 rounded-lg">
               <p className="text-sm text-gray-300">
                 Pending Amount:{" "}
-                <span className="text-yellow-400 font-medium">{formatCurrency(selectedSupplier.pendingAmount)}</span>
+                <span className="text-yellow-400 font-medium">{formatCurrency((supplierTotals[selectedSupplier.email] || 0) - (supplierPaidAmounts[selectedSupplier.email] || 0))} </span>
               </p>
             </div>
 

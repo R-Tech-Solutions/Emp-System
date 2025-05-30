@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { jsPDF } from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 export default function PurchaseApp() {
     const [currentView, setCurrentView] = useState("list") // "list", "create", "details"
@@ -20,7 +22,6 @@ export default function PurchaseApp() {
             shipping: 15.99,
             tax: 28.0,
             total: 393.96,
-            status: "Completed",
             billingAddress: "123 Main St, New York, NY 10001",
             shippingAddress: "123 Main St, New York, NY 10001",
         },
@@ -35,7 +36,6 @@ export default function PurchaseApp() {
             shipping: 9.99,
             tax: 12.0,
             total: 171.98,
-            status: "Processing",
             billingAddress: "456 Oak Ave, Los Angeles, CA 90210",
             shippingAddress: "456 Oak Ave, Los Angeles, CA 90210",
         },
@@ -106,6 +106,9 @@ export default function PurchaseApp() {
     const [newProductError, setNewProductError] = useState("");
     const [productSearch, setProductSearch] = useState("");
 
+    // Add this state for selected purchase details
+    const [selectedPurchase, setSelectedPurchase] = useState(null);
+
     // Fetch suppliers from backend
     useEffect(() => {
         if (supplierType === "existing") {
@@ -171,13 +174,30 @@ export default function PurchaseApp() {
         // eslint-disable-next-line
     }, [priceList, products])
 
+    // Add this useEffect after other useEffect hooks
+    useEffect(() => {
+        const fetchPurchases = async () => {
+            try {
+                const response = await fetch('http://localhost:3001/api/purchase');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch purchases');
+                }
+                const data = await response.json();
+                setPurchases(data);
+            } catch (error) {
+                console.error('Error fetching purchases:', error);
+            }
+        };
+
+        fetchPurchases();
+    }, []);
+
     const addPurchase = (newPurchase) => {
         const purchaseId = `PUR-${String(purchases.length + 1).padStart(3, "0")}`
         const purchase = {
             ...newPurchase,
             id: purchaseId,
             date: new Date().toISOString().split("T")[0],
-            status: "Processing",
         }
         setPurchases((prev) => [purchase, ...prev])
         setCurrentView("list")
@@ -206,23 +226,22 @@ export default function PurchaseApp() {
         })
     }
 
-    const viewPurchase = (purchaseId) => {
-        setSelectedPurchaseId(purchaseId)
-        setCurrentView("details")
-    }
-
-    const getStatusColor = (status) => {
-        switch (status) {
-            case "Completed":
-                return "bg-green-600"
-            case "Processing":
-                return "bg-yellow-600"
-            case "Cancelled":
-                return "bg-red-600"
-            default:
-                return "bg-gray-600"
+    const viewPurchase = async (purchaseId) => {
+        try {
+            const response = await fetch(`http://localhost:3001/api/purchase/${purchaseId}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch purchase details');
+            }
+            const data = await response.json();
+            setSelectedPurchase(data);
+            setSelectedPurchaseId(purchaseId);
+            setCurrentView("details");
+        } catch (error) {
+            console.error('Error fetching purchase details:', error);
+            alert('Failed to load purchase details');
         }
-    }
+    };
+
 
     const handleInputChange = (e) => {
         const { name, value, type } = e.target
@@ -250,35 +269,80 @@ export default function PurchaseApp() {
         const grandTotal = subtotal;
 
         const purchaseData = {
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            company: formData.company,
-            website: formData.website,
-            supplierNotes: formData.supplierNotes,
-            items: cartItems,
+            customerName: formData.name,
+            customerEmail: formData.email,
+            items: cartItems.map(item => ({
+                sku: item.sku,
+                name: item.name,
+                quantity: item.quantity,
+                price: item.price,
+                total: item.total
+            })),
             subtotal,
             total: grandTotal,
-            billingAddress: `${formData.billingAddress}, ${formData.billingCity}, ${formData.billingState} ${formData.billingZip}`,
-            shippingAddress: formData.sameAsShipping
-                ? `${formData.billingAddress}, ${formData.billingCity}, ${formData.billingState} ${formData.billingZip}`
-                : `${formData.shippingAddress}, ${formData.shippingCity}, ${formData.shippingState} ${formData.shippingZip}`,
-            orderNotes: formData.orderNotes,
+            paymentMethod: paymentMethod
         };
 
-        addPurchase(purchaseData);
-
-        // Send each product to inventory
-        for (const item of cartItems) {
-            await fetch('http://localhost:3001/api/inventory', {
+        try {
+            // Save to backend
+            const response = await fetch('http://localhost:3001/api/purchase', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    productId: item.sku,
-                    quantity: item.quantity,
-                    supplierEmail: formData.email,
-                }),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(purchaseData)
             });
+
+            if (!response.ok) {
+                throw new Error('Failed to save purchase');
+            }
+
+            const savedPurchase = await response.json();
+
+            // Add to local state
+            addPurchase(savedPurchase);
+
+            // Send each product to inventory
+            for (const item of cartItems) {
+                await fetch('http://localhost:3001/api/inventory', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        productId: item.sku,
+                        quantity: item.quantity,
+                        supplierEmail: formData.email,
+                    }),
+                });
+            }
+
+            // Reset form and cart
+            setFormData({
+                name: "",
+                email: "",
+                phone: "",
+                company: "",
+                website: "",
+                supplierNotes: "",
+                billingAddress: "",
+                billingCity: "",
+                billingState: "",
+                billingZip: "",
+                shippingAddress: "",
+                shippingCity: "",
+                shippingState: "",
+                shippingZip: "",
+                orderNotes: "",
+                cardName: "",
+                cardNumber: "",
+                expiryDate: "",
+                cvv: "",
+                sameAsShipping: false,
+            });
+            setCartItems([]);
+            setCurrentView("list");
+        } catch (error) {
+            console.error('Error saving purchase:', error);
+            alert('Failed to save purchase. Please try again.');
         }
     };
 
@@ -458,18 +522,6 @@ export default function PurchaseApp() {
                     <div className="text-gray-400">Total Purchases</div>
                 </div>
                 <div className="bg-gray-800 rounded-lg p-6">
-                    <div className="text-2xl font-bold text-green-400">
-                        {purchases.filter((p) => p.status === "Completed").length}
-                    </div>
-                    <div className="text-gray-400">Completed</div>
-                </div>
-                <div className="bg-gray-800 rounded-lg p-6">
-                    <div className="text-2xl font-bold text-yellow-400">
-                        {purchases.filter((p) => p.status === "Processing").length}
-                    </div>
-                    <div className="text-gray-400">Processing</div>
-                </div>
-                <div className="bg-gray-800 rounded-lg p-6">
                     <div className="text-2xl font-bold text-white">
                         ${purchases.reduce((sum, p) => sum + p.total, 0).toFixed(2)}
                     </div>
@@ -509,31 +561,32 @@ export default function PurchaseApp() {
                             </thead>
                             <tbody>
                                 {purchases.map((purchase) => (
-                                    <tr key={purchase.id} className="border-b border-gray-700 hover:bg-gray-750">
+                                    <tr key={purchase.purchaseId} className="border-b border-gray-700 hover:bg-gray-750">
                                         <td className="py-4 px-6">
-                                            <div className="font-medium text-white">{purchase.id}</div>
+                                            <div className="font-medium text-white">{purchase.purchaseId}</div>
                                         </td>
                                         <td className="py-4 px-6">
-                                            <div className="text-white font-medium">{purchase.name}</div>
-                                            <div className="text-gray-400 text-sm">{purchase.email}</div>
+                                            <div className="text-white font-medium">{purchase.customerName}</div>
+                                            <div className="text-gray-400 text-sm">{purchase.customerEmail}</div>
                                         </td>
-                                        <td className="py-4 px-6 text-gray-300">{new Date(purchase.date).toLocaleDateString()}</td>
+                                        <td className="py-4 px-6 text-gray-300">{new Date(purchase.createdAt).toLocaleDateString()}</td>
                                         <td className="py-4 px-6 text-gray-300">
-                                            {purchase.items.length} item{purchase.items.length !== 1 ? "s" : ""}
+                                            {purchase.numberOfProducts} item{purchase.numberOfProducts !== 1 ? "s" : ""}
                                         </td>
                                         <td className="py-4 px-6 text-right">
                                             <div className="font-semibold text-white">${purchase.total.toFixed(2)}</div>
                                         </td>
                                         <td className="py-4 px-6 text-center">
-                                            <span
-                                                className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full text-white ${getStatusColor(purchase.status)}`}
-                                            >
-                                                {purchase.status}
+                                            <span className={`px-2 py-1 rounded text-sm ${purchase.paymentStatus === "Paid by Cash"
+                                                    ? "bg-green-600 text-white"
+                                                    : "bg-blue-600 text-white"
+                                                }`}>
+                                                {purchase.paymentStatus}
                                             </span>
                                         </td>
                                         <td className="py-4 px-6 text-center">
                                             <button
-                                                onClick={() => viewPurchase(purchase.id)}
+                                                onClick={() => viewPurchase(purchase.purchaseId)}
                                                 className="bg-gray-600 hover:bg-gray-500 text-white px-3 py-1 rounded text-sm transition duration-200"
                                             >
                                                 View Details
@@ -767,7 +820,6 @@ export default function PurchaseApp() {
                     <div className="grid lg:grid-cols-3 gap-8">
                         {/* Left Column - Customer Info & Payment */}
                         <div className="lg:col-span-2 space-y-8">
-                            {/* Customer Information */}
                             <div className="bg-gray-800 rounded-lg shadow-xl p-6">
                                 <h2 className="text-xl font-semibold mb-6">Customer Information</h2>
 
@@ -1163,22 +1215,14 @@ export default function PurchaseApp() {
 
     // Purchase Details View
     const renderPurchaseDetails = () => {
-        const purchase = purchases.find((p) => p.id === selectedPurchaseId)
-
-        if (!purchase) {
+        if (!selectedPurchase) {
             return (
                 <div className="container mx-auto px-4 py-8 max-w-4xl text-white">
                     <div className="text-center">
-                        <h1 className="text-2xl font-bold mb-4">Purchase Not Found</h1>
-                        <button
-                            onClick={() => setCurrentView("list")}
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
-                        >
-                            Back to Purchases
-                        </button>
+                        <h1 className="text-2xl font-bold mb-4">Loading Purchase Details...</h1>
                     </div>
                 </div>
-            )
+            );
         }
 
         return (
@@ -1187,11 +1231,11 @@ export default function PurchaseApp() {
                 <div className="flex justify-between items-center mb-8">
                     <div>
                         <h1 className="text-3xl font-bold mb-2">Purchase Details</h1>
-                        <p className="text-gray-400">Purchase ID: {purchase.id}</p>
+                        <p className="text-gray-400">Purchase ID: {selectedPurchase.purchaseId}</p>
                     </div>
                     <button
                         onClick={() => setCurrentView("list")}
-                        className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
+                        className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200 no-print"
                     >
                         Back to Purchases
                     </button>
@@ -1205,12 +1249,13 @@ export default function PurchaseApp() {
                             <div className="flex justify-between items-start mb-6">
                                 <div>
                                     <h2 className="text-xl font-semibold mb-2">Purchase Overview</h2>
-                                    <p className="text-gray-400">Created on {new Date(purchase.date).toLocaleDateString()}</p>
+                                    <p className="text-gray-400">Created on {new Date(selectedPurchase.createdAt).toLocaleDateString()}</p>
                                 </div>
-                                <span
-                                    className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full text-white ${getStatusColor(purchase.status)}`}
-                                >
-                                    {purchase.status}
+                                <span className={`px-3 py-1 rounded text-sm ${selectedPurchase.paymentStatus === "Paid by Cash"
+                                        ? "bg-green-600 text-white"
+                                        : "bg-blue-600 text-white"
+                                    }`}>
+                                    {selectedPurchase.paymentStatus}
                                 </span>
                             </div>
 
@@ -1218,23 +1263,11 @@ export default function PurchaseApp() {
                                 <div>
                                     <h3 className="font-medium mb-2">Customer Information</h3>
                                     <div className="text-gray-300 space-y-1">
-                                        <p>{purchase.name}</p>
-                                        <p>{purchase.email}</p>
-                                        {purchase.phone && <p>{purchase.phone}</p>}
+                                        <p>{selectedPurchase.customerName}</p>
+                                        <p>{selectedPurchase.customerEmail}</p>
                                     </div>
                                 </div>
-                                <div>
-                                    <h3 className="font-medium mb-2">Billing Address</h3>
-                                    <p className="text-gray-300">{purchase.billingAddress}</p>
-                                </div>
                             </div>
-
-                            {purchase.billingAddress !== purchase.shippingAddress && (
-                                <div className="mt-4">
-                                    <h3 className="font-medium mb-2">Shipping Address</h3>
-                                    <p className="text-gray-300">{purchase.shippingAddress}</p>
-                                </div>
-                            )}
                         </div>
 
                         {/* Order Items */}
@@ -1244,6 +1277,7 @@ export default function PurchaseApp() {
                                 <table className="w-full">
                                     <thead>
                                         <tr className="border-b border-gray-700">
+                                            <th className="text-left py-3 px-2">Product ID</th>
                                             <th className="text-left py-3 px-2">Product</th>
                                             <th className="text-center py-3 px-2">Quantity</th>
                                             <th className="text-right py-3 px-2">Price</th>
@@ -1251,14 +1285,17 @@ export default function PurchaseApp() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {purchase.items.map((item, index) => (
+                                        {selectedPurchase.items.map((item, index) => (
                                             <tr key={index} className="border-b border-gray-700">
+                                                <td className="py-4 px-2">
+                                                    <div className="font-medium">{item.sku}</div>
+                                                </td>
                                                 <td className="py-4 px-2">
                                                     <div className="font-medium">{item.name}</div>
                                                 </td>
                                                 <td className="text-center py-4 px-2">{item.quantity}</td>
-                                                <td className="text-right py-4 px-2">Rs {item.price.toFixed(2)}</td>
-                                                <td className="text-right py-4 px-2 font-semibold">Rs {item.total.toFixed(2)}</td>
+                                                <td className="text-right py-4 px-2">${item.price.toFixed(2)}</td>
+                                                <td className="text-right py-4 px-2 font-semibold">${item.total.toFixed(2)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -1274,42 +1311,11 @@ export default function PurchaseApp() {
                                     <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
                                     <div>
                                         <p className="font-medium">Order Created</p>
-                                        <p className="text-gray-400 text-sm">{new Date(purchase.date).toLocaleDateString()} at 10:30 AM</p>
+                                        <p className="text-gray-400 text-sm">
+                                            {new Date(selectedPurchase.createdAt).toLocaleDateString()} at {new Date(selectedPurchase.createdAt).toLocaleTimeString()}
+                                        </p>
                                     </div>
                                 </div>
-                                {purchase.status === "Processing" && (
-                                    <div className="flex items-center space-x-3">
-                                        <div className="w-3 h-3 bg-yellow-600 rounded-full"></div>
-                                        <div>
-                                            <p className="font-medium">Payment Confirmed</p>
-                                            <p className="text-gray-400 text-sm">
-                                                {new Date(purchase.date).toLocaleDateString()} at 10:32 AM
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                                {purchase.status === "Completed" && (
-                                    <>
-                                        <div className="flex items-center space-x-3">
-                                            <div className="w-3 h-3 bg-yellow-600 rounded-full"></div>
-                                            <div>
-                                                <p className="font-medium">Payment Confirmed</p>
-                                                <p className="text-gray-400 text-sm">
-                                                    {new Date(purchase.date).toLocaleDateString()} at 10:32 AM
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center space-x-3">
-                                            <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-                                            <div>
-                                                <p className="font-medium">Order Completed</p>
-                                                <p className="text-gray-400 text-sm">
-                                                    {new Date(purchase.date).toLocaleDateString()} at 2:15 PM
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </>
-                                )}
                             </div>
                         </div>
                     </div>
@@ -1322,65 +1328,112 @@ export default function PurchaseApp() {
                             <div className="space-y-3 mb-6">
                                 <div className="flex justify-between">
                                     <span className="text-gray-400">Subtotal</span>
-                                    <span>${purchase.subtotal.toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Shipping</span>
-                                    <span>${purchase.shipping.toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400">Tax</span>
-                                    <span>${purchase.tax.toFixed(2)}</span>
+                                    <span>${selectedPurchase.subtotal.toFixed(2)}</span>
                                 </div>
                                 <div className="border-t border-gray-700 pt-3">
                                     <div className="flex justify-between text-lg font-semibold">
                                         <span>Total</span>
-                                        <span>${purchase.total.toFixed(2)}</span>
-                                    </div>  
+                                        <span>${selectedPurchase.total.toFixed(2)}</span>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="space-y-3">
+                            <div className="space-y-3 no-print">
                                 <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200" onClick={handlePrintInvoice}>
                                     Print Invoice
                                 </button>
                                 <button className="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200" onClick={handleDownloadPDF}>
                                     Download PDF
                                 </button>
-                                {purchase.status === "Processing" && (
-                                    <button className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200" onClick={() => handleCancelOrder(purchase.id)}>
-                                        Cancel Order
-                                    </button>
-                                )}
-                            </div>
-
-                            <div className="mt-6 p-4 bg-gray-700 rounded-lg">
-                                <h3 className="font-medium mb-2">Need Help?</h3>
-                                <p className="text-gray-400 text-sm mb-3">Contact our support team for assistance with your order.</p>
-                                <button className="text-blue-400 hover:text-blue-300 text-sm font-medium">Contact Support</button>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        )
-    }
+        );
+    };
 
     const handlePrintInvoice = () => {
         window.print();
     };
 
     const handleDownloadPDF = () => {
-        alert('Download PDF functionality coming soon!');
-    };
+    if (!selectedPurchase) return;
 
-    const handleCancelOrder = (purchaseId) => {
-        setPurchases((prev) =>
-            prev.map((p) =>
-                p.id === purchaseId ? { ...p, status: 'Cancelled' } : p
-            )
-        );
-    };
+    const doc = new jsPDF();
+
+    // === Company Header ===
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Your Company Name', 105, 15, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('123 Business Street, City, Country', 105, 22, { align: 'center' });
+    doc.text('Email: contact@yourcompany.com | Phone: +123-456-7890', 105, 28, { align: 'center' });
+
+    // Optional Logo (adjust x/y/width/height as needed)
+    // doc.addImage(logo, 'PNG', 15, 10, 30, 20);
+
+    // === Invoice Title ===
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Purchase Invoice', 105, 40, { align: 'center' });
+
+    // === Purchase Info ===
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Purchase ID: ${selectedPurchase.purchaseId}`, 20, 55);
+    doc.text(`Date: ${new Date(selectedPurchase.createdAt).toLocaleDateString()}`, 20, 63);
+    doc.text(`Status: ${selectedPurchase.paymentStatus}`, 20, 71);
+
+    // Line separator
+    doc.setLineWidth(0.5);
+    doc.line(20, 75, 190, 75);
+
+    // === Customer Info ===
+    doc.setFont('helvetica', 'bold');
+    doc.text('Customer Information:', 20, 85);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Name: ${selectedPurchase.customerName}`, 30, 93);
+    doc.text(`Email: ${selectedPurchase.customerEmail}`, 30, 101);
+
+    // === Product Table ===
+    const tableColumn = ['Product ID', 'Product', 'Quantity', 'Price', 'Total'];
+    const tableRows = selectedPurchase.items.map(item => [
+        item.sku,
+        item.name,
+        item.quantity.toString(),
+        `$${item.price.toFixed(2)}`,
+        `$${item.total.toFixed(2)}`
+    ]);
+
+    autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 110,
+        theme: 'striped',
+        styles: { fontSize: 10, cellPadding: 3 },
+        headStyles: { fillColor: [44, 62, 80], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [240, 240, 240] },
+        margin: { top: 10 }
+    });
+    const finalY = doc.lastAutoTable.finalY || 200;
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Subtotal:`, 140, finalY + 10);
+    doc.text(`$${selectedPurchase.subtotal.toFixed(2)}`, 180, finalY + 10, { align: 'right' });
+    doc.text(`Total:`, 140, finalY + 18);
+    doc.text(`$${selectedPurchase.total.toFixed(2)}`, 180, finalY + 18, { align: 'right' });
+
+    // === Footer ===
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'italic');
+    doc.text('Thank you for your purchase!', 105, finalY + 35, { align: 'center' });
+
+    // Save PDF
+    doc.save(`purchase-${selectedPurchase.purchaseId}.pdf`);
+};
+
 
     const renderCurrentView = () => {
         switch (currentView) {
@@ -1393,5 +1446,32 @@ export default function PurchaseApp() {
         }
     }
 
-    return <div className="min-h-screen bg-gray-900">{renderCurrentView()}</div>
+    return (
+        <div className="min-h-screen bg-gray-900">
+            <style>
+                {`
+                    @media print {
+                        body * {
+                            visibility: hidden;
+                        }
+                        .print-content, .print-content * {
+                            visibility: visible;
+                        }
+                        .print-content {
+                            position: absolute;
+                            left: 0;
+                            top: 0;
+                            width: 100%;
+                        }
+                        .no-print {
+                            display: none !important;
+                        }
+                    }
+                `}
+            </style>
+            <div className="print-content">
+                {renderCurrentView()}
+            </div>
+        </div>
+    );
 }
