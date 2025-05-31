@@ -19,7 +19,6 @@ import axios from "axios"
 export default function SupplierManagement() {
   const [suppliers, setSuppliers] = useState([])
   const [supplierTotals, setSupplierTotals] = useState({})
-  const [supplierPaidAmounts, setSupplierPaidAmounts] = useState({})
   const [searchTerm, setSearchTerm] = useState("")
   const [filterCategory, setFilterCategory] = useState("all")
   const [showAddForm, setShowAddForm] = useState(false)
@@ -29,6 +28,16 @@ export default function SupplierManagement() {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [selectedSupplier, setSelectedSupplier] = useState(null)
   const [showPaymentHistory, setShowPaymentHistory] = useState({})
+  const [isFullPayMode, setIsFullPayMode] = useState(false)
+
+  // Move calculatePaidAmount here so it is defined before use
+  const calculatePaidAmount = (paymentHistory) => {
+    if (!paymentHistory || !Array.isArray(paymentHistory)) return 0
+    return paymentHistory.reduce((sum, payment) => {
+      const amount = Number(payment.amount) || 0
+      return amount > 0 ? sum + amount : sum
+    }, 0)
+  }
 
   const [newSupplier, setNewSupplier] = useState({
     name: "",
@@ -57,6 +66,10 @@ export default function SupplierManagement() {
     try {
       const response = await axios.get('http://localhost:3001/api/contacts')
       const supplierData = response.data.filter(contact => contact.categoryType === "Supplier")
+        .map(supplier => ({
+          ...supplier,
+          paymentHistory: supplier.paymentHistory || [] // Ensure paymentHistory exists
+        }))
       setSuppliers(supplierData)
     } catch (error) {
       console.error('Error fetching suppliers:', error)
@@ -67,45 +80,17 @@ export default function SupplierManagement() {
     try {
       const response = await axios.get('http://localhost:3001/api/purchase')
       const purchases = response.data
-      
-      // Calculate totals and paid amounts for each supplier
       const totals = {}
-      const paidAmounts = {}
-      
       purchases.forEach(purchase => {
         const email = purchase.customerEmail
-        
-        // Calculate total amounts for debited purchases
         if (purchase.paymentStatus === "Debited to Supplier Account") {
           if (!totals[email]) {
             totals[email] = 0
           }
           totals[email] += purchase.total
         }
-        
-        // Calculate paid amounts from payment history
-        if (purchase.paymentHistory && Array.isArray(purchase.paymentHistory)) {
-          if (!paidAmounts[email]) {
-            paidAmounts[email] = 0
-          }
-          
-          // Filter out $0.00 payments and sum valid payment amounts
-          const validPayments = purchase.paymentHistory.filter(payment => {
-            const amount = Number(payment.amount) || 0
-            return amount > 0 // Only include payments greater than 0
-          })
-          
-          // Sum up all valid payment amounts
-          const paymentTotal = validPayments.reduce((sum, payment) => {
-            return sum + (Number(payment.amount) || 0)
-          }, 0)
-          
-          paidAmounts[email] += paymentTotal
-        }
       })
-      
       setSupplierTotals(totals)
-      setSupplierPaidAmounts(paidAmounts)
     } catch (error) {
       console.error('Error fetching supplier totals:', error)
     }
@@ -135,7 +120,10 @@ export default function SupplierManagement() {
 
   // Calculate totals
   const totalAmount = Object.values(supplierTotals).reduce((sum, amount) => sum + amount, 0)
-  const totalPaid = Object.values(supplierPaidAmounts).reduce((sum, amount) => sum + amount, 0)
+  const totalPaid = suppliers.reduce(
+    (sum, supplier) => sum + calculatePaidAmount(supplier.paymentHistory), 
+    0
+  )
   const totalPending = totalAmount - totalPaid
   const fullyPaidSuppliers = suppliers.filter((s) => s.totalAmount === s.paidAmount).length
 
@@ -188,15 +176,18 @@ export default function SupplierManagement() {
   const handlePayment = (supplier, isFullPayment = false) => {
     setSelectedSupplier(supplier)
     if (isFullPayment) {
+      const pendingAmount = (supplierTotals[supplier.email] || 0) - calculatePaidAmount(supplier.paymentHistory)
       setPaymentForm({
         ...paymentForm,
-        amount: supplier.pendingAmount?.toString() || "0",
+        amount: pendingAmount > 0 ? pendingAmount.toString() : "0",
       })
+      setIsFullPayMode(true)
     } else {
       setPaymentForm({
         ...paymentForm,
         amount: "",
       })
+      setIsFullPayMode(false)
     }
     setShowPaymentModal(true)
   }
@@ -219,18 +210,15 @@ export default function SupplierManagement() {
       ...(paymentForm.method === "card" && { cardLast4: paymentForm.cardNumber.slice(-4) }),
     }
 
-    // Here you would typically make an API call to update the payment
-    // For now, we'll just update the local state
-    setSuppliers(
-      suppliers.map((s) =>
-        s.id === supplier.id
-          ? {
-              ...s,
-              paymentHistory: [...(s.paymentHistory || []), newPayment],
-            }
-          : s,
-      ),
-    )
+    // Update the supplier's payment history
+    setSuppliers(suppliers.map(s => 
+      s.id === supplier.id 
+        ? { 
+            ...s, 
+            paymentHistory: [...(s.paymentHistory || []), newPayment] 
+          } 
+        : s
+    ))
 
     setShowPaymentModal(false)
     setPaymentForm({
@@ -417,12 +405,12 @@ export default function SupplierManagement() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm font-medium text-green-400">
-                          {formatCurrency(supplierPaidAmounts[supplier.email] || 0)}
+                          {formatCurrency(calculatePaidAmount(supplier.paymentHistory))}
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="text-sm font-medium text-yellow-400">
-                          {formatCurrency((supplierTotals[supplier.email] || 0) - (supplierPaidAmounts[supplier.email] || 0))}
+                          {formatCurrency((supplierTotals[supplier.email] || 0) - calculatePaidAmount(supplier.paymentHistory))}
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -458,7 +446,7 @@ export default function SupplierManagement() {
                             <div className="flex justify-between items-center mb-3">
                               <h4 className="text-sm font-medium text-white">Payment History</h4>
                               <span className="text-xs bg-yellow-600 text-white px-2 py-1 rounded-full">
-                                {formatCurrency((supplierTotals[supplier.email] || 0) - (supplierPaidAmounts[supplier.email] || 0))} Pending
+                                {formatCurrency((supplierTotals[supplier.email] || 0) - calculatePaidAmount(supplier.paymentHistory))} Pending
                               </span>
                             </div>
                             {supplier.paymentHistory?.length > 0 ? (
@@ -518,7 +506,7 @@ export default function SupplierManagement() {
             <div className="mb-4 p-3 bg-gray-700 rounded-lg">
               <p className="text-sm text-gray-300">
                 Pending Amount:{" "}
-                <span className="text-yellow-400 font-medium">{formatCurrency((supplierTotals[selectedSupplier.email] || 0) - (supplierPaidAmounts[selectedSupplier.email] || 0))} </span>
+                <span className="text-yellow-400 font-medium">{formatCurrency((supplierTotals[selectedSupplier.email] || 0) - calculatePaidAmount(selectedSupplier.paymentHistory))} </span>
               </p>
             </div>
 
@@ -533,7 +521,11 @@ export default function SupplierManagement() {
                   value={paymentForm.amount}
                   onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  readOnly={isFullPayMode}
                 />
+                {isFullPayMode && (
+                  <p className="text-xs text-blue-400 mt-1">Payment Amount is set to Pending Amount for Full Pay.</p>
+                )}
               </div>
 
               <div>
