@@ -25,6 +25,8 @@ import Purchase from "./pages/Purchase.jsx";
 import InventoryManagement from "./pages/InventoryManagemnet.jsx";
 import SupplierManagement from "./pages/SupplierManagement.jsx";
 import Cashbook from "./pages/Cashbook.jsx";
+import Expence from "./pages/Expence.jsx";
+import Income from "./pages/Income.jsx";
 
 function App() {
   const { theme } = useTheme();
@@ -216,6 +218,23 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Cashbook />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="expence"
+              element={
+                <ProtectedRoute>
+                  <Expence />
+                </ProtectedRoute>
+              }
+            />
+             
+            <Route
+              path="income"
+              element={
+                <ProtectedRoute>
+                  <Income />
                 </ProtectedRoute>
               }
             />

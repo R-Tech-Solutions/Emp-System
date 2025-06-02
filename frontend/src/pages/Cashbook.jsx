@@ -2,43 +2,12 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { Plus, Edit2, Trash2, Search, Filter, X, Save, DollarSign, FileText } from "lucide-react"
+import axios from "axios"
 
 export default function CashbookApp() {
-  const [entries, setEntries] = useState([
-    {
-      id: 1,
-      date: "2024-01-15",
-      particulars: "Opening Balance",
-      voucherNumber: "OB001",
-      transactionType: "cash-in",
-      amount: 10000,
-      paymentMode: "cash",
-      category: "opening",
-      balance: 10000,
-    },
-    {
-      id: 2,
-      date: "2024-01-16",
-      particulars: "Sales Revenue",
-      voucherNumber: "SR001",
-      transactionType: "cash-in",
-      amount: 2500,
-      paymentMode: "cash",
-      category: "sales",
-      balance: 12500,
-    },
-    {
-      id: 3,
-      date: "2024-01-16",
-      particulars: "Office Rent",
-      voucherNumber: "EX001",
-      transactionType: "cash-out",
-      amount: 1500,
-      paymentMode: "bank",
-      category: "expense",
-      balance: 11000,
-    },
-  ])
+  const [entries, setEntries] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const [showModal, setShowModal] = useState(false)
   const [editingEntry, setEditingEntry] = useState(null)
@@ -47,7 +16,7 @@ export default function CashbookApp() {
   const [filters, setFilters] = useState({
     dateFrom: "",
     dateTo: "",
-    transactionType: "",
+    transactionType: "", 
     category: "",
     paymentMode: "",
   })
@@ -65,24 +34,23 @@ export default function CashbookApp() {
   const categories = ["sales", "purchase", "expense", "investment", "opening", "other"]
   const paymentModes = ["cash", "bank", "upi", "cheque", "card"]
 
-  // Calculate running balance for all entries
-  const calculateBalances = (entriesList) => {
-    let runningBalance = 0
-    return entriesList
-      .sort((a, b) => new Date(a.date) - new Date(b.date) || a.id - b.id)
-      .map((entry) => {
-        if (entry.transactionType === "cash-in") {
-          runningBalance += entry.amount
-        } else {
-          runningBalance -= entry.amount
-        }
-        return { ...entry, balance: runningBalance }
-      })
-  }
-
-  // Update balances whenever entries change
+  // Fetch entries from API
   useEffect(() => {
-    setEntries((prevEntries) => calculateBalances(prevEntries))
+    const fetchEntries = async () => {
+      try {
+        setLoading(true)
+        const response = await axios.get('http://localhost:3001/api/cashbook')
+        setEntries(response.data)
+        setError(null)
+      } catch (err) {
+        console.error('Error fetching cashbook entries:', err)
+        setError('Failed to fetch cashbook entries')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchEntries()
   }, [])
 
   // Filtered and searched entries
@@ -90,34 +58,36 @@ export default function CashbookApp() {
     const filtered = entries.filter((entry) => {
       const matchesSearch =
         entry.particulars.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        entry.voucherNumber.toLowerCase().includes(searchTerm.toLowerCase())
+        entry.voucher.toLowerCase().includes(searchTerm.toLowerCase())
 
       const matchesDateFrom = !filters.dateFrom || entry.date >= filters.dateFrom
       const matchesDateTo = !filters.dateTo || entry.date <= filters.dateTo
-      const matchesType = !filters.transactionType || entry.transactionType === filters.transactionType
+      const matchesType = !filters.transactionType || entry.type === filters.transactionType
       const matchesCategory = !filters.category || entry.category === filters.category
-      const matchesPaymentMode = !filters.paymentMode || entry.paymentMode === filters.paymentMode
+      const matchesPaymentMode = !filters.paymentMode || 
+        entry.mode.toLowerCase().includes(filters.paymentMode.toLowerCase())
 
       return matchesSearch && matchesDateFrom && matchesDateTo && matchesType && matchesCategory && matchesPaymentMode
     })
 
-    return filtered.sort((a, b) => new Date(b.date) - new Date(a.date) || b.id - a.id)
+    return filtered.sort((a, b) => new Date(b.date) - new Date(a.date))
   }, [entries, searchTerm, filters])
 
   // Summary calculations
   const summary = useMemo(() => {
     const totalCashIn = entries
-      .filter((entry) => entry.transactionType === "cash-in")
+      .filter((entry) => entry.type === "Cash In")
       .reduce((sum, entry) => sum + entry.amount, 0)
 
     const totalCashOut = entries
-      .filter((entry) => entry.transactionType === "cash-out")
+      .filter((entry) => entry.type === "Cash Out")
       .reduce((sum, entry) => sum + entry.amount, 0)
 
     const netBalance = totalCashIn - totalCashOut
 
     return { totalCashIn, totalCashOut, netBalance }
   }, [entries])
+
   const resetForm = () => {
     setFormData({
       date: new Date().toISOString().split("T")[0],
@@ -141,6 +111,22 @@ export default function CashbookApp() {
       paymentMode: "",
     })
     setSearchTerm("")
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-gray-100 flex items-center justify-center">
+        <div className="text-xl">Loading cashbook entries...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-gray-100 flex items-center justify-center">
+        <div className="text-xl text-red-500">{error}</div>
+      </div>
+    )
   }
 
   return (
@@ -204,8 +190,8 @@ export default function CashbookApp() {
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">All Types</option>
-                  <option value="cash-in">Cash In</option>
-                  <option value="cash-out">Cash Out</option>
+                  <option value="Cash In">Cash In</option>
+                  <option value="Cash Out">Cash Out</option>
                 </select>
               </div>
               <div>
@@ -241,8 +227,6 @@ export default function CashbookApp() {
             </div>
           )}
         </div>
-
-        {/* Entries Table */}
         <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -273,31 +257,32 @@ export default function CashbookApp() {
               </thead>
               <tbody className="divide-y divide-gray-700">
                 {filteredEntries.map((entry) => (
-                  <tr key={entry.id} className="hover:bg-gray-700 transition-colors">
-                    <td className="px-4 py-3 text-sm text-gray-300">{new Date(entry.date).toLocaleDateString()}</td>
+                  <tr key={entry.voucher} className="hover:bg-gray-700 transition-colors">
+                    <td className="px-4 py-3 text-sm text-gray-300">
+                      {new Date(entry.date).toLocaleDateString()}
+                    </td>
                     <td className="px-4 py-3 text-sm text-white font-medium">{entry.particulars}</td>
-                    <td className="px-4 py-3 text-sm text-gray-300">{entry.voucherNumber}</td>
+                    <td className="px-4 py-3 text-sm text-gray-300">{entry.voucher}</td>
                     <td className="px-4 py-3 text-sm">
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          entry.transactionType === "cash-in"
+                          entry.type === "Cash In"
                             ? "bg-green-900 text-green-300"
                             : "bg-red-900 text-red-300"
                         }`}
                       >
-                        {entry.transactionType === "cash-in" ? "Cash In" : "Cash Out"}
+                        {entry.type}
                       </span>
                     </td>
                     <td
                       className={`px-4 py-3 text-sm font-medium ${
-                        entry.transactionType === "cash-in" ? "text-green-400" : "text-red-400"
+                        entry.type === "Cash In" ? "text-green-400" : "text-red-400"
                       }`}
                     >
                       ₹{entry.amount.toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-300 capitalize">{entry.paymentMode}</td>
+                    <td className="px-4 py-3 text-sm text-gray-300 capitalize">{entry.mode}</td>
                     <td className="px-4 py-3 text-sm text-gray-300 capitalize">{entry.category}</td>
-                    
                   </tr>
                 ))}
               </tbody>
