@@ -118,56 +118,6 @@ export default function CashbookApp() {
 
     return { totalCashIn, totalCashOut, netBalance }
   }, [entries])
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-
-    if (!formData.particulars || !formData.amount || !formData.voucherNumber) {
-      alert("Please fill in all required fields")
-      return
-    }
-
-    const entryData = {
-      ...formData,
-      amount: Number.parseFloat(formData.amount),
-      id: editingEntry ? editingEntry.id : Date.now(),
-    }
-
-    if (editingEntry) {
-      setEntries((prevEntries) => {
-        const updated = prevEntries.map((entry) => (entry.id === editingEntry.id ? entryData : entry))
-        return calculateBalances(updated)
-      })
-    } else {
-      setEntries((prevEntries) => calculateBalances([...prevEntries, entryData]))
-    }
-
-    resetForm()
-  }
-
-  const handleEdit = (entry) => {
-    setEditingEntry(entry)
-    setFormData({
-      date: entry.date,
-      particulars: entry.particulars,
-      voucherNumber: entry.voucherNumber,
-      transactionType: entry.transactionType,
-      amount: entry.amount.toString(),
-      paymentMode: entry.paymentMode,
-      category: entry.category,
-    })
-    setShowModal(true)
-  }
-
-  const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this entry?")) {
-      setEntries((prevEntries) => {
-        const filtered = prevEntries.filter((entry) => entry.id !== id)
-        return calculateBalances(filtered)
-      })
-    }
-  }
-
   const resetForm = () => {
     setFormData({
       date: new Date().toISOString().split("T")[0],
@@ -195,58 +145,7 @@ export default function CashbookApp() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
-      {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <FileText className="w-8 h-8 text-blue-400" />
-            <h1 className="text-2xl font-bold text-white">Cashbook Manager</h1>
-          </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Entry</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Summary Cards */}
       <div className="px-6 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm">Total Cash In</p>
-                <p className="text-2xl font-bold text-green-400">₹{summary.totalCashIn.toLocaleString()}</p>
-              </div>
-              <DollarSign className="w-8 h-8 text-green-400" />
-            </div>
-          </div>
-          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm">Total Cash Out</p>
-                <p className="text-2xl font-bold text-red-400">₹{summary.totalCashOut.toLocaleString()}</p>
-              </div>
-              <DollarSign className="w-8 h-8 text-red-400" />
-            </div>
-          </div>
-          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm">Net Balance</p>
-                <p className={`text-2xl font-bold ${summary.netBalance >= 0 ? "text-green-400" : "text-red-400"}`}>
-                  ₹{summary.netBalance.toLocaleString()}
-                </p>
-              </div>
-              <DollarSign className={`w-8 h-8 ${summary.netBalance >= 0 ? "text-green-400" : "text-red-400"}`} />
-            </div>
-          </div>
-        </div>
-
-        {/* Search and Filters */}
         <div className="bg-gray-800 rounded-lg p-4 mb-6 border border-gray-700">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
@@ -365,16 +264,10 @@ export default function CashbookApp() {
                     Amount
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Balance
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Mode
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Category
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Actions
                   </th>
                 </tr>
               </thead>
@@ -402,31 +295,9 @@ export default function CashbookApp() {
                     >
                       ₹{entry.amount.toLocaleString()}
                     </td>
-                    <td
-                      className={`px-4 py-3 text-sm font-medium ${
-                        entry.balance >= 0 ? "text-green-400" : "text-red-400"
-                      }`}
-                    >
-                      ₹{entry.balance.toLocaleString()}
-                    </td>
                     <td className="px-4 py-3 text-sm text-gray-300 capitalize">{entry.paymentMode}</td>
                     <td className="px-4 py-3 text-sm text-gray-300 capitalize">{entry.category}</td>
-                    <td className="px-4 py-3 text-sm">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleEdit(entry)}
-                          className="text-blue-400 hover:text-blue-300 transition-colors"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(entry.id)}
-                          className="text-red-400 hover:text-red-300 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+                    
                   </tr>
                 ))}
               </tbody>
@@ -438,130 +309,6 @@ export default function CashbookApp() {
           )}
         </div>
       </div>
-
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md border border-gray-700">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-white">{editingEntry ? "Edit Entry" : "Add New Entry"}</h2>
-              <button onClick={resetForm} className="text-gray-400 hover:text-white transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Date *</label>
-                <input
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, date: e.target.value }))}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Particulars *</label>
-                <input
-                  type="text"
-                  value={formData.particulars}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, particulars: e.target.value }))}
-                  placeholder="Description of transaction"
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Voucher Number *</label>
-                <input
-                  type="text"
-                  value={formData.voucherNumber}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, voucherNumber: e.target.value }))}
-                  placeholder="Receipt/Voucher number"
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Transaction Type *</label>
-                <select
-                  value={formData.transactionType}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, transactionType: e.target.value }))}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="cash-in">Cash In (Receipt)</option>
-                  <option value="cash-out">Cash Out (Payment)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Amount *</label>
-                <input
-                  type="number"
-                  value={formData.amount}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, amount: e.target.value }))}
-                  placeholder="0.00"
-                  step="0.01"
-                  min="0"
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Payment Mode</label>
-                <select
-                  value={formData.paymentMode}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, paymentMode: e.target.value }))}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {paymentModes.map((mode) => (
-                    <option key={mode} value={mode}>
-                      {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Category</label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex space-x-3 pt-4">
-                <button
-                  type="submit"
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>{editingEntry ? "Update" : "Save"}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
