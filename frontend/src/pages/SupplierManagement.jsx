@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import {
   Search,
   Plus,
@@ -29,14 +29,20 @@ export default function SupplierManagement() {
   const [selectedSupplier, setSelectedSupplier] = useState(null)
   const [showPaymentHistory, setShowPaymentHistory] = useState({})
   const [isFullPayMode, setIsFullPayMode] = useState(false)
+  const [supplierPurchases, setSupplierPurchases] = useState({});
+  const [selectedPurchase, setSelectedPurchase] = useState(null);
+  const [paymentError, setPaymentError] = useState("")
+  const [showError, setShowError] = useState(false)
+  const [paymentHistoryData, setPaymentHistoryData] = useState({});
 
-  // Move calculatePaidAmount here so it is defined before use
-  const calculatePaidAmount = (paymentHistory) => {
+  const calculatePaidAmount = (paymentHistory, purchaseId) => {
     if (!paymentHistory || !Array.isArray(paymentHistory)) return 0
-    return paymentHistory.reduce((sum, payment) => {
-      const amount = Number(payment.amount) || 0
-      return amount > 0 ? sum + amount : sum
-    }, 0)
+    return paymentHistory
+      .filter(payment => payment.purchaseId === purchaseId)
+      .reduce((sum, payment) => {
+        const amount = Number(payment.amount) || 0
+        return amount > 0 ? sum + amount : sum
+      }, 0)
   }
 
   const [newSupplier, setNewSupplier] = useState({
@@ -64,37 +70,75 @@ export default function SupplierManagement() {
 
   const fetchSuppliers = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/contacts')
-      const supplierData = response.data.filter(contact => contact.categoryType === "Supplier")
-        .map(supplier => ({
-          ...supplier,
-          paymentHistory: supplier.paymentHistory || [] // Ensure paymentHistory exists
-        }))
-      setSuppliers(supplierData)
+      const response = await axios.get('http://localhost:3001/api/contacts');
+      const purchasesResponse = await axios.get('http://localhost:3001/api/purchase');
+      const suppliersResponse = await axios.get('http://localhost:3001/api/suppliers');
+
+      const supplierData = response.data
+        .filter(contact => contact.categoryType === "Supplier")
+        .map(supplier => {
+          // Find supplier payment records
+          const supplierPayments = suppliersResponse.data
+            .filter(payment => payment.contactId === supplier.id);
+
+          // Find all purchases for this supplier's email
+          const supplierPurchases = purchasesResponse.data
+            .filter(purchase => purchase.customerEmail === supplier.email)
+            .map(purchase => {
+              // Find corresponding supplier payment record
+              const paymentRecord = supplierPayments.find(p => p.purchaseId === purchase.id);
+              return {
+                id: purchase.id,
+                total: purchase.total,
+                paymentStatus: purchase.paymentStatus,
+                paidAmount: paymentRecord?.paidAmountTotal || 0,
+                pendingAmount: paymentRecord?.pendingAmount || purchase.total,
+                status: paymentRecord?.status || "Pending",
+                paymentHistory: paymentRecord?.paidAmountHistory || []
+              };
+            });
+
+          return {
+            ...supplier,
+            purchases: supplierPurchases
+          };
+        });
+
+      setSuppliers(supplierData);
     } catch (error) {
-      console.error('Error fetching suppliers:', error)
+      console.error('Error fetching suppliers:', error);
     }
-  }
+  };
 
   const fetchSupplierTotals = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/purchase')
-      const purchases = response.data
-      const totals = {}
+      const response = await axios.get('http://localhost:3001/api/purchase');
+      const purchases = response.data;
+      const totals = {};
+      const purchaseDetails = {}; // New object to store purchase details
+
       purchases.forEach(purchase => {
-        const email = purchase.customerEmail
+        const email = purchase.customerEmail;
         if (purchase.paymentStatus === "Debited to Supplier Account") {
           if (!totals[email]) {
-            totals[email] = 0
+            totals[email] = 0;
+            purchaseDetails[email] = [];
           }
-          totals[email] += purchase.total
+          totals[email] += purchase.total;
+          purchaseDetails[email].push({
+            id: purchase.id,
+            amount: purchase.total
+          });
         }
-      })
-      setSupplierTotals(totals)
+      });
+
+      setSupplierTotals(totals);
+      // Store purchase details in state
+      setSupplierPurchases(purchaseDetails);
     } catch (error) {
-      console.error('Error fetching supplier totals:', error)
+      console.error('Error fetching supplier totals:', error);
     }
-  }
+  };
 
   // Filter and search suppliers
   const filteredSuppliers = suppliers.filter((supplier) => {
@@ -121,7 +165,7 @@ export default function SupplierManagement() {
   // Calculate totals
   const totalAmount = Object.values(supplierTotals).reduce((sum, amount) => sum + amount, 0)
   const totalPaid = suppliers.reduce(
-    (sum, supplier) => sum + calculatePaidAmount(supplier.paymentHistory), 
+    (sum, supplier) => sum + calculatePaidAmount(supplier.paymentHistory, null),
     0
   )
   const totalPending = totalAmount - totalPaid
@@ -130,53 +174,93 @@ export default function SupplierManagement() {
   // Get unique categories
   const categories = [...new Set(suppliers.map((s) => s.category))]
 
-  const handleAddSupplier = (e) => {
-    e.preventDefault()
-    const supplier = {
-      ...newSupplier,
-      id: Date.now(),
-      paidAmount: 0,
-      totalAmount: Number.parseFloat(newSupplier.totalAmount) || 0,
-      paymentHistory: [],
+  const handleAddSupplier = async (e) => {
+    e.preventDefault();
+    try {
+      const supplier = {
+        ...newSupplier,
+        categoryType: "Supplier"
+      };
+
+      // Create contact
+      const contactResponse = await axios.post('http://localhost:3001/api/contacts', supplier);
+      const contactId = contactResponse.data.id;
+
+      // Create supplier record
+      const supplierData = {
+        contactId,
+        purchaseId: null, // Will be set when first purchase is made
+        totalAmount: 0,
+        paidAmountTotal: 0,
+        paidAmountHistory: [],
+        pendingAmount: 0,
+        status: "No Purchases"
+      };
+
+      await axios.post('http://localhost:3001/api/suppliers', supplierData);
+
+      setNewSupplier({
+        name: "",
+        email: "",
+        phone: "",
+        company: "",
+        website: "",
+        supplierNotes: "",
+      });
+      setShowAddForm(false);
+      await fetchSuppliers();
+    } catch (error) {
+      console.error('Error adding supplier:', error);
     }
-    setSuppliers([...suppliers, supplier])
-    setNewSupplier({
-      name: "",
-      email: "",
-      phone: "",
-      address: "",
-      totalAmount: 0,
-      category: "Technology",
-    })
-    setShowAddForm(false)
-  }
+  };
 
   const handleEditSupplier = (supplier) => {
     setEditingSupplier({ ...supplier })
   }
 
-  const handleUpdateSupplier = (e) => {
-    e.preventDefault()
-    setSuppliers(
-      suppliers.map((s) =>
-        s.id === editingSupplier.id
-          ? { ...editingSupplier, totalAmount: Number.parseFloat(editingSupplier.totalAmount) || 0 }
-          : s,
-      ),
-    )
-    setEditingSupplier(null)
-  }
-
-  const handleDeleteSupplier = (id) => {
-    if (window.confirm("Are you sure you want to delete this supplier?")) {
-      setSuppliers(suppliers.filter((s) => s.id !== id))
+  const handleUpdateSupplier = async (e) => {
+    e.preventDefault();
+    try {
+      // Update contact
+      await axios.put(`http://localhost:3001/api/contacts/${editingSupplier.id}`, editingSupplier);
+      
+      setEditingSupplier(null);
+      await fetchSuppliers();
+    } catch (error) {
+      console.error('Error updating supplier:', error);
     }
-  }
+  };
 
-  const handlePayment = (supplier, isFullPayment = false) => {
+  const handleDeleteSupplier = async (id) => {
+    if (window.confirm("Are you sure you want to delete this supplier?")) {
+      try {
+        // Delete contact
+        await axios.delete(`http://localhost:3001/api/contacts/${id}`);
+        
+        // Delete supplier records
+        const supplierRecords = await axios.get('http://localhost:3001/api/suppliers');
+        const recordsToDelete = supplierRecords.data.filter(record => record.contactId === id);
+        
+        await Promise.all(
+          recordsToDelete.map(record => 
+            axios.delete(`http://localhost:3001/api/suppliers/${record.id}`)
+          )
+        );
+
+        await fetchSuppliers();
+      } catch (error) {
+        console.error('Error deleting supplier:', error);
+      }
+    }
+  };
+
+  const handlePayment = (supplier, purchase, isFullPayment = false) => {
     setSelectedSupplier(supplier)
+    setSelectedPurchase(purchase)
+    setPaymentError("")
+    setShowError(false)
     if (isFullPayment) {
-      const pendingAmount = (supplierTotals[supplier.email] || 0) - calculatePaidAmount(supplier.paymentHistory)
+      const pendingAmount = purchase.amount - calculatePaidAmount(supplier.paymentHistory, purchase.id)
       setPaymentForm({
         ...paymentForm,
         amount: pendingAmount > 0 ? pendingAmount.toString() : "0",
@@ -192,52 +276,117 @@ export default function SupplierManagement() {
     setShowPaymentModal(true)
   }
 
-  const processPayment = (e) => {
-    e.preventDefault()
-    const paymentAmount = Number.parseFloat(paymentForm.amount)
-    const supplier = selectedSupplier
+  const processPayment = async (e) => {
+    e.preventDefault();
+    const paymentAmount = Number.parseFloat(paymentForm.amount);
+    const supplier = selectedSupplier;
+    const purchase = selectedPurchase;
 
     if (paymentAmount <= 0) {
-      alert("Invalid payment amount")
-      return
+      setPaymentError("Invalid payment amount");
+      setShowError(true);
+      return;
     }
 
-    const newPayment = {
-      id: Date.now(),
-      amount: paymentAmount,
-      method: paymentForm.method,
-      date: new Date().toISOString().split("T")[0],
-      ...(paymentForm.method === "card" && { cardLast4: paymentForm.cardNumber.slice(-4) }),
+    // Check if payment amount exceeds pending amount
+    const pendingAmount = purchase.pendingAmount || (purchase.total - (purchase.paidAmount || 0));
+    if (paymentAmount > pendingAmount) {
+      setPaymentError(`Payment amount cannot exceed pending amount of ${formatCurrency(pendingAmount)}`);
+      setShowError(true);
+      return;
     }
 
-    // Update the supplier's payment history
-    setSuppliers(suppliers.map(s => 
-      s.id === supplier.id 
-        ? { 
-            ...s, 
-            paymentHistory: [...(s.paymentHistory || []), newPayment] 
-          } 
-        : s
-    ))
+    try {
+      const paymentData = {
+        amount: paymentAmount,
+        method: paymentForm.method,
+        cardLast4: paymentForm.method === "card" ? paymentForm.cardNumber.slice(-4) : null
+      };
 
-    setShowPaymentModal(false)
-    setPaymentForm({
-      amount: "",
-      method: "cash",
-      cardNumber: "",
-      expiryDate: "",
-      cvv: "",
-      cardholderName: "",
-    })
-    setSelectedSupplier(null)
-  }
+      // Add payment to supplier record using the new endpoint
+      await axios.post(`http://localhost:3001/api/suppliers/payment/${purchase.id}`, paymentData);
 
-  const togglePaymentHistory = (supplierId) => {
-    setShowPaymentHistory((prev) => ({
-      ...prev,
-      [supplierId]: !prev[supplierId],
-    }))
-  }
+      // Refresh supplier data
+      await fetchSuppliers();
+
+      setShowPaymentModal(false);
+      setPaymentForm({
+        amount: "",
+        method: "cash",
+        cardNumber: "",
+        expiryDate: "",
+        cvv: "",
+        cardholderName: "",
+      });
+      setSelectedSupplier(null);
+      setSelectedPurchase(null);
+      setPaymentError("");
+      setShowError(false);
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      setPaymentError(error.response?.data?.error || "Failed to process payment. Please try again.");
+      setShowError(true);
+    }
+  };
+
+  const togglePaymentHistory = async (supplierId, purchaseId) => {
+    try {
+      console.log('Fetching payment history for:', { supplierId, purchaseId });
+      const historyKey = `${supplierId}-${purchaseId || 'all'}`;
+      
+      // Fetch payment history from the endpoint
+      const response = await axios.get(`http://localhost:3001/api/suppliers/payment-history/${purchaseId}`);
+      console.log('Payment history response:', response.data);
+      
+      // Store payment history data in state
+      setPaymentHistoryData(prev => ({
+        ...prev,
+        [purchaseId]: {
+          paymentHistory: response.data.paymentHistory || [],
+          totalPaid: response.data.totalPaid || 0,
+          pendingAmount: response.data.pendingAmount || 0,
+          status: response.data.status || "Pending",
+          totalAmount: response.data.totalAmount || 0
+        }
+      }));
+
+      // Update the supplier's payment history in the state
+      setSuppliers(prevSuppliers => 
+        prevSuppliers.map(supplier => {
+          if (supplier.id === supplierId) {
+            console.log('Updating supplier:', supplier.id);
+            const updatedPurchases = supplier.purchases.map(purchase => {
+              if (purchase.id === purchaseId) {
+                console.log('Updating purchase:', purchase.id);
+                const updatedPurchase = {
+                  ...purchase,
+                  paymentHistory: response.data.paymentHistory || [],
+                  paidAmount: response.data.totalPaid || 0,
+                  pendingAmount: response.data.pendingAmount || 0,
+                  status: response.data.status || "Pending",
+                  totalAmount: response.data.totalAmount || 0,
+                  total: response.data.totalAmount || 0
+                };
+                console.log('Updated purchase data:', updatedPurchase);
+                return updatedPurchase;
+              }
+              return purchase;
+            });
+            return { ...supplier, purchases: updatedPurchases };
+          }
+          return supplier;
+        })
+      );
+
+      setShowPaymentHistory(prev => ({
+        ...prev,
+        [historyKey]: !prev[historyKey]
+      }));
+    } catch (error) {
+      console.error('Error fetching payment history:', error);
+      alert('Failed to fetch payment history. Please try again.');
+    }
+  };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-US", {
@@ -245,6 +394,79 @@ export default function SupplierManagement() {
       currency: "USD",
     }).format(amount || 0)
   }
+
+  const renderPaymentHistory = (supplier, purchase) => {
+    console.log('Rendering payment history for purchase:', purchase);
+    
+    // Get payment history data from state
+    const historyData = paymentHistoryData[purchase.id] || {
+      paymentHistory: [],
+      totalPaid: 0,
+      pendingAmount: 0,
+      totalAmount: 0
+    };
+
+    // Ensure we have the correct data structure
+    const paymentHistory = Array.isArray(historyData.paymentHistory) ? historyData.paymentHistory : [];
+    const pendingAmount = Number(historyData.pendingAmount) || 0;
+    const totalPaid = Number(historyData.totalPaid) || 0;
+    const totalAmount = Number(historyData.totalAmount) || Number(purchase.total) || 0;
+
+    console.log('Payment history data:', {
+      purchaseId: purchase.id,
+      paymentHistoryLength: paymentHistory.length,
+      pendingAmount,
+      totalPaid,
+      totalAmount,
+      paymentHistory
+    });
+
+    return (
+      <div className="space-y-2">
+        <div className="flex justify-between items-center mb-3">
+          <h4 className="text-sm font-medium text-white">Payment History for Purchase {purchase.id}</h4>
+          <div className="flex items-center space-x-2">
+            <span className="text-xs bg-green-600 text-white px-2 py-1 rounded-full">
+              Paid: {formatCurrency(totalPaid)}
+            </span>
+            <span className="text-xs bg-yellow-600 text-white px-2 py-1 rounded-full">
+              Pending: {formatCurrency(pendingAmount)}
+            </span>
+          </div>
+        </div>
+        {Array.isArray(paymentHistory) && paymentHistory.length > 0 ? (
+          <div className="space-y-2">
+            {paymentHistory
+              .filter(payment => (Number(payment.amount) || 0) > 0)
+              .map((payment) => (
+                <div
+                  key={payment.id}
+                  className="flex items-center justify-between bg-gray-800 rounded p-3"
+                >
+                  <div className="flex items-center space-x-3">
+                    {payment.method === "card" ? (
+                      <CreditCard className="h-4 w-4 text-blue-400" />
+                    ) : (
+                      <Banknote className="h-4 w-4 text-green-400" />
+                    )}
+                    <span className="text-sm text-gray-300">
+                      {formatCurrency(payment.amount)} via {payment.method}
+                      {payment.cardLast4 && ` (**** ${payment.cardLast4})`}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-1 text-sm text-gray-400">
+                    <Calendar className="h-3 w-3" />
+                    <span>{new Date(payment.date).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              ))}
+          </div>
+        ) : (
+          <p className="text-gray-400 text-sm">No payment history available for this purchase</p>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
@@ -341,6 +563,9 @@ export default function SupplierManagement() {
               <thead className="bg-gray-700">
                 <tr>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Purchase ID
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Supplier
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
@@ -349,6 +574,7 @@ export default function SupplierManagement() {
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Notes
                   </th>
+
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Total Amount
                   </th>
@@ -365,94 +591,202 @@ export default function SupplierManagement() {
               </thead>
               <tbody className="divide-y divide-gray-700">
                 {sortedSuppliers.map((supplier) => (
-                  <>
-                    <tr key={supplier.id} className="hover:bg-gray-700/50 transition-colors">
-                      <td className="px-6 py-4">
-                        <div>
-                          <div className="text-sm font-medium text-white">{supplier.name}</div>
-                          <div className="text-sm text-gray-400">{supplier.company}</div>
-                          {supplier.website && (
-                            <div className="flex items-center space-x-1 text-sm text-gray-400">
-                              <Globe className="h-3 w-3" />
-                              <a href={supplier.website} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400">
-                                {supplier.website}
-                              </a>
-                            </div>
+                  <React.Fragment key={supplier.id}>
+                    {supplierPurchases[supplier.email]?.length > 0 ? (
+                      supplierPurchases[supplier.email].map((purchase) => (
+                        <React.Fragment key={`${supplier.id}-${purchase.id}`}>
+                          <tr className="hover:bg-gray-700/50 transition-colors">
+                           <td className="px-6 py-4">
+                              <div className="text-sm text-gray-300">
+                                {purchase.id}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div>
+                                <div className="text-sm font-medium text-white">{supplier.name}</div>
+                                <div className="text-sm text-gray-400">{supplier.company}</div>
+                                {supplier.website && (
+                                  <div className="flex items-center space-x-1 text-sm text-gray-400">
+                                    <Globe className="h-3 w-3" />
+                                    <a href={supplier.website} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400">
+                                      {supplier.website}
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm text-gray-300">
+                                <div className="flex items-center space-x-1 mb-1">
+                                  <Mail className="h-3 w-3" />
+                                  <span className="truncate max-w-xs">{supplier.email}</span>
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                  <Phone className="h-3 w-3" />
+                                  <span>{supplier.phone}</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm text-gray-300">
+                                {supplier.supplierNotes || '-'}
+                              </div>
+                            </td>
+                           
+                            <td className="px-6 py-4">
+                              <div className="text-sm font-medium text-white">
+                                {formatCurrency(purchase.amount)}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm font-medium text-green-400">
+                                {formatCurrency(calculatePaidAmount(supplier.paymentHistory, purchase.id))}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm font-medium text-yellow-400">
+                                {formatCurrency(purchase.amount - calculatePaidAmount(supplier.paymentHistory, purchase.id))}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex space-x-2">
+                                {purchase.amount - calculatePaidAmount(supplier.paymentHistory, purchase.id) > 0 ? (
+                                  <>
+                                    <button
+                                      onClick={() => handlePayment(supplier, purchase)}
+                                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                                    >
+                                      Pay
+                                    </button>
+                                    <button
+                                      onClick={() => handlePayment(supplier, purchase, true)}
+                                      className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                                    >
+                                      Full Pay
+                                    </button>
+                                  </>
+                                ) : (
+                                  <span className="bg-green-600 text-white px-3 py-1 rounded text-sm">
+                                    Paid
+                                  </span>
+                                )}
+                                <button
+                                  onClick={() => togglePaymentHistory(supplier.id, purchase.id)}
+                                  className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors flex items-center space-x-1"
+                                >
+                                  <span>History</span>
+                                  <ChevronDown
+                                    className={`h-3 w-3 transition-transform ${showPaymentHistory[`${supplier.id}-${purchase.id}`] ? "rotate-180" : ""}`}
+                                  />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                          {showPaymentHistory[`${supplier.id}-${purchase.id}`] && (
+                            <tr className="bg-gray-700/30">
+                              <td colSpan="8" className="px-6 py-4">
+                                {renderPaymentHistory(supplier, purchase)}
+                              </td>
+                            </tr>
                           )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-300">
-                          <div className="flex items-center space-x-1 mb-1">
-                            <Mail className="h-3 w-3" />
-                            <span className="truncate max-w-xs">{supplier.email}</span>
+                        </React.Fragment>
+                      ))
+                    ) : (
+                      <tr className="hover:bg-gray-700/50 transition-colors">
+                        <td className="px-6 py-4">
+                          <div>
+                            <div className="text-sm font-medium text-white">{supplier.name}</div>
+                            <div className="text-sm text-gray-400">{supplier.company}</div>
+                            {supplier.website && (
+                              <div className="flex items-center space-x-1 text-sm text-gray-400">
+                                <Globe className="h-3 w-3" />
+                                <a href={supplier.website} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400">
+                                  {supplier.website}
+                                </a>
+                              </div>
+                            )}
                           </div>
-                          <div className="flex items-center space-x-1">
-                            <Phone className="h-3 w-3" />
-                            <span>{supplier.phone}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-300">
+                            <div className="flex items-center space-x-1 mb-1">
+                              <Mail className="h-3 w-3" />
+                              <span className="truncate max-w-xs">{supplier.email}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Phone className="h-3 w-3" />
+                              <span>{supplier.phone}</span>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-300">
-                          {supplier.supplierNotes || '-'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-white">
-                          {formatCurrency(supplierTotals[supplier.email] || 0)}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-green-400">
-                          {formatCurrency(calculatePaidAmount(supplier.paymentHistory))}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-yellow-400">
-                          {formatCurrency((supplierTotals[supplier.email] || 0) - calculatePaidAmount(supplier.paymentHistory))}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handlePayment(supplier)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                          >
-                            Pay
-                          </button>
-                          <button
-                            onClick={() => handlePayment(supplier, true)}
-                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                          >
-                            Full Pay
-                          </button>
-                          <button
-                            onClick={() => togglePaymentHistory(supplier.id)}
-                            className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors flex items-center space-x-1"
-                          >
-                            <span>History</span>
-                            <ChevronDown
-                              className={`h-3 w-3 transition-transform ${showPaymentHistory[supplier.id] ? "rotate-180" : ""}`}
-                            />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                    {showPaymentHistory[supplier.id] && (
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-300">
+                            {supplier.supplierNotes || '-'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-300">
+                            -
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-medium text-white">
+                            {formatCurrency(supplierTotals[supplier.email] || 0)}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-medium text-green-400">
+                            {formatCurrency(calculatePaidAmount(supplier.paymentHistory, null))}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-medium text-yellow-400">
+                            {formatCurrency((supplierTotals[supplier.email] || 0) - calculatePaidAmount(supplier.paymentHistory, null))}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex space-x-2">
+                            {(supplierTotals[supplier.email] || 0) - calculatePaidAmount(supplier.paymentHistory, null) > 0 ? (
+                              <>
+                                <button
+                                  onClick={() => handlePayment(supplier, null, true)}
+                                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                                >
+                                  Full Pay
+                                </button>
+                              </>
+                            ) : (
+                              <span className="bg-green-600 text-white px-3 py-1 rounded text-sm">
+                                Paid
+                              </span>
+                            )}
+                            <button
+                              onClick={() => togglePaymentHistory(supplier.id, 'all')}
+                              className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors flex items-center space-x-1"
+                            >
+                              <span>History</span>
+                              <ChevronDown
+                                className={`h-3 w-3 transition-transform ${showPaymentHistory[`${supplier.id}-all`] ? "rotate-180" : ""}`}
+                              />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    {showPaymentHistory[`${supplier.id}-all`] && (
                       <tr className="bg-gray-700/30">
-                        <td colSpan="7" className="px-6 py-4">
+                        <td colSpan="8" className="px-6 py-4">
                           <div className="space-y-2">
                             <div className="flex justify-between items-center mb-3">
-                              <h4 className="text-sm font-medium text-white">Payment History</h4>
+                              <h4 className="text-sm font-medium text-white">Payment History for All Purchases</h4>
                               <span className="text-xs bg-yellow-600 text-white px-2 py-1 rounded-full">
-                                {formatCurrency((supplierTotals[supplier.email] || 0) - calculatePaidAmount(supplier.paymentHistory))} Pending
+                                {formatCurrency((supplierTotals[supplier.email] || 0) - calculatePaidAmount(supplier.paymentHistory, null))} Pending
                               </span>
                             </div>
                             {supplier.paymentHistory?.length > 0 ? (
                               <div className="space-y-2">
                                 {supplier.paymentHistory
-                                  .filter(payment => (Number(payment.amount) || 0) > 0) // Only show non-zero payments
+                                  .filter(payment => (Number(payment.amount) || 0) > 0)
                                   .map((payment) => (
                                     <div
                                       key={payment.id}
@@ -477,13 +811,13 @@ export default function SupplierManagement() {
                                   ))}
                               </div>
                             ) : (
-                              <p className="text-gray-400 text-sm">No payment history available</p>
+                              <p className="text-gray-400 text-sm">No payment history available for all purchases</p>
                             )}
                           </div>
                         </td>
                       </tr>
                     )}
-                  </>
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
@@ -499,14 +833,25 @@ export default function SupplierManagement() {
       </div>
 
       {/* Payment Modal */}
-      {showPaymentModal && selectedSupplier && (
+      {showPaymentModal && selectedSupplier && selectedPurchase && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-md">
             <h2 className="text-xl font-bold text-white mb-4">Payment for {selectedSupplier.name}</h2>
             <div className="mb-4 p-3 bg-gray-700 rounded-lg">
               <p className="text-sm text-gray-300">
+                Purchase ID: <span className="text-white font-medium">{selectedPurchase.id}</span>
+              </p>
+              <p className="text-sm text-gray-300 mt-2">
+                Total Amount: <span className="text-white font-medium">{formatCurrency(selectedPurchase.amount)}</span>
+              </p>
+              <p className="text-sm text-gray-300 mt-2">
+                Paid Amount: <span className="text-green-400 font-medium">{formatCurrency(calculatePaidAmount(selectedSupplier.paymentHistory, selectedPurchase.id))}</span>
+              </p>
+              <p className="text-sm text-gray-300 mt-2">
                 Pending Amount:{" "}
-                <span className="text-yellow-400 font-medium">{formatCurrency((supplierTotals[selectedSupplier.email] || 0) - calculatePaidAmount(selectedSupplier.paymentHistory))} </span>
+                <span className="text-yellow-400 font-medium">
+                  {formatCurrency(selectedPurchase.amount - calculatePaidAmount(selectedSupplier.paymentHistory, selectedPurchase.id))}
+                </span>
               </p>
             </div>
 
@@ -519,12 +864,21 @@ export default function SupplierManagement() {
                   min="0.01"
                   required
                   value={paymentForm.amount}
-                  onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={(e) => {
+                    setPaymentForm({ ...paymentForm, amount: e.target.value })
+                    setShowError(false)
+                    setPaymentError("")
+                  }}
+                  className={`w-full px-3 py-2 bg-gray-700 border ${showError ? 'border-red-500' : 'border-gray-600'} rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   readOnly={isFullPayMode}
                 />
                 {isFullPayMode && (
                   <p className="text-xs text-blue-400 mt-1">Payment Amount is set to Pending Amount for Full Pay.</p>
+                )}
+                {showError && (
+                  <div className="mt-2 p-2 bg-red-900/30 border border-red-500 rounded-lg">
+                    <p className="text-sm text-red-400">{paymentError}</p>
+                  </div>
                 )}
               </div>
 
@@ -534,11 +888,10 @@ export default function SupplierManagement() {
                   <button
                     type="button"
                     onClick={() => setPaymentForm({ ...paymentForm, method: "cash" })}
-                    className={`flex items-center justify-center space-x-2 p-3 rounded-lg border transition-colors ${
-                      paymentForm.method === "cash"
-                        ? "bg-green-600 border-green-500 text-white"
-                        : "bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600"
-                    }`}
+                    className={`flex items-center justify-center space-x-2 p-3 rounded-lg border transition-colors ${paymentForm.method === "cash"
+                      ? "bg-green-600 border-green-500 text-white"
+                      : "bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600"
+                      }`}
                   >
                     <Banknote className="h-4 w-4" />
                     <span>Cash</span>
@@ -546,11 +899,10 @@ export default function SupplierManagement() {
                   <button
                     type="button"
                     onClick={() => setPaymentForm({ ...paymentForm, method: "card" })}
-                    className={`flex items-center justify-center space-x-2 p-3 rounded-lg border transition-colors ${
-                      paymentForm.method === "card"
-                        ? "bg-blue-600 border-blue-500 text-white"
-                        : "bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600"
-                    }`}
+                    className={`flex items-center justify-center space-x-2 p-3 rounded-lg border transition-colors ${paymentForm.method === "card"
+                      ? "bg-blue-600 border-blue-500 text-white"
+                      : "bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600"
+                      }`}
                   >
                     <CreditCard className="h-4 w-4" />
                     <span>Card</span>
