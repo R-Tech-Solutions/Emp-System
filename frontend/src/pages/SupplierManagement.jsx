@@ -34,6 +34,9 @@ export default function SupplierManagement() {
   const [paymentError, setPaymentError] = useState("")
   const [showError, setShowError] = useState(false)
   const [paymentHistoryData, setPaymentHistoryData] = useState({});
+  const [supplierPaidAmounts, setSupplierPaidAmounts] = useState({});
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const calculatePaidAmount = (paymentHistory, purchaseId) => {
     if (!paymentHistory || !Array.isArray(paymentHistory)) return 0
@@ -66,6 +69,7 @@ export default function SupplierManagement() {
   useEffect(() => {
     fetchSuppliers()
     fetchSupplierTotals()
+    fetchSupplierPaidAmounts()
   }, [])
 
   const fetchSuppliers = async () => {
@@ -137,6 +141,21 @@ export default function SupplierManagement() {
       setSupplierPurchases(purchaseDetails);
     } catch (error) {
       console.error('Error fetching supplier totals:', error);
+    }
+  };
+
+  const fetchSupplierPaidAmounts = async () => {
+    try {
+      const response = await axios.get('http://localhost:3001/api/suppliers');
+      const paidAmounts = {};
+      response.data.forEach(supplier => {
+        if (supplier.purchaseId) {
+          paidAmounts[supplier.purchaseId] = supplier.paidAmountTotal || 0;
+        }
+      });
+      setSupplierPaidAmounts(paidAmounts);
+    } catch (error) {
+      console.error('Error fetching supplier paid amounts:', error);
     }
   };
 
@@ -259,8 +278,10 @@ export default function SupplierManagement() {
     setSelectedPurchase(purchase)
     setPaymentError("")
     setShowError(false)
+    
     if (isFullPayment) {
-      const pendingAmount = purchase.amount - calculatePaidAmount(supplier.paymentHistory, purchase.id)
+      // Calculate pending amount
+      const pendingAmount = purchase.amount - (supplierPaidAmounts[purchase.id] || 0)
       setPaymentForm({
         ...paymentForm,
         amount: pendingAmount > 0 ? pendingAmount.toString() : "0",
@@ -289,7 +310,7 @@ export default function SupplierManagement() {
     }
 
     // Check if payment amount exceeds pending amount
-    const pendingAmount = purchase.pendingAmount || (purchase.total - (purchase.paidAmount || 0));
+    const pendingAmount = purchase.amount - (supplierPaidAmounts[purchase.id] || 0);
     if (paymentAmount > pendingAmount) {
       setPaymentError(`Payment amount cannot exceed pending amount of ${formatCurrency(pendingAmount)}`);
       setShowError(true);
@@ -304,24 +325,85 @@ export default function SupplierManagement() {
       };
 
       // Add payment to supplier record using the new endpoint
-      await axios.post(`http://localhost:3001/api/suppliers/payment/${purchase.id}`, paymentData);
+      const response = await axios.post(`http://localhost:3001/api/suppliers/payment/${purchase.id}`, paymentData);
+      console.log('Payment processed:', response.data);
 
-      // Refresh supplier data
-      await fetchSuppliers();
+      // Immediately update the paid amounts state
+      setSupplierPaidAmounts(prev => ({
+        ...prev,
+        [purchase.id]: (prev[purchase.id] || 0) + paymentAmount
+      }));
 
-      setShowPaymentModal(false);
-      setPaymentForm({
-        amount: "",
-        method: "cash",
-        cardNumber: "",
-        expiryDate: "",
-        cvv: "",
-        cardholderName: "",
-      });
-      setSelectedSupplier(null);
-      setSelectedPurchase(null);
-      setPaymentError("");
-      setShowError(false);
+      // Update payment history data
+      setPaymentHistoryData(prev => ({
+        ...prev,
+        [purchase.id]: {
+          ...prev[purchase.id],
+          paymentHistory: [...(prev[purchase.id]?.paymentHistory || []), {
+            id: Date.now().toString(),
+            amount: paymentAmount,
+            method: paymentForm.method,
+            date: new Date().toISOString(),
+            cardLast4: paymentData.cardLast4
+          }],
+          totalPaid: (prev[purchase.id]?.totalPaid || 0) + paymentAmount,
+          pendingAmount: purchase.amount - ((prev[purchase.id]?.totalPaid || 0) + paymentAmount)
+        }
+      }));
+
+      // Update suppliers state
+      setSuppliers(prevSuppliers => 
+        prevSuppliers.map(s => {
+          if (s.id === supplier.id) {
+            return {
+              ...s,
+              purchases: s.purchases.map(p => {
+                if (p.id === purchase.id) {
+                  return {
+                    ...p,
+                    paidAmount: (p.paidAmount || 0) + paymentAmount,
+                    pendingAmount: p.amount - ((p.paidAmount || 0) + paymentAmount),
+                    status: p.amount - ((p.paidAmount || 0) + paymentAmount) === 0 ? "Paid" : "Pending",
+                    paymentHistory: [...(p.paymentHistory || []), {
+                      id: Date.now().toString(),
+                      amount: paymentAmount,
+                      method: paymentForm.method,
+                      date: new Date().toISOString(),
+                      cardLast4: paymentData.cardLast4
+                    }]
+                  };
+                }
+                return p;
+              })
+            };
+          }
+          return s;
+        })
+      );
+
+      // Show success message
+      setSuccessMessage(`Payment of ${formatCurrency(paymentAmount)} processed successfully!`);
+      setShowSuccessMessage(true);
+
+      // Close modal and reset form after 2 seconds
+      setTimeout(() => {
+        setShowPaymentModal(false);
+        setPaymentForm({
+          amount: "",
+          method: "cash",
+          cardNumber: "",
+          expiryDate: "",
+          cvv: "",
+          cardholderName: "",
+        });
+        setSelectedSupplier(null);
+        setSelectedPurchase(null);
+        setPaymentError("");
+        setShowError(false);
+        setShowSuccessMessage(false);
+        setSuccessMessage("");
+      }, 2000);
+
     } catch (error) {
       console.error('Error processing payment:', error);
       setPaymentError(error.response?.data?.error || "Failed to process payment. Please try again.");
@@ -337,13 +419,18 @@ export default function SupplierManagement() {
       // Fetch payment history from the endpoint
       const response = await axios.get(`http://localhost:3001/api/suppliers/payment-history/${purchaseId}`);
       console.log('Payment history response:', response.data);
+
+      // Fetch supplier data to get paidAmountTotal
+      const supplierResponse = await axios.get(`http://localhost:3001/api/suppliers`);
+      const supplierData = supplierResponse.data.find(s => s.purchaseId === purchaseId);
+      console.log('Supplier data:', supplierData);
       
       // Store payment history data in state
       setPaymentHistoryData(prev => ({
         ...prev,
         [purchaseId]: {
           paymentHistory: response.data.paymentHistory || [],
-          totalPaid: response.data.totalPaid || 0,
+          totalPaid: supplierData?.paidAmountTotal || response.data.totalPaid || 0,
           pendingAmount: response.data.pendingAmount || 0,
           status: response.data.status || "Pending",
           totalAmount: response.data.totalAmount || 0
@@ -361,7 +448,7 @@ export default function SupplierManagement() {
                 const updatedPurchase = {
                   ...purchase,
                   paymentHistory: response.data.paymentHistory || [],
-                  paidAmount: response.data.totalPaid || 0,
+                  paidAmount: supplierData?.paidAmountTotal || response.data.totalPaid || 0,
                   pendingAmount: response.data.pendingAmount || 0,
                   status: response.data.status || "Pending",
                   totalAmount: response.data.totalAmount || 0,
@@ -470,75 +557,7 @@ export default function SupplierManagement() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
-      {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Building2 className="h-8 w-8 text-blue-400" />
-            <div>
-              <h1 className="text-2xl font-bold text-white">Supplier Management</h1>
-              <p className="text-gray-400">Manage your supplier contacts</p>
-            </div>
-          </div>
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Supplier</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
       <div className="px-6 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm">Total Suppliers</p>
-                <p className="text-2xl font-bold text-white">{suppliers.length}</p>
-              </div>
-              <Building2 className="h-8 w-8 text-blue-400" />
-            </div>
-          </div>
-
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm">Total Amount</p>
-                <p className="text-2xl font-bold text-white">{formatCurrency(totalAmount)}</p>
-              </div>
-              <DollarSign className="h-8 w-8 text-blue-400" />
-            </div>
-          </div>
-
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm">Total Paid</p>
-                <p className="text-2xl font-bold text-green-400">{formatCurrency(totalPaid)}</p>
-              </div>
-              <div className="h-8 w-8 bg-green-900/30 rounded-full flex items-center justify-center">
-                <div className="h-3 w-3 bg-green-400 rounded-full"></div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm">Total Pending</p>
-                <p className="text-2xl font-bold text-yellow-400">{formatCurrency(totalPending)}</p>
-              </div>
-              <div className="h-8 w-8 bg-yellow-900/30 rounded-full flex items-center justify-center">
-                <div className="h-3 w-3 bg-yellow-400 rounded-full"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Filters and Search */}
         <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 mb-6">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1">
@@ -640,17 +659,17 @@ export default function SupplierManagement() {
                             </td>
                             <td className="px-6 py-4">
                               <div className="text-sm font-medium text-green-400">
-                                {formatCurrency(calculatePaidAmount(supplier.paymentHistory, purchase.id))}
+                                {formatCurrency(supplierPaidAmounts[purchase.id] || 0)}
                               </div>
                             </td>
                             <td className="px-6 py-4">
                               <div className="text-sm font-medium text-yellow-400">
-                                {formatCurrency(purchase.amount - calculatePaidAmount(supplier.paymentHistory, purchase.id))}
+                                {formatCurrency(purchase.amount - (supplierPaidAmounts[purchase.id] || 0))}
                               </div>
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex space-x-2">
-                                {purchase.amount - calculatePaidAmount(supplier.paymentHistory, purchase.id) > 0 ? (
+                                {purchase.amount - (supplierPaidAmounts[purchase.id] || 0) > 0 ? (
                                   <>
                                     <button
                                       onClick={() => handlePayment(supplier, purchase)}
@@ -736,17 +755,17 @@ export default function SupplierManagement() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm font-medium text-green-400">
-                            {formatCurrency(calculatePaidAmount(supplier.paymentHistory, null))}
+                            {formatCurrency(supplierPaidAmounts[supplier.email] || 0)}
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm font-medium text-yellow-400">
-                            {formatCurrency((supplierTotals[supplier.email] || 0) - calculatePaidAmount(supplier.paymentHistory, null))}
+                            {formatCurrency((supplierTotals[supplier.email] || 0) - (supplierPaidAmounts[supplier.email] || 0))}
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex space-x-2">
-                            {(supplierTotals[supplier.email] || 0) - calculatePaidAmount(supplier.paymentHistory, null) > 0 ? (
+                            {(supplierTotals[supplier.email] || 0) - (supplierPaidAmounts[supplier.email] || 0) > 0 ? (
                               <>
                                 <button
                                   onClick={() => handlePayment(supplier, null, true)}
@@ -780,7 +799,7 @@ export default function SupplierManagement() {
                             <div className="flex justify-between items-center mb-3">
                               <h4 className="text-sm font-medium text-white">Payment History for All Purchases</h4>
                               <span className="text-xs bg-yellow-600 text-white px-2 py-1 rounded-full">
-                                {formatCurrency((supplierTotals[supplier.email] || 0) - calculatePaidAmount(supplier.paymentHistory, null))} Pending
+                                {formatCurrency((supplierTotals[supplier.email] || 0) - (supplierPaidAmounts[supplier.email] || 0))} Pending
                               </span>
                             </div>
                             {supplier.paymentHistory?.length > 0 ? (
@@ -837,6 +856,21 @@ export default function SupplierManagement() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-md">
             <h2 className="text-xl font-bold text-white mb-4">Payment for {selectedSupplier.name}</h2>
+            
+            {/* Success Message */}
+            {showSuccessMessage && (
+              <div className="mb-4 p-4 bg-green-900/30 border border-green-500 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <div className="h-8 w-8 bg-green-500 rounded-full flex items-center justify-center">
+                    <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <p className="text-green-400 font-medium">{successMessage}</p>
+                </div>
+              </div>
+            )}
+
             <div className="mb-4 p-3 bg-gray-700 rounded-lg">
               <p className="text-sm text-gray-300">
                 Purchase ID: <span className="text-white font-medium">{selectedPurchase.id}</span>
@@ -845,12 +879,12 @@ export default function SupplierManagement() {
                 Total Amount: <span className="text-white font-medium">{formatCurrency(selectedPurchase.amount)}</span>
               </p>
               <p className="text-sm text-gray-300 mt-2">
-                Paid Amount: <span className="text-green-400 font-medium">{formatCurrency(calculatePaidAmount(selectedSupplier.paymentHistory, selectedPurchase.id))}</span>
+                Paid Amount: <span className="text-green-400 font-medium">{formatCurrency(supplierPaidAmounts[selectedPurchase.id] || 0)}</span>
               </p>
               <p className="text-sm text-gray-300 mt-2">
                 Pending Amount:{" "}
                 <span className="text-yellow-400 font-medium">
-                  {formatCurrency(selectedPurchase.amount - calculatePaidAmount(selectedSupplier.paymentHistory, selectedPurchase.id))}
+                  {formatCurrency(selectedPurchase.amount - (supplierPaidAmounts[selectedPurchase.id] || 0))}
                 </span>
               </p>
             </div>
@@ -970,14 +1004,15 @@ export default function SupplierManagement() {
                 <button
                   type="submit"
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors"
+                  disabled={showSuccessMessage}
                 >
-                  Process Payment
+                  {showSuccessMessage ? 'Processing...' : 'Process Payment'}
                 </button>
                 <button
                   type="button"
                   onClick={() => {
-                    setShowPaymentModal(false)
-                    setSelectedSupplier(null)
+                    setShowPaymentModal(false);
+                    setSelectedSupplier(null);
                     setPaymentForm({
                       amount: "",
                       method: "cash",
@@ -985,9 +1020,12 @@ export default function SupplierManagement() {
                       expiryDate: "",
                       cvv: "",
                       cardholderName: "",
-                    })
+                    });
+                    setShowSuccessMessage(false);
+                    setSuccessMessage("");
                   }}
                   className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors"
+                  disabled={showSuccessMessage}
                 >
                   Cancel
                 </button>
