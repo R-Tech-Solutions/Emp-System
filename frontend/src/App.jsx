@@ -175,9 +175,9 @@ function App() {
             <Route
               path="products"
               element={
-                <ProtectedRoute>
+
                   <Products />
-                </ProtectedRoute>
+
               }
             />
             <Route
@@ -224,9 +224,9 @@ function App() {
             <Route
               path="invoice"
               element={
-                <ProtectedRoute>
+
                   <Invoice />
-                </ProtectedRoute>
+
               }
             />
              

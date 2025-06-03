@@ -67,6 +67,8 @@ export default function InvoiceGenerator() {
   const lastBarcodeRef = useRef('')
   const scanCountRef = useRef(0)
   const lastScanTimeRef = useRef(Date.now())
+  const barcodeInputRef = useRef(null)
+  const barcodeDebounceRef = useRef(null)
 
   // Load saved invoices from localStorage on component mount
   useEffect(() => {
@@ -243,27 +245,70 @@ export default function InvoiceGenerator() {
     return () => window.removeEventListener('keydown', handleKeyPress)
   }, [])
 
+  // Handle product found
+  const handleProductFound = useCallback((product) => {
+    setItems(prevItems => {
+      // Check if product already exists in items by name (or use product.id/sku if available)
+      const existingIndex = prevItems.findIndex(item => item.name === product.name);
+      if (existingIndex !== -1) {
+        // If found, increase quantity
+        return prevItems.map((item, idx) =>
+          idx === existingIndex
+            ? { ...item, quantity: Number(item.quantity) + 1 }
+            : item
+        );
+      } else {
+        // If not found, add as new item
+        const newItem = {
+          id: Date.now(),
+          name: product.name,
+          quantity: 1,
+          price: Number(
+            priceType === 'standard' ? product.salesPrice : 
+            priceType === 'wholesale' ? product.marginPrice : 
+            product.retailPrice
+          ),
+          tax: 0,
+          discount: 0,
+        };
+        return [...prevItems, newItem];
+      }
+    });
+
+    toast.success('Product added!', {
+      icon: '✅',
+      style: {
+        background: '#10B981',
+        color: '#fff',
+      },
+    });
+
+    // Auto-focus barcode input for next scan
+    setTimeout(() => {
+      const barcodeInput = document.getElementById('barcode-input');
+      if (barcodeInput) barcodeInput.focus();
+    }, 50);
+  }, [priceType]);
+
   // Add debounced barcode handler
   const debouncedBarcodeHandler = useCallback((barcode) => {
     if (barcodeTimeoutRef.current) {
-      clearTimeout(barcodeTimeoutRef.current)
+      clearTimeout(barcodeTimeoutRef.current);
     }
 
+    // Set timeout to 10ms for ultra-fast response
     barcodeTimeoutRef.current = setTimeout(async () => {
-      if (barcode === lastBarcodeRef.current) return
-      lastBarcodeRef.current = barcode
-
       try {
-        setLoading(true)
+        setLoading(true);
         
         // Check cache first
         if (productCache.has(barcode)) {
-          const cachedProduct = productCache.get(barcode)
-          handleProductFound(cachedProduct)
-          return
+          const cachedProduct = productCache.get(barcode);
+          handleProductFound(cachedProduct);
+          return;
         }
 
-        const response = await fetch(`http://localhost:3001/api/products/barcode/${barcode}`)
+        const response = await fetch(`http://localhost:3001/api/products/barcode/${barcode}`);
         
         if (!response.ok) {
           if (response.status === 404) {
@@ -273,135 +318,82 @@ export default function InvoiceGenerator() {
                 background: '#EF4444',
                 color: '#fff',
               },
-            })
-            return
+            });
+            return;
           }
-          throw new Error(`HTTP error! status: ${response.status}`)
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        const product = await response.json()
+        const product = await response.json();
         
         if (product) {
           // Cache the product
-          setProductCache(prev => new Map(prev).set(barcode, product))
-          handleProductFound(product)
+          setProductCache(prev => new Map(prev).set(barcode, product));
+          handleProductFound(product);
         }
       } catch (error) {
-        console.error('Error fetching product by barcode:', error)
+        console.error('Error fetching product by barcode:', error);
         toast.error('Error fetching product!', {
           icon: '❌',
           style: {
             background: '#EF4444',
             color: '#fff',
           },
-        })
+        });
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }, 50) // Reduced debounce time for faster response
-  }, [productCache])
-
-  // Handle product found
-  const handleProductFound = useCallback((product) => {
-    const currentTime = Date.now()
-    const timeSinceLastScan = currentTime - lastScanTimeRef.current
-    
-    // If it's been more than 2 seconds since last scan, reset scan count
-    if (timeSinceLastScan > 2000) {
-      scanCountRef.current = 0
-    }
-    
-    // Increment scan count
-    scanCountRef.current++
-    lastScanTimeRef.current = currentTime
-
-    // Check if product already exists in items
-    const existingItemIndex = items.findIndex(item => item.name === product.name)
-    
-    if (existingItemIndex !== -1) {
-      // Product exists, increment quantity
-      setItems(prev => prev.map((item, index) => {
-        if (index === existingItemIndex) {
-          return {
-            ...item,
-            quantity: item.quantity + 1
-          }
-        }
-        return item
-      }))
-      
-      toast.success('Quantity updated!', {
-        icon: '✅',
-        style: {
-          background: '#10B981',
-          color: '#fff',
-        },
-      })
-    } else {
-      // Product doesn't exist, add new item
-      const newItem = {
-        id: Date.now(),
-        name: product.name,
-        quantity: 1,
-        price: Number(priceType === 'standard' ? product.salesPrice : 
-               priceType === 'wholesale' ? product.marginPrice : 
-               product.retailPrice),
-        tax: 0,
-        discount: 0,
-      }
-      setItems(prev => [...prev, newItem])
-      
-      toast.success('Product added!', {
-        icon: '✅',
-        style: {
-          background: '#10B981',
-          color: '#fff',
-        },
-      })
-    }
-
-    // Auto-focus barcode input for next scan
-    setTimeout(() => {
-      const barcodeInput = document.getElementById('barcode-input')
-      if (barcodeInput) {
-        barcodeInput.focus()
-      }
-    }, 50)
-  }, [items, priceType])
+    }, 10); // Reduced from 50ms to 10ms for maximum speed
+  }, [productCache, handleProductFound]);
 
   // Handle barcode input
   const handleBarcodeInput = useCallback((e) => {
-    const barcode = e.target.value.trim()
+    const barcode = e.target.value.trim();
     
     // Only proceed if we have exactly 14 digits
     if (barcode.length === 14 && /^\d+$/.test(barcode)) {
-      debouncedBarcodeHandler(barcode)
-      e.target.value = '' // Clear the input after processing
+      debouncedBarcodeHandler(barcode);
+      e.target.value = ''; // Clear the input after processing
     }
-  }, [debouncedBarcodeHandler])
+  }, [debouncedBarcodeHandler]);
 
   // Handle paste event
-  const handlePaste = useCallback((e) => {
-    e.preventDefault()
-    const pastedText = (e.clipboardData || window.clipboardData).getData('text').trim()
-    
-    // Handle multiple barcodes in paste
-    const barcodes = pastedText.split(/[\n\s,]+/).filter(code => code.length === 14 && /^\d+$/.test(code))
-    
-    if (barcodes.length > 0) {
-      // Process each barcode
-      barcodes.forEach((barcode, index) => {
-        setTimeout(() => {
-          const syntheticEvent = {
-            target: {
-              value: barcode,
-            },
-          }
-          handleBarcodeInput(syntheticEvent)
-        }, index * 100) // Add slight delay between processing each barcode
-      })
+ const handlePaste = useCallback((e) => {
+  e.preventDefault();
+  const pastedText = (e.clipboardData || window.clipboardData).getData('text').trim();
+  
+  // Handle multiple barcodes in paste
+  const barcodes = pastedText.split(/[\n\s,]+/).filter(code => code.length === 14 && /^\d+$/.test(code));
+  
+  if (barcodes.length > 0) {
+    // Process each barcode with minimal delay
+    barcodes.forEach((barcode, index) => {
+      setTimeout(() => {
+        const syntheticEvent = {
+          target: {
+            value: barcode,
+          },
+        };
+        handleBarcodeInput(syntheticEvent);
+      }, index * 20); // Reduced delay between barcodes (20ms)
+    });
+  }
+}, [handleBarcodeInput]);
+  
+  // Enhanced barcode input handler for scanner
+  const handleBarcodeKeyDown = useCallback((e) => {
+    if (e.key === 'Enter') {
+      const barcode = e.target.value.trim();
+      if (barcode.length === 14 && /^\d+$/.test(barcode)) {
+        // Debounce to prevent double fetches
+        if (barcodeDebounceRef.current) clearTimeout(barcodeDebounceRef.current);
+        barcodeDebounceRef.current = setTimeout(() => {
+          debouncedBarcodeHandler(barcode);
+          e.target.value = '';
+        }, 30); // 30ms debounce for ultra-fast response
+      }
     }
-  }, [handleBarcodeInput])
+  }, [debouncedBarcodeHandler]);
 
   // Add event listeners
   useEffect(() => {
@@ -433,7 +425,7 @@ export default function InvoiceGenerator() {
           className="text-center mb-12"
         >
           <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 mb-4">
-            Invoice Generator
+            Invoice Gener ator
           </h1>
           <p className="text-gray-400">Create and manage professional invoices with ease</p>
         </motion.div>
@@ -577,7 +569,69 @@ export default function InvoiceGenerator() {
                         </div>
                       </div>
 
-                      {/* Enhanced Products Table */}
+                      {/* Product Cards Grid (replaces table) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {loading ? (
+                          <div className="col-span-full flex items-center justify-center gap-2 py-12">
+                            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                            <span className="text-gray-400">Loading products...</span>
+                          </div>
+                        ) : filteredProducts.length === 0 ? (
+                          <div className="col-span-full text-center text-gray-400 py-12">
+                            No products found
+                          </div>
+                        ) : (
+                          filteredProducts.map((product) => (
+                            <motion.div
+                              key={product.id}
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="bg-gray-700/40 border border-gray-700/60 rounded-xl shadow-lg flex flex-col items-center p-3 hover:shadow-blue-500/20 transition-all group relative min-h-[220px]"
+                              style={{ maxWidth: '240px', margin: '0 auto' }}
+                            >
+                              <div className="w-20 h-20 bg-gray-800 rounded-md flex items-center justify-center mb-2 overflow-hidden border border-gray-700/50">
+                                {product.imageUrl ? (
+                                  <img
+                                    src={product.imageUrl}
+                                    alt={product.name}
+                                    className="object-contain w-full h-full"
+                                    loading="lazy"
+                                  />
+                                ) : (
+                                  <div className="text-gray-500 text-2xl font-bold">?</div>
+                                )}
+                              </div>
+                              <div className="w-full text-center mb-1">
+                                <div className="font-semibold text-base text-white truncate" title={product.name}>{product.name}</div>
+                                <div className="text-xs text-gray-400 mt-0.5">SKU: <span className="font-mono">{product.sku}</span></div>
+                              </div>
+                              <div className="text-xs text-gray-400 mb-1">{product.category}</div>
+                              <div className="flex flex-col gap-0.5 w-full text-xs mb-2">
+                                <div className="flex justify-between text-gray-300">
+                                  <span>Std:</span>
+                                </div>
+                                <div className="flex justify-between text-xs text-gray-300">
+                                  <span>Wholesale:</span>
+                                  <span className="font-semibold text-green-400">Rs {product.marginPrice}</span>
+                                </div>
+                                <div className="flex justify-between text-xs text-gray-300">
+                                  <span>Retail:</span>
+                                  <span className="font-semibold text-purple-400">Rs {product.retailPrice}</span>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => addProductToItems(product)}
+                                className="mt-4 w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-lg transition-all shadow-lg hover:shadow-blue-500/25 font-medium text-white"
+                              >
+                                Add to Cart
+                              </button>
+                            </motion.div>
+                          ))
+                        )}
+                      </div>
+
+                      {/* Old table view removed/commented out for clarity */}
+                      {/*
                       <div className="overflow-x-auto rounded-lg border border-gray-700/50">
                         <table className="w-full">
                           <thead>
@@ -635,6 +689,7 @@ export default function InvoiceGenerator() {
                           </tbody>
                         </table>
                       </div>
+                      */}
                     </motion.div>
                   </motion.div>
                 )}
@@ -677,10 +732,12 @@ export default function InvoiceGenerator() {
                         <div className="relative flex-1">
                           <input
                             id="barcode-input"
+                            ref={barcodeInputRef}
                             type="text"
                             placeholder="Scan or paste barcode (14 digits)"
                             maxLength={14}
                             className="w-full px-4 py-2 pl-10 bg-gray-700/50 border border-gray-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                            onKeyDown={handleBarcodeKeyDown}
                           />
                           <Barcode className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                           {loading && (
@@ -792,7 +849,7 @@ export default function InvoiceGenerator() {
                               step="0.01"
                             />
                             <div className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">
-                              $
+                              Rs
                             </div>
                           </div>
                           <div className="col-span-1 relative">
@@ -823,6 +880,10 @@ export default function InvoiceGenerator() {
                               %
                             </div>
                           </div>
+                          {/* Show total for this item */}
+                          <div className="col-span-1 text-right text-green-400 font-semibold text-sm">
+                            Total: Rs {calculateItemTotal(item).toFixed(2)}
+                          </div>
                           <button
                             onClick={() => removeItem(item.id)}
                             className="col-span-1 p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
@@ -832,6 +893,12 @@ export default function InvoiceGenerator() {
                           </button>
                         </motion.div>
                       ))}
+                      {/* Show full total below all items */}
+                      <div className="flex justify-end mt-4">
+                        <div className="bg-gray-800/70 rounded-lg px-6 py-3 border border-gray-600/50 text-lg font-bold text-green-300 shadow">
+                          Full Total: Rs {totals.total.toFixed(2)}
+                        </div>
+                      </div>
                     </div>
 
                     {/* Empty State */}

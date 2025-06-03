@@ -28,12 +28,17 @@ function productData({
     weighWithScaleBool = !!toWeighWithScale;
   }
 
+  // Helper to round to 2 decimals
+  function round2(val) {
+    return Math.round((parseFloat(val) + Number.EPSILON) * 100) / 100;
+  }
+
   return {
     name,
     description,
-    salesPrice: salesPrice || 0,
+    salesPrice: round2(salesPrice || 0),
     salesPricePercent: salesPricePercent || 0,
-    costPrice: costPrice || 0,
+    costPrice: round2(costPrice || 0),
     sku: sku || "",
     category: category || "General",
     reference: reference || "",
@@ -42,9 +47,9 @@ function productData({
     imageUrl: imageUrl || "",
     barcode: barcode || "",
     toWeighWithScale: weighWithScaleBool, // always boolean, default false
-    marginPrice: marginPrice || 0,
+    marginPrice: round2(marginPrice || 0),
     marginPricePercent: marginPricePercent || 0,
-    retailPrice: retailPrice || 0,
+    retailPrice: round2(retailPrice || 0),
     retailPricePercent: retailPricePercent || 0,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
