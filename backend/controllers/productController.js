@@ -129,3 +129,24 @@ exports.deleteProduct = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+// Get Product by Barcode
+exports.getProductByBarcode = async (req, res) => {
+  try {
+    const { barcode } = req.params;
+    const snapshot = await db.collection(COLLECTION_NAME)
+      .where('barcode', '==', barcode)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    const doc = snapshot.docs[0];
+    res.json({ id: doc.id, ...doc.data() });
+  } catch (err) {
+    console.error("Error fetching product by barcode:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
