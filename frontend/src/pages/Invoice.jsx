@@ -70,6 +70,24 @@ export default function InvoiceGenerator() {
   const barcodeInputRef = useRef(null)
   const barcodeDebounceRef = useRef(null)
 
+  // Hide sidebar when this page is open
+  useEffect(() => {
+    const sidebar = document.querySelector('.fixed.md\\:static');
+    if (sidebar) {
+      sidebar.style.display = 'none';
+    }
+    // Optionally, hide mobile sidebar overlay if open
+    const overlay = document.querySelector('.fixed.inset-0.z-40');
+    if (overlay) {
+      overlay.style.display = 'none';
+    }
+    // Clean up: show sidebar again when unmounting
+    return () => {
+      if (sidebar) sidebar.style.display = '';
+      if (overlay) overlay.style.display = '';
+    };
+  }, [/* intentionally empty: only run on mount/unmount */]);
+
   // Load saved invoices from localStorage on component mount
   useEffect(() => {
     const saved = localStorage.getItem("savedInvoices")
@@ -415,21 +433,43 @@ export default function InvoiceGenerator() {
     }
   }, [handleBarcodeInput, handlePaste])
 
+  // Shortcuts bar for Close and Home
+  const handleCloseInvoice = () => {
+    // Show sidebar again
+    const sidebar = document.querySelector('.fixed.md\\:static');
+    if (sidebar) sidebar.style.display = '';
+    const overlay = document.querySelector('.fixed.inset-0.z-40');
+    if (overlay) overlay.style.display = '';
+    // Optionally, navigate away or reload
+    window.history.back(); // Or use a router if available
+  };
+  const handleGoHome = () => {
+    // Show sidebar again
+    const sidebar = document.querySelector('.fixed.md\\:static');
+    if (sidebar) sidebar.style.display = '';
+    const overlay = document.querySelector('.fixed.inset-0.z-40');
+    if (overlay) overlay.style.display = '';
+    window.location.href = '/dashboard';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
-      <div className="container mx-auto px-4 py-8">
-        {/* Enhanced Header */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+      {/* Shortcuts Bar */}
+      <div className="flex justify-end gap-2 p-2">
+        <button
+          onClick={handleCloseInvoice}
+          className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium text-white border border-gray-600 transition-all"
         >
-          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 mb-4">
-            Invoice Gener ator
-          </h1>
-          <p className="text-gray-400">Create and manage professional invoices with ease</p>
-        </motion.div>
-
+          Close
+        </button>
+        <button
+          onClick={handleGoHome}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium text-white border border-blue-700 transition-all"
+        >
+          Home
+        </button>
+      </div>
+      <div className="container mx-auto px-4 py-8">
         {/* Enhanced Tab Navigation */}
         <div className="flex justify-center mb-8">
           <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-1.5 flex shadow-lg">

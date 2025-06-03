@@ -59,7 +59,6 @@ function Sidebar() {
     { name: "Inventory", path: "/inventory", icon: <Boxes className="w-5 h-5" /> },
     { name: "Supplier", path: "/supplier", icon: <Truck className="w-5 h-5" /> },
     { name: "Cashbook", path: "/cashbook", icon: <BookOpen className="w-5 h-5" /> },
-    { name: "Invoice", path: "/invoice", icon: <Receipt className="w-5 h-5" /> },
     { name: "Income", path: "/income", icon: <DollarSign className="w-5 h-5" /> },
   ];
 
@@ -145,6 +144,14 @@ function SidebarContent({ navItems, toggleTheme, theme }) {
 
       {/* Bottom - Theme and Logout */}
       < div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700" >
+              <button
+          onClick={() => navigate('/invoice')}
+          className="flex items-center w-full mt-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-purple-500 rounded-md hover:from-blue-600 hover:to-purple-600 transition-all shadow-lg hover:shadow-blue-500/25"
+        >
+          <Receipt className="w-5 h-5 mr-3" />
+          POS
+        </button>
+        <br/>
         <button
           onClick={handleLogout}
           className="flex items-center w-full px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 rounded-md hover:bg-red-100 dark:hover:bg-red-900"
@@ -152,6 +159,7 @@ function SidebarContent({ navItems, toggleTheme, theme }) {
           <LogoutIcon className="w-5 h-5" />
           <span className="ml-3">Logout</span>
         </button>
+
       </div >
     </>
   );
