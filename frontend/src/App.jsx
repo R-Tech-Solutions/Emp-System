@@ -25,7 +25,7 @@ import Purchase from "./pages/Purchase.jsx";
 import InventoryManagement from "./pages/InventoryManagemnet.jsx";
 import SupplierManagement from "./pages/SupplierManagement.jsx";
 import Cashbook from "./pages/Cashbook.jsx";
-import Expence from "./pages/Expence.jsx";
+import Invoice from "./pages/Invoice.jsx";
 import Income from "./pages/Income.jsx";
 
 function App() {
@@ -222,10 +222,10 @@ function App() {
               }
             />
             <Route
-              path="expence"
+              path="invoice"
               element={
                 <ProtectedRoute>
-                  <Expence />
+                  <Invoice />
                 </ProtectedRoute>
               }
             />

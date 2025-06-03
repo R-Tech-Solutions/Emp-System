@@ -29,6 +29,7 @@ const inventoryRoutes = require('./routes/InventoryRoute');
 const purchaseRoutes = require('./routes/PurchaseRoutes');
 const supplierRoutes = require('./routes/SupplierRoutes');
 const cashbookRoutes = require('./routes/CashbookRoutes');
+const financeRoutes = require('./routes/FinanceRoutes');
 
 dotenv.config();
 
@@ -66,6 +67,7 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/purchase', purchaseRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/cashbook', cashbookRoutes);
+app.use('/api/finance', financeRoutes);
 
 app.get('/', (req, res) => {
     res.send('Hello World!'); 

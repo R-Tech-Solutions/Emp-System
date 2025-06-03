@@ -3,7 +3,7 @@ import "./Loader.css";
 
 const DotSpinner = () => {
   return (
-    <div className="loader"></div>
+    <div className="loaderNew"></div>
 
   );
 };
