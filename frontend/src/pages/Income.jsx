@@ -591,93 +591,6 @@ const FinanceDashboard = () => {
                 <p className="text-2xl font-bold text-indigo-400">${incomeSummary.recurring.toLocaleString()}</p>
               </div>
             </div>
-
-            {/* Income Chart */}
-            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 mb-6">
-              <h3 className="text-lg font-semibold mb-4">Income by Category</h3>
-              <div className="space-y-3">
-                {incomeChartData.map((item, index) => (
-                  <div key={item.category} className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div
-                        className={`w-4 h-4 rounded mr-3 bg-${["blue", "green", "yellow", "red", "purple", "pink", "indigo", "cyan"][index % 8]}-500`}
-                      ></div>
-                      <span className="text-sm">{item.category}</span>
-                    </div>
-                    <span className="font-semibold">${item.amount.toLocaleString()}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Income Filters */}
-            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 mb-6">
-              <h3 className="text-lg font-semibold mb-4">Filters & Search</h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                <input
-                  type="text"
-                  placeholder="Search income..."
-                  className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white placeholder-gray-400"
-                  value={incomeFilters.search}
-                  onChange={(e) => setIncomeFilters({ ...incomeFilters, search: e.target.value })}
-                />
-                <input
-                  type="date"
-                  className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
-                  value={incomeFilters.dateFrom}
-                  onChange={(e) => setIncomeFilters({ ...incomeFilters, dateFrom: e.target.value })}
-                />
-                <input
-                  type="date"
-                  className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
-                  value={incomeFilters.dateTo}
-                  onChange={(e) => setIncomeFilters({ ...incomeFilters, dateTo: e.target.value })}
-                />
-                <select
-                  className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
-                  value={incomeFilters.category}
-                  onChange={(e) => setIncomeFilters({ ...incomeFilters, category: e.target.value })}
-                >
-                  <option value="">All Categories</option>
-                  {incomeCategories.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
-                  value={incomeFilters.project}
-                  onChange={(e) => setIncomeFilters({ ...incomeFilters, project: e.target.value })}
-                >
-                  <option value="">All Projects</option>
-                  {projects.map((proj) => (
-                    <option key={proj} value={proj}>
-                      {proj}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
-                  value={incomeFilters.status}
-                  onChange={(e) => setIncomeFilters({ ...incomeFilters, status: e.target.value })}
-                >
-                  <option value="">All Status</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Received">Received</option>
-                  <option value="Cancelled">Cancelled</option>
-                </select>
-                <input
-                  type="text"
-                  placeholder="Received from..."
-                  className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white placeholder-gray-400"
-                  value={incomeFilters.receivedFrom}
-                  onChange={(e) => setIncomeFilters({ ...incomeFilters, receivedFrom: e.target.value })}
-                />
-              </div>
-            </div>
-
-            {/* Income Action Buttons */}
             <div className="flex justify-between items-center mb-6">
               <button
                 onClick={() => setShowIncomeModal(true)}
@@ -685,17 +598,6 @@ const FinanceDashboard = () => {
               >
                 <span>➕</span> Add Income
               </button>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => exportToCSV("income")}
-                  className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium"
-                >
-                  Export CSV
-                </button>
-                <button className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg font-medium">
-                  Import CSV
-                </button>
-              </div>
             </div>
 
             {/* Income Table */}
@@ -854,92 +756,6 @@ const FinanceDashboard = () => {
                 <p className="text-2xl font-bold text-purple-400">${expenseSummary.thisMonth.toLocaleString()}</p>
               </div>
             </div>
-
-            {/* Expense Chart */}
-            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 mb-6">
-              <h3 className="text-lg font-semibold mb-4">Expenses by Category</h3>
-              <div className="flex flex-wrap gap-4">
-                {expenseChartData.map((item, index) => (
-                  <div key={item.category} className="flex items-center">
-                    <div
-                      className={`w-4 h-4 rounded mr-2 bg-${["blue", "green", "yellow", "red", "purple", "pink", "indigo"][index % 7]}-500`}
-                    ></div>
-                    <span className="text-sm">
-                      {item.category}: ${item.amount.toLocaleString()}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Expense Filters */}
-            <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 mb-6">
-              <h3 className="text-lg font-semibold mb-4">Filters & Search</h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                <input
-                  type="text"
-                  placeholder="Search expenses..."
-                  className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white placeholder-gray-400"
-                  value={expenseFilters.search}
-                  onChange={(e) => setExpenseFilters({ ...expenseFilters, search: e.target.value })}
-                />
-                <input
-                  type="date"
-                  className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
-                  value={expenseFilters.dateFrom}
-                  onChange={(e) => setExpenseFilters({ ...expenseFilters, dateFrom: e.target.value })}
-                />
-                <input
-                  type="date"
-                  className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
-                  value={expenseFilters.dateTo}
-                  onChange={(e) => setExpenseFilters({ ...expenseFilters, dateTo: e.target.value })}
-                />
-                <select
-                  className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
-                  value={expenseFilters.category}
-                  onChange={(e) => setExpenseFilters({ ...expenseFilters, category: e.target.value })}
-                >
-                  <option value="">All Categories</option>
-                  {expenseCategories.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
-                  value={expenseFilters.department}
-                  onChange={(e) => setExpenseFilters({ ...expenseFilters, department: e.target.value })}
-                >
-                  <option value="">All Departments</option>
-                  {departments.map((dept) => (
-                    <option key={dept} value={dept}>
-                      {dept}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
-                  value={expenseFilters.status}
-                  onChange={(e) => setExpenseFilters({ ...expenseFilters, status: e.target.value })}
-                >
-                  <option value="">All Status</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Approved">Approved</option>
-                  <option value="Rejected">Rejected</option>
-                </select>
-                <input
-                  type="text"
-                  placeholder="Paid by..."
-                  className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white placeholder-gray-400"
-                  value={expenseFilters.paidBy}
-                  onChange={(e) => setExpenseFilters({ ...expenseFilters, paidBy: e.target.value })}
-                />
-              </div>
-            </div>
-
-            {/* Expense Action Buttons */}
             <div className="flex justify-between items-center mb-6">
               <button
                 onClick={() => setShowExpenseModal(true)}
@@ -947,17 +763,7 @@ const FinanceDashboard = () => {
               >
                 <span>➕</span> Add Expense
               </button>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => exportToCSV("expense")}
-                  className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg font-medium"
-                >
-                  Export CSV
-                </button>
-                <button className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg font-medium">
-                  Import CSV
-                </button>
-              </div>
+              
             </div>
 
             {/* Expense Table */}

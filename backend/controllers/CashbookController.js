@@ -1,4 +1,5 @@
 const { db } = require("../firebaseConfig");
+const { IncomeModel, ExpenseModel } = require('../models/FinanceModel');
 
 // Get cashbook entries
 exports.getCashbookEntries = async (req, res) => {
@@ -12,6 +13,12 @@ exports.getCashbookEntries = async (req, res) => {
     const suppliersSnapshot = await db.collection('suppliers')
       .where('status', '==', 'Paid')
       .get();
+
+    // Fetch income entries
+    const incomes = await IncomeModel.getAll();
+
+    // Fetch expense entries
+    const expenses = await ExpenseModel.getAll();
 
     // Format purchase entries
     const purchaseEntries = purchasesSnapshot.docs.map(doc => {
@@ -46,10 +53,35 @@ exports.getCashbookEntries = async (req, res) => {
       };
     });
 
+    // Format income entries
+    const incomeEntries = incomes.map(income => ({
+      date: income.date,
+      particulars: income.title,
+      voucher: income.id,
+      type: "Cash In",
+      amount: income.amount,
+      mode: income.paymentMethod,
+      category: "Income"
+    }));
+
+    // Format expense entries
+    const expenseEntries = expenses.map(expense => ({
+      date: expense.date,
+      particulars: expense.title,
+      voucher: expense.id,
+      type: "Cash Out",
+      amount: expense.amount,
+      mode: expense.paymentMethod,
+      category: "Expense"
+    }));
+
     // Combine and sort all entries by date
-    const allEntries = [...purchaseEntries, ...supplierEntries].sort((a, b) => 
-      new Date(b.date) - new Date(a.date)
-    );
+    const allEntries = [
+      ...purchaseEntries, 
+      ...supplierEntries,
+      ...incomeEntries,
+      ...expenseEntries
+    ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
     res.json(allEntries);
   } catch (err) {
