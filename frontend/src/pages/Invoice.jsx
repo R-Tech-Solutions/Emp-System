@@ -267,17 +267,27 @@ export default function InvoiceGenerator() {
   // Handle product found
   const handleProductFound = useCallback((product) => {
     setItems(prevItems => {
-      // Check if product already exists in items by name (or use product.id/sku if available)
+      // Check if product already exists in items by name
       const existingIndex = prevItems.findIndex(item => item.name === product.name);
+      
       if (existingIndex !== -1) {
-        // If found, increase quantity
-        return prevItems.map((item, idx) =>
-          idx === existingIndex
-            ? { ...item, quantity: Number(item.quantity) + 1 }
-            : item
-        );
+        // If found, increase quantity by 1
+        const updatedItems = [...prevItems];
+        const currentItem = updatedItems[existingIndex];
+        
+        // Update the existing item with new quantity
+        updatedItems[existingIndex] = {
+          ...currentItem,
+          quantity: Number(currentItem.quantity) + 1,
+          // Keep the same price and other properties
+          price: currentItem.price,
+          tax: currentItem.tax,
+          discount: currentItem.discount
+        };
+        
+        return updatedItems;
       } else {
-        // If not found, add as new item
+        // If not found, add as new item with quantity 1
         const newItem = {
           id: Date.now(),
           name: product.name,
@@ -294,7 +304,13 @@ export default function InvoiceGenerator() {
       }
     });
 
-    toast.success('Product added!', {
+    // Show success message with quantity info
+    const existingItem = items.find(item => item.name === product.name);
+    const message = existingItem 
+      ? `Product quantity updated to ${existingItem.quantity + 1}!`
+      : 'Product added!';
+
+    toast.success(message, {
       icon: '✅',
       style: {
         background: '#10B981',
@@ -307,7 +323,7 @@ export default function InvoiceGenerator() {
       const barcodeInput = document.getElementById('barcode-input');
       if (barcodeInput) barcodeInput.focus();
     }, 50);
-  }, [priceType]);
+  }, [priceType, items]);
 
   // Optimized product lookup function
   const lookupProduct = useCallback(async (barcode) => {
@@ -328,7 +344,7 @@ export default function InvoiceGenerator() {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
 
-      const response = await fetch(`http://localhost:3001/api/products/barcode/${barcode}`, {
+      const response = await fetch(`http://localhost:3001/api/products/barcode/${encodeURIComponent(barcode)}`, {
         signal: controller.signal,
         headers: {
           'Cache-Control': 'no-cache',
@@ -364,34 +380,65 @@ export default function InvoiceGenerator() {
   const handleBarcodeInput = useCallback((e) => {
     const barcode = e.target.value.trim();
     
-    // Only proceed if we have exactly 14 digits
-    if (barcode.length === 14 && /^\d+$/.test(barcode)) {
-      // Prevent duplicate scans
-      const now = Date.now();
-      if (barcode === lastBarcodeRef.current && now - lastScanTimeRef.current < 1000) {
+    // Clear any existing timeout
+    if (barcodeTimeoutRef.current) {
+      clearTimeout(barcodeTimeoutRef.current);
+    }
+
+    // Set a timeout to wait for complete barcode
+    barcodeTimeoutRef.current = setTimeout(() => {
+      // Only proceed if we have a valid barcode
+      if (barcode && barcode.length >= 3) { // Minimum length check
+        // Clear input immediately
         e.target.value = '';
-        return;
-      }
 
-      lastBarcodeRef.current = barcode;
-      lastScanTimeRef.current = now;
-
-      // Process barcode immediately
-      lookupProduct(barcode)
-        .then(product => {
-          handleProductFound(product);
-          e.target.value = ''; // Clear input after successful scan
-        })
-        .catch(error => {
-          toast.error(error.message === 'Product not found' ? 'Product not found!' : 'Error scanning product!', {
-            icon: '❌',
-            style: {
-              background: '#EF4444',
-              color: '#fff',
-            },
+        // Process barcode immediately
+        lookupProduct(barcode)
+          .then(product => {
+            handleProductFound(product);
+          })
+          .catch(error => {
+            if (error.message !== 'Product not found') {
+              toast.error('Error scanning product!', {
+                icon: '❌',
+                style: {
+                  background: '#EF4444',
+                  color: '#fff',
+                },
+              });
+            }
           });
-          e.target.value = ''; // Clear input on error
-        });
+      }
+    }, 100); // Increased timeout to wait for complete barcode
+  }, [lookupProduct, handleProductFound]);
+
+  // Optimized keydown handler
+  const handleBarcodeKeyDown = useCallback((e) => {
+    if (e.key === 'Enter') {
+      const barcode = e.target.value.trim();
+      if (barcode && barcode.length >= 3) { // Minimum length check
+        e.preventDefault(); // Prevent form submission
+        
+        // Clear input immediately
+        e.target.value = '';
+        
+        // Process immediately without debounce
+        lookupProduct(barcode)
+          .then(product => {
+            handleProductFound(product);
+          })
+          .catch(error => {
+            if (error.message !== 'Product not found') {
+              toast.error('Error scanning product!', {
+                icon: '❌',
+                style: {
+                  background: '#EF4444',
+                  color: '#fff',
+                },
+              });
+            }
+          });
+      }
     }
   }, [lookupProduct, handleProductFound]);
 
@@ -401,12 +448,18 @@ export default function InvoiceGenerator() {
     const pastedText = (e.clipboardData || window.clipboardData).getData('text').trim();
     
     // Handle multiple barcodes in paste
-    const barcodes = pastedText.split(/[\n\s,]+/).filter(code => code.length === 14 && /^\d+$/.test(code));
+    const barcodes = pastedText.split(/[\n\s,]+/).filter(code => code.length > 0);
     
     if (barcodes.length > 0) {
       // Process each barcode with minimal delay
       barcodes.forEach((barcode, index) => {
+        // Skip if this is the same barcode as the last one
+        if (barcode === lastBarcodeRef.current) return;
+
         setTimeout(() => {
+          lastBarcodeRef.current = barcode;
+          lastScanTimeRef.current = Date.now();
+
           lookupProduct(barcode)
             .then(product => {
               handleProductFound(product);
@@ -420,35 +473,8 @@ export default function InvoiceGenerator() {
                 },
               });
             });
-        }, index * 50); // Reduced delay between barcodes
+        }, index * 50); // Increased delay between barcodes to 50ms
       });
-    }
-  }, [lookupProduct, handleProductFound]);
-
-  // Optimized keydown handler
-  const handleBarcodeKeyDown = useCallback((e) => {
-    if (e.key === 'Enter') {
-      const barcode = e.target.value.trim();
-      if (barcode.length === 14 && /^\d+$/.test(barcode)) {
-        e.preventDefault(); // Prevent form submission
-        
-        // Process immediately without debounce
-        lookupProduct(barcode)
-          .then(product => {
-            handleProductFound(product);
-            e.target.value = '';
-          })
-          .catch(error => {
-            toast.error(error.message === 'Product not found' ? 'Product not found!' : 'Error scanning product!', {
-              icon: '❌',
-              style: {
-                background: '#EF4444',
-                color: '#fff',
-              },
-            });
-            e.target.value = '';
-          });
-      }
     }
   }, [lookupProduct, handleProductFound]);
 
@@ -456,6 +482,12 @@ export default function InvoiceGenerator() {
   useEffect(() => {
     const barcodeInput = document.getElementById('barcode-input');
     if (barcodeInput) {
+      // Remove existing listeners
+      barcodeInput.removeEventListener('input', handleBarcodeInput);
+      barcodeInput.removeEventListener('paste', handlePaste);
+      barcodeInput.removeEventListener('keydown', handleBarcodeKeyDown);
+
+      // Add new listeners
       barcodeInput.addEventListener('input', handleBarcodeInput);
       barcodeInput.addEventListener('paste', handlePaste);
       barcodeInput.addEventListener('keydown', handleBarcodeKeyDown);
@@ -766,8 +798,7 @@ export default function InvoiceGenerator() {
                             id="barcode-input"
                             ref={barcodeInputRef}
                             type="text"
-                            placeholder="Scan or paste barcode (14 digits)"
-                            maxLength={14}
+                            placeholder="Scan or paste barcode"
                             className="w-full px-4 py-2 pl-10 bg-gray-700/50 border border-gray-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
                             onKeyDown={handleBarcodeKeyDown}
                           />
@@ -777,9 +808,6 @@ export default function InvoiceGenerator() {
                               <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                             </div>
                           )}
-                          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
-                            {document.getElementById('barcode-input')?.value.length || 0}/14
-                          </div>
                         </div>
                       </div>
 
