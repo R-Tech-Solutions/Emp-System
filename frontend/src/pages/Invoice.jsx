@@ -69,6 +69,7 @@ export default function InvoiceGenerator() {
   const lastScanTimeRef = useRef(Date.now())
   const barcodeInputRef = useRef(null)
   const barcodeDebounceRef = useRef(null)
+  const apiCache = useRef(new Map())
 
   // Hide sidebar when this page is open
   useEffect(() => {
@@ -308,130 +309,181 @@ export default function InvoiceGenerator() {
     }, 50);
   }, [priceType]);
 
-  // Add debounced barcode handler
-  const debouncedBarcodeHandler = useCallback((barcode) => {
-    if (barcodeTimeoutRef.current) {
-      clearTimeout(barcodeTimeoutRef.current);
-    }
+  // Optimized product lookup function
+  const lookupProduct = useCallback(async (barcode) => {
+    try {
+      // Check memory cache first
+      if (productCache.has(barcode)) {
+        return productCache.get(barcode);
+      }
 
-    // Set timeout to 10ms for ultra-fast response
-    barcodeTimeoutRef.current = setTimeout(async () => {
-      try {
-        setLoading(true);
-        
-        // Check cache first
-        if (productCache.has(barcode)) {
-          const cachedProduct = productCache.get(barcode);
-          handleProductFound(cachedProduct);
-          return;
+      // Check API cache
+      if (apiCache.current.has(barcode)) {
+        const cachedProduct = apiCache.current.get(barcode);
+        productCache.set(barcode, cachedProduct);
+        return cachedProduct;
+      }
+
+      // Make API call with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+
+      const response = await fetch(`http://localhost:3001/api/products/barcode/${barcode}`, {
+        signal: controller.signal,
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         }
+      });
 
-        const response = await fetch(`http://localhost:3001/api/products/barcode/${barcode}`);
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Product not found');
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const product = await response.json();
+      
+      // Cache the result
+      productCache.set(barcode, product);
+      apiCache.current.set(barcode, product);
+      
+      return product;
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout');
+      }
+      throw error;
+    }
+  }, [productCache]);
+
+  // Optimized barcode handler
+  const handleBarcodeInput = useCallback((e) => {
+    const barcode = e.target.value.trim();
+    
+    // Only proceed if we have exactly 14 digits
+    if (barcode.length === 14 && /^\d+$/.test(barcode)) {
+      // Prevent duplicate scans
+      const now = Date.now();
+      if (barcode === lastBarcodeRef.current && now - lastScanTimeRef.current < 1000) {
+        e.target.value = '';
+        return;
+      }
+
+      lastBarcodeRef.current = barcode;
+      lastScanTimeRef.current = now;
+
+      // Process barcode immediately
+      lookupProduct(barcode)
+        .then(product => {
+          handleProductFound(product);
+          e.target.value = ''; // Clear input after successful scan
+        })
+        .catch(error => {
+          toast.error(error.message === 'Product not found' ? 'Product not found!' : 'Error scanning product!', {
+            icon: '❌',
+            style: {
+              background: '#EF4444',
+              color: '#fff',
+            },
+          });
+          e.target.value = ''; // Clear input on error
+        });
+    }
+  }, [lookupProduct, handleProductFound]);
+
+  // Optimized paste handler
+  const handlePaste = useCallback((e) => {
+    e.preventDefault();
+    const pastedText = (e.clipboardData || window.clipboardData).getData('text').trim();
+    
+    // Handle multiple barcodes in paste
+    const barcodes = pastedText.split(/[\n\s,]+/).filter(code => code.length === 14 && /^\d+$/.test(code));
+    
+    if (barcodes.length > 0) {
+      // Process each barcode with minimal delay
+      barcodes.forEach((barcode, index) => {
+        setTimeout(() => {
+          lookupProduct(barcode)
+            .then(product => {
+              handleProductFound(product);
+            })
+            .catch(error => {
+              toast.error(error.message === 'Product not found' ? 'Product not found!' : 'Error scanning product!', {
+                icon: '❌',
+                style: {
+                  background: '#EF4444',
+                  color: '#fff',
+                },
+              });
+            });
+        }, index * 50); // Reduced delay between barcodes
+      });
+    }
+  }, [lookupProduct, handleProductFound]);
+
+  // Optimized keydown handler
+  const handleBarcodeKeyDown = useCallback((e) => {
+    if (e.key === 'Enter') {
+      const barcode = e.target.value.trim();
+      if (barcode.length === 14 && /^\d+$/.test(barcode)) {
+        e.preventDefault(); // Prevent form submission
         
-        if (!response.ok) {
-          if (response.status === 404) {
-            toast.error('Product not found!', {
+        // Process immediately without debounce
+        lookupProduct(barcode)
+          .then(product => {
+            handleProductFound(product);
+            e.target.value = '';
+          })
+          .catch(error => {
+            toast.error(error.message === 'Product not found' ? 'Product not found!' : 'Error scanning product!', {
               icon: '❌',
               style: {
                 background: '#EF4444',
                 color: '#fff',
               },
             });
-            return;
-          }
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const product = await response.json();
-        
-        if (product) {
-          // Cache the product
-          setProductCache(prev => new Map(prev).set(barcode, product));
-          handleProductFound(product);
-        }
-      } catch (error) {
-        console.error('Error fetching product by barcode:', error);
-        toast.error('Error fetching product!', {
-          icon: '❌',
-          style: {
-            background: '#EF4444',
-            color: '#fff',
-          },
-        });
-      } finally {
-        setLoading(false);
-      }
-    }, 10); // Reduced from 50ms to 10ms for maximum speed
-  }, [productCache, handleProductFound]);
-
-  // Handle barcode input
-  const handleBarcodeInput = useCallback((e) => {
-    const barcode = e.target.value.trim();
-    
-    // Only proceed if we have exactly 14 digits
-    if (barcode.length === 14 && /^\d+$/.test(barcode)) {
-      debouncedBarcodeHandler(barcode);
-      e.target.value = ''; // Clear the input after processing
-    }
-  }, [debouncedBarcodeHandler]);
-
-  // Handle paste event
- const handlePaste = useCallback((e) => {
-  e.preventDefault();
-  const pastedText = (e.clipboardData || window.clipboardData).getData('text').trim();
-  
-  // Handle multiple barcodes in paste
-  const barcodes = pastedText.split(/[\n\s,]+/).filter(code => code.length === 14 && /^\d+$/.test(code));
-  
-  if (barcodes.length > 0) {
-    // Process each barcode with minimal delay
-    barcodes.forEach((barcode, index) => {
-      setTimeout(() => {
-        const syntheticEvent = {
-          target: {
-            value: barcode,
-          },
-        };
-        handleBarcodeInput(syntheticEvent);
-      }, index * 20); // Reduced delay between barcodes (20ms)
-    });
-  }
-}, [handleBarcodeInput]);
-  
-  // Enhanced barcode input handler for scanner
-  const handleBarcodeKeyDown = useCallback((e) => {
-    if (e.key === 'Enter') {
-      const barcode = e.target.value.trim();
-      if (barcode.length === 14 && /^\d+$/.test(barcode)) {
-        // Debounce to prevent double fetches
-        if (barcodeDebounceRef.current) clearTimeout(barcodeDebounceRef.current);
-        barcodeDebounceRef.current = setTimeout(() => {
-          debouncedBarcodeHandler(barcode);
-          e.target.value = '';
-        }, 30); // 30ms debounce for ultra-fast response
+            e.target.value = '';
+          });
       }
     }
-  }, [debouncedBarcodeHandler]);
+  }, [lookupProduct, handleProductFound]);
 
-  // Add event listeners
+  // Add event listeners with cleanup
   useEffect(() => {
-    const barcodeInput = document.getElementById('barcode-input')
+    const barcodeInput = document.getElementById('barcode-input');
     if (barcodeInput) {
-      barcodeInput.addEventListener('input', handleBarcodeInput)
-      barcodeInput.addEventListener('paste', handlePaste)
+      barcodeInput.addEventListener('input', handleBarcodeInput);
+      barcodeInput.addEventListener('paste', handlePaste);
+      barcodeInput.addEventListener('keydown', handleBarcodeKeyDown);
       
       // Auto-focus barcode input when component mounts
-      barcodeInput.focus()
+      barcodeInput.focus();
       
       return () => {
-        barcodeInput.removeEventListener('input', handleBarcodeInput)
-        barcodeInput.removeEventListener('paste', handlePaste)
-        if (barcodeTimeoutRef.current) {
-          clearTimeout(barcodeTimeoutRef.current)
-        }
-      }
+        barcodeInput.removeEventListener('input', handleBarcodeInput);
+        barcodeInput.removeEventListener('paste', handlePaste);
+        barcodeInput.removeEventListener('keydown', handleBarcodeKeyDown);
+      };
     }
-  }, [handleBarcodeInput, handlePaste])
+  }, [handleBarcodeInput, handlePaste, handleBarcodeKeyDown]);
+
+  // Clear caches periodically to prevent memory bloat
+  useEffect(() => {
+    const cacheCleanupInterval = setInterval(() => {
+      if (productCache.size > 1000) {
+        setProductCache(new Map());
+      }
+      if (apiCache.current.size > 1000) {
+        apiCache.current.clear();
+      }
+    }, 300000); // Clean every 5 minutes
+
+    return () => clearInterval(cacheCleanupInterval);
+  }, []);
 
   // Shortcuts bar for Close and Home
   const handleCloseInvoice = () => {
@@ -670,66 +722,6 @@ export default function InvoiceGenerator() {
                         )}
                       </div>
 
-                      {/* Old table view removed/commented out for clarity */}
-                      {/*
-                      <div className="overflow-x-auto rounded-lg border border-gray-700/50">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="bg-gray-700/50">
-                              <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Name</th>
-                              <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">SKU</th>
-                              <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Category</th>
-                              <th className="px-6 py-4 text-right text-sm font-medium text-gray-300">Standard Price</th>
-                              <th className="px-6 py-4 text-right text-sm font-medium text-gray-300">Wholesale Price</th>
-                              <th className="px-6 py-4 text-right text-sm font-medium text-gray-300">Retail Price</th>
-                              <th className="px-6 py-4 text-center text-sm font-medium text-gray-300">Action</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-700/50">
-                            {loading ? (
-                              <tr>
-                                <td colSpan="7" className="px-6 py-8 text-center">
-                                  <div className="flex items-center justify-center gap-2">
-                                    <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                                    <span className="text-gray-400">Loading products...</span>
-                                  </div>
-                                </td>
-                              </tr>
-                            ) : filteredProducts.length === 0 ? (
-                              <tr>
-                                <td colSpan="7" className="px-6 py-8 text-center text-gray-400">
-                                  No products found
-                                </td>
-                              </tr>
-                            ) : (
-                              filteredProducts.map((product) => (
-                                <motion.tr 
-                                  key={product.id}
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  className="hover:bg-gray-700/30 transition-colors"
-                                >
-                                  <td className="px-6 py-4">{product.name}</td>
-                                  <td className="px-6 py-4">{product.sku}</td>
-                                  <td className="px-6 py-4">{product.category}</td>
-                                  <td className="px-6 py-4 text-right">${product.salesPrice}</td>
-                                  <td className="px-6 py-4 text-right">${product.marginPrice}</td>
-                                  <td className="px-6 py-4 text-right">${product.retailPrice}</td>
-                                  <td className="px-6 py-4 text-center">
-                                    <button
-                                      onClick={() => addProductToItems(product)}
-                                      className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-lg transition-all shadow-lg hover:shadow-blue-500/25"
-                                    >
-                                      Add to Cart
-                                    </button>
-                                  </td>
-                                </motion.tr>
-                              ))
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                      */}
                     </motion.div>
                   </motion.div>
                 )}
