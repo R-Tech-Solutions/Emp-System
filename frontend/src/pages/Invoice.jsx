@@ -1,1257 +1,1195 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
-import { Plus, Trash2, Printer, CreditCard, Banknote, Eye, Search, ShoppingCart, ChevronRight, ChevronLeft, X, Keyboard, Info, Barcode } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
-import toast from 'react-hot-toast'
+import { useState, useEffect, useRef } from "react"
 
+// Mock product database
+const mockProducts = [
+  {
+    id: 1,
+    name: "Coca Cola 500ml",
+    barcode: "N33163-371",
+    category: "Beverages",
+    stock: 50,
+    standardPrice: 250,
+    wholesalePrice: 200,
+    retailPrice: 275,
+    cost: 150,
+    description: "Refreshing cola drink",
+    image: "/placeholder.svg?height=100&width=100",
+  },
+  {
+    id: 2,
+    name: "Bread Loaf",
+    barcode: "2345678901234",
+    category: "Bakery",
+    stock: 25,
+    standardPrice: 300,
+    wholesalePrice: 250,
+    retailPrice: 325,
+    cost: 180,
+    description: "Fresh white bread",
+    image: "/placeholder.svg?height=100&width=100",
+  }
+]
 
-export default function InvoiceGenerator() {
-  const [activeTab, setActiveTab] = useState("create")
-  const [savedInvoices, setSavedInvoices] = useState([])
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("")
+const mockCustomers = [
+  {
+    id: 1,
+    name: "John Doe",
+    email: "john@example.com",
+    phone: "+94771234567",
+    loyaltyPoints: 150,
+    totalSpent: 125075,
+    visits: 25,
+  },
+  {
+    id: 2,
+    name: "Jane Smith",
+    email: "jane@example.com",
+    phone: "+94771234568",
+    loyaltyPoints: 89,
+    totalSpent: 89050,
+    visits: 18,
+  }
+]
 
-  const [companyInfo, setCompanyInfo] = useState({
-    name: "R-Tech Solutions",
-    address: "262 Peradenita road Kandy",
-    city: "kandy",
-    phone: "0766187001",
-    email: "info@Rtechsl.com",
-    website: "www.rtechsl.lk",
-  })
+const categories = ["All", "Beverages", "Bakery", "Dairy", "Fruits", "Meat", "Electronics"]
 
-  const [clientInfo, setClientInfo] = useState({
-    name: "",
-    address: "",
-    city: "",
-    phone: "",
-    email: "",
-  })
-
-  const [invoiceDetails, setInvoiceDetails] = useState({
-    number: "INV-001",
-    date: new Date().toISOString().split("T")[0],
-    dueDate: "",
-    currency: "USD",
-  })
-
-  const [items, setItems] = useState([{ id: 1, name: "", quantity: 1, price: 0, tax: 0, discount: 0 }])
-
-  const [notes, setNotes] = useState("")
-  const [terms, setTerms] = useState("")
-
-  const [cardPaymentDetails, setCardPaymentDetails] = useState({
-    bankName: "",
-    accountNumber: "",
-    routingNumber: "",
-    swiftCode: "",
-    amount: "",
-    balance: 0
-  })
-
-  const [cashPaymentDetails, setCashPaymentDetails] = useState({
-    amount: "",
-    receivedBy: "",
-    date: "",
-    balance: 0
-  })
-
-  const [priceType, setPriceType] = useState("standard")
-  const [showProductModal, setShowProductModal] = useState(false)
-  const [products, setProducts] = useState([])
-  const [searchTerm, setSearchTerm] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [showPreview, setShowPreview] = useState(false)
-  const [productCache, setProductCache] = useState(new Map())
-  const barcodeTimeoutRef = useRef(null)
-  const lastBarcodeRef = useRef('')
-  const scanCountRef = useRef(0)
-  const lastScanTimeRef = useRef(Date.now())
-  const barcodeInputRef = useRef(null)
-  const barcodeDebounceRef = useRef(null)
-  const apiCache = useRef(new Map())
-
-  // Hide sidebar when this page is open
+// Toast Notification Component
+const Toast = ({ message, type, isVisible, onClose }) => {
   useEffect(() => {
-    const sidebar = document.querySelector('.fixed.md\\:static');
-    if (sidebar) {
-      sidebar.style.display = 'none';
+    if (isVisible) {
+      const timer = setTimeout(() => {
+        onClose()
+      }, 3000)
+      return () => clearTimeout(timer)
     }
-    // Optionally, hide mobile sidebar overlay if open
-    const overlay = document.querySelector('.fixed.inset-0.z-40');
-    if (overlay) {
-      overlay.style.display = 'none';
-    }
-    // Clean up: show sidebar again when unmounting
-    return () => {
-      if (sidebar) sidebar.style.display = '';
-      if (overlay) overlay.style.display = '';
-    };
-  }, [/* intentionally empty: only run on mount/unmount */]);
+  }, [isVisible, onClose])
 
-  // Load saved invoices from localStorage on component mount
-  useEffect(() => {
-    const saved = localStorage.getItem("savedInvoices")
-    if (saved) {
-      setSavedInvoices(JSON.parse(saved))
-    }
-  }, [])
-
-  // Fetch products from API
-  const fetchProducts = async () => {
-    try {
-      setLoading(true)
-      const response = await fetch('http://localhost:3001/api/products')
-      const data = await response.json()
-      setProducts(data)
-    } catch (error) {
-      console.error('Error fetching products:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Add product to items
-  const addProductToItems = (product) => {
-    const newItem = {
-      id: Date.now(),
-      name: product.name,
-      quantity: 1,
-      price: Number(priceType === 'standard' ? product.salesPrice : 
-             priceType === 'wholesale' ? product.marginPrice : 
-             product.retailPrice),
-      tax: 0,
-      discount: 0,
-    }
-    setItems([...items, newItem])
-    setShowProductModal(false)
-  }
-
-  // Filter products based on search term
-  const filteredProducts = products.filter(product => 
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.barcode.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  const addItem = () => {
-    const newItem = {
-      id: Date.now(),
-      name: "",
-      quantity: 1,
-      price: 0,
-      tax: 0,
-      discount: 0,
-    }
-    setItems([...items, newItem])
-  }
-
-  const removeItem = (id) => {
-    setItems(items.filter((item) => item.id !== id))
-  }
-
-  const updateItem = (id, field, value) => {
-    setItems(items.map((item) => (item.id === id ? { ...item, [field]: field === 'price' ? Number(value) : value } : item)))
-  }
-
-  const calculateItemTotal = (item) => {
-    const subtotal = Number(item.quantity) * Number(item.price)
-    const discountAmount = (subtotal * Number(item.discount)) / 100
-    const taxableAmount = subtotal - discountAmount
-    const taxAmount = (taxableAmount * Number(item.tax)) / 100
-    return taxableAmount + taxAmount
-  }
-
-  const calculateTotals = () => {
-    const subtotal = items.reduce((sum, item) => sum + (Number(item.quantity) * Number(item.price)), 0)
-    const totalDiscount = items.reduce((sum, item) => sum + ((Number(item.quantity) * Number(item.price) * Number(item.discount)) / 100), 0)
-    const totalTax = items.reduce((sum, item) => {
-      const itemSubtotal = Number(item.quantity) * Number(item.price)
-      const itemDiscount = (itemSubtotal * Number(item.discount)) / 100
-      const taxableAmount = itemSubtotal - itemDiscount
-      return sum + (taxableAmount * Number(item.tax)) / 100
-    }, 0)
-    const total = subtotal - totalDiscount + totalTax
-
-    return { subtotal, totalDiscount, totalTax, total }
-  }
-
-  const handlePrint = () => {
-    window.print()
-  }
-
-  const saveInvoice = () => {
-    const invoice = {
-      id: Date.now(),
-      companyInfo,
-      clientInfo,
-      invoiceDetails,
-      items,
-      notes,
-      terms,
-      paymentMethod: selectedPaymentMethod,
-      paymentDetails: selectedPaymentMethod === "card" ? cardPaymentDetails : cashPaymentDetails,
-      totals: calculateTotals(),
-      createdAt: new Date().toISOString(),
-    }
-
-    const updatedInvoices = [...savedInvoices, invoice]
-    setSavedInvoices(updatedInvoices)
-    localStorage.setItem("savedInvoices", JSON.stringify(updatedInvoices))
-    alert("Invoice saved successfully!")
-  }
-
-  const deleteInvoice = (id) => {
-    const updatedInvoices = savedInvoices.filter((invoice) => invoice.id !== id)
-    setSavedInvoices(updatedInvoices)
-    localStorage.setItem("savedInvoices", JSON.stringify(updatedInvoices))
-  }
-
-  const totals = calculateTotals()
-
-  const PaymentMethodCard = ({ method, icon: Icon, title, description, isSelected, onClick }) => (
-    <div
-      onClick={onClick}
-      className={`cursor-pointer p-4 rounded-lg border-2 transition-all ${
-        isSelected
-          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-          : "border-gray-300 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-400"
-      }`}
-    >
-      <div className="flex items-center gap-3">
-        <Icon size={24} className={isSelected ? "text-blue-600" : "text-gray-600 dark:text-gray-400"} />
-        <div>
-          <h3 className={`font-medium ${isSelected ? "text-blue-600" : "text-gray-800 dark:text-gray-200"}`}>
-            {title}
-          </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">{description}</p>
-        </div>
-      </div>
-    </div>
-  )
-
-  // Add keyboard shortcuts
-  useEffect(() => {
-    const handleKeyPress = (e) => {
-      // Ctrl + F to open product modal
-      if (e.ctrlKey && e.key === 'f') {
-        e.preventDefault()
-        setShowProductModal(true)
-        fetchProducts()
-      }
-      // Ctrl + N to add new item
-      if (e.ctrlKey && e.key === 'n') {
-        e.preventDefault()
-        addItem()
-      }
-      // Ctrl + P to change price type
-      if (e.ctrlKey && e.key === 'p') {
-        e.preventDefault()
-        setPriceType(prev => {
-          const types = ['standard', 'wholesale', 'retail']
-          const currentIndex = types.indexOf(prev)
-          return types[(currentIndex + 1) % types.length]
-        })
-      }
-      // Ctrl + B to focus barcode input
-      if (e.ctrlKey && e.key === 'b') {
-        e.preventDefault()
-        document.getElementById('barcode-input')?.focus()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyPress)
-    return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [])
-
-  // Handle product found
-  const handleProductFound = useCallback((product) => {
-    setItems(prevItems => {
-      // Check if product already exists in items by name
-      const existingIndex = prevItems.findIndex(item => item.name === product.name);
-      
-      if (existingIndex !== -1) {
-        // If found, increase quantity by 1
-        const updatedItems = [...prevItems];
-        const currentItem = updatedItems[existingIndex];
-        
-        // Update the existing item with new quantity
-        updatedItems[existingIndex] = {
-          ...currentItem,
-          quantity: Number(currentItem.quantity) + 1,
-          // Keep the same price and other properties
-          price: currentItem.price,
-          tax: currentItem.tax,
-          discount: currentItem.discount
-        };
-        
-        return updatedItems;
-      } else {
-        // If not found, add as new item with quantity 1
-        const newItem = {
-          id: Date.now(),
-          name: product.name,
-          quantity: 1,
-          price: Number(
-            priceType === 'standard' ? product.salesPrice : 
-            priceType === 'wholesale' ? product.marginPrice : 
-            product.retailPrice
-          ),
-          tax: 0,
-          discount: 0,
-        };
-        return [...prevItems, newItem];
-      }
-    });
-
-    // Show success message with quantity info
-    const existingItem = items.find(item => item.name === product.name);
-    const message = existingItem 
-      ? `Product quantity updated to ${existingItem.quantity + 1}!`
-      : 'Product added!';
-
-    toast.success(message, {
-      icon: '✅',
-      style: {
-        background: '#10B981',
-        color: '#fff',
-      },
-    });
-
-    // Auto-focus barcode input for next scan
-    setTimeout(() => {
-      const barcodeInput = document.getElementById('barcode-input');
-      if (barcodeInput) barcodeInput.focus();
-    }, 50);
-  }, [priceType, items]);
-
-  // Optimized product lookup function
-  const lookupProduct = useCallback(async (barcode) => {
-    try {
-      // Check memory cache first
-      if (productCache.has(barcode)) {
-        return productCache.get(barcode);
-      }
-
-      // Check API cache
-      if (apiCache.current.has(barcode)) {
-        const cachedProduct = apiCache.current.get(barcode);
-        productCache.set(barcode, cachedProduct);
-        return cachedProduct;
-      }
-
-      // Make API call with timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
-
-      const response = await fetch(`http://localhost:3001/api/products/barcode/${barcode}`, {
-        signal: controller.signal,
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error('Product not found');
-        }
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const product = await response.json();
-      
-      // Cache the result
-      productCache.set(barcode, product);
-      apiCache.current.set(barcode, product);
-      
-      return product;
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        throw new Error('Request timeout');
-      }
-      throw error;
-    }
-  }, [productCache]);
-
-  // Handle barcode input
-  const handleBarcodeInput = useCallback((e) => {
-    const barcode = e.target.value.trim();
-    
-    // Only proceed if we have exactly 14 digits
-    if (barcode.length === 14 && /^\d+$/.test(barcode)) {
-      // Prevent duplicate scans
-      const now = Date.now();
-      if (barcode === lastBarcodeRef.current && now - lastScanTimeRef.current < 1000) {
-        e.target.value = '';
-        return;
-      }
-
-      lastBarcodeRef.current = barcode;
-      lastScanTimeRef.current = now;
-
-      // Process barcode immediately
-      lookupProduct(barcode)
-        .then(product => {
-          handleProductFound(product);
-          e.target.value = ''; // Clear input after successful scan
-        })
-        .catch(error => {
-          toast.error(error.message === 'Product not found' ? 'Product not found!' : 'Error scanning product!', {
-            icon: '❌',
-            style: {
-              background: '#EF4444',
-              color: '#fff',
-            },
-          });
-          e.target.value = ''; // Clear input on error
-        });
-    }
-  }, [lookupProduct, handleProductFound]);
-
-  // Optimized paste handler
-  const handlePaste = useCallback((e) => {
-    e.preventDefault();
-    const pastedText = (e.clipboardData || window.clipboardData).getData('text').trim();
-    
-    // Handle multiple barcodes in paste
-    const barcodes = pastedText.split(/[\n\s,]+/).filter(code => code.length === 14 && /^\d+$/.test(code));
-    
-    if (barcodes.length > 0) {
-      // Process each barcode with minimal delay
-      barcodes.forEach((barcode, index) => {
-        setTimeout(() => {
-          lookupProduct(barcode)
-            .then(product => {
-              handleProductFound(product);
-            })
-            .catch(error => {
-              toast.error(error.message === 'Product not found' ? 'Product not found!' : 'Error scanning product!', {
-                icon: '❌',
-                style: {
-                  background: '#EF4444',
-                  color: '#fff',
-                },
-              });
-            });
-        }, index * 50); // Reduced delay between barcodes
-      });
-    }
-  }, [lookupProduct, handleProductFound]);
-
-  // Optimized keydown handler
-  const handleBarcodeKeyDown = useCallback((e) => {
-    if (e.key === 'Enter') {
-      const barcode = e.target.value.trim();
-      if (barcode.length === 14 && /^\d+$/.test(barcode)) {
-        e.preventDefault(); // Prevent form submission
-        
-        // Process immediately without debounce
-        lookupProduct(barcode)
-          .then(product => {
-            handleProductFound(product);
-            e.target.value = '';
-          })
-          .catch(error => {
-            toast.error(error.message === 'Product not found' ? 'Product not found!' : 'Error scanning product!', {
-              icon: '❌',
-              style: {
-                background: '#EF4444',
-                color: '#fff',
-              },
-            });
-            e.target.value = '';
-          });
-      }
-    }
-  }, [lookupProduct, handleProductFound]);
-
-  // Add event listeners
-  useEffect(() => {
-    const barcodeInput = document.getElementById('barcode-input')
-    if (barcodeInput) {
-      barcodeInput.addEventListener('input', handleBarcodeInput);
-      barcodeInput.addEventListener('paste', handlePaste);
-      barcodeInput.addEventListener('keydown', handleBarcodeKeyDown);
-      
-      // Auto-focus barcode input when component mounts
-      barcodeInput.focus()
-      
-      return () => {
-        barcodeInput.removeEventListener('input', handleBarcodeInput)
-        barcodeInput.removeEventListener('paste', handlePaste)
-        if (barcodeTimeoutRef.current) {
-          clearTimeout(barcodeTimeoutRef.current)
-        }
-      }
-    }
-  }, [handleBarcodeInput, handlePaste])
-
-  // Shortcuts bar for Close and Home
-  const handleCloseInvoice = () => {
-    // Show sidebar again
-    const sidebar = document.querySelector('.fixed.md\\:static');
-    if (sidebar) sidebar.style.display = '';
-    const overlay = document.querySelector('.fixed.inset-0.z-40');
-    if (overlay) overlay.style.display = '';
-    // Optionally, navigate away or reload
-    window.history.back(); // Or use a router if available
-  };
-  const handleGoHome = () => {
-    // Show sidebar again
-    const sidebar = document.querySelector('.fixed.md\\:static');
-    if (sidebar) sidebar.style.display = '';
-    const overlay = document.querySelector('.fixed.inset-0.z-40');
-    if (overlay) overlay.style.display = '';
-    window.location.href = '/dashboard';
-  };
+  if (!isVisible) return null
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
-      {/* Shortcuts Bar */}
-      <div className="flex justify-end gap-2 p-2">
-        <button
-          onClick={handleCloseInvoice}
-          className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium text-white border border-gray-600 transition-all"
-        >
-          Close
-        </button>
-        <button
-          onClick={handleGoHome}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium text-white border border-blue-700 transition-all"
-        >
-          Home
-        </button>
-      </div>
-      <div className="container mx-auto px-4 py-8">
-        {/* Enhanced Tab Navigation */}
-        <div className="flex justify-center mb-8">
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-1.5 flex shadow-lg">
-            <button
-              onClick={() => setActiveTab("create")}
-              className={`px-8 py-3 rounded-lg transition-all duration-300 flex items-center gap-2 ${
-                activeTab === "create" 
-                  ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg" 
-                  : "text-gray-400 hover:text-white hover:bg-gray-700/50"
-              }`}
-            >
-              <ShoppingCart size={18} />
-              Create Invoice
-            </button>
-            <button
-              onClick={() => setActiveTab("history")}
-              className={`px-8 py-3 rounded-lg transition-all duration-300 flex items-center gap-2 ${
-                activeTab === "history" 
-                  ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg" 
-                  : "text-gray-400 hover:text-white hover:bg-gray-700/50"
-              }`}
-            >
-              <Eye size={18} />
-              Invoice History ({savedInvoices.length})
-            </button>
-          </div>
+    <div className="fixed top-4 right-4 z-50 animate-slide-in">
+      <div
+        className={`px-6 py-4 rounded-lg shadow-lg border-l-4 ${
+          type === "success"
+            ? "bg-green-800 border-green-500 text-green-100"
+            : type === "error"
+            ? "bg-red-800 border-red-500 text-red-100"
+            : "bg-blue-800 border-blue-500 text-blue-100"
+        }`}
+      >
+        <div className="flex items-center justify-between">
+          <span className="font-medium">{message}</span>
+          <button onClick={onClose} className="ml-4 text-gray-300 hover:text-white">
+            ×
+          </button>
         </div>
-
-        <AnimatePresence mode="wait">
-          {activeTab === "create" ? (
-            <motion.div
-              key="create"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              className="grid lg:grid-1 gap-8"
-            >
-              {/* Invoice Form */}
-              <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 space-y-6 shadow-xl border border-gray-700/50">
-
-                {/* Enhanced Product Selection Modal */}
-                {showProductModal && (
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50"
-                  >
-                    <motion.div 
-                      initial={{ scale: 0.9, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0.9, opacity: 0 }}
-                      className="bg-gray-800 rounded-xl p-6 w-11/12 max-w-6xl max-h-[80vh] overflow-y-auto shadow-2xl border border-gray-700/50"
-                    >
-                      <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-2xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
-                          Select Product
-                        </h3>
-                        <button
-                          onClick={() => setShowProductModal(false)}
-                          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-                        >
-                          <X size={24} className="text-gray-400" />
-                        </button>
-                      </div>
-                      
-                      {/* Enhanced Search Bar */}
-                      <div className="mb-6">
-                        <div className="relative">
-                          <input
-                            type="text"
-                            placeholder="Search by name, SKU, or barcode..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full px-4 py-3 pl-12 bg-gray-700/50 border border-gray-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                          />
-                          <Search className="absolute left-4 top-3.5 text-gray-400" size={20} />
-                        </div>
-                      </div>
-
-                      {/* Product Cards Grid (replaces table) */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        {loading ? (
-                          <div className="col-span-full flex items-center justify-center gap-2 py-12">
-                            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                            <span className="text-gray-400">Loading products...</span>
-                          </div>
-                        ) : filteredProducts.length === 0 ? (
-                          <div className="col-span-full text-center text-gray-400 py-12">
-                            No products found
-                          </div>
-                        ) : (
-                          filteredProducts.map((product) => (
-                            <motion.div
-                              key={product.id}
-                              initial={{ opacity: 0, y: 20 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              className="bg-gray-700/40 border border-gray-700/60 rounded-xl shadow-lg flex flex-col items-center p-3 hover:shadow-blue-500/20 transition-all group relative min-h-[220px]"
-                              style={{ maxWidth: '240px', margin: '0 auto' }}
-                            >
-                              <div className="w-20 h-20 bg-gray-800 rounded-md flex items-center justify-center mb-2 overflow-hidden border border-gray-700/50">
-                                {product.imageUrl ? (
-                                  <img
-                                    src={product.imageUrl}
-                                    alt={product.name}
-                                    className="object-contain w-full h-full"
-                                    loading="lazy"
-                                  />
-                                ) : (
-                                  <div className="text-gray-500 text-2xl font-bold">?</div>
-                                )}
-                              </div>
-                              <div className="w-full text-center mb-1">
-                                <div className="font-semibold text-base text-white truncate" title={product.name}>{product.name}</div>
-                                <div className="text-xs text-gray-400 mt-0.5">SKU: <span className="font-mono">{product.sku}</span></div>
-                              </div>
-                              <div className="text-xs text-gray-400 mb-1">{product.category}</div>
-                              <div className="flex flex-col gap-0.5 w-full text-xs mb-2">
-                                <div className="flex justify-between text-gray-300">
-                                  <span>Std:</span>
-                                </div>
-                                <div className="flex justify-between text-xs text-gray-300">
-                                  <span>Wholesale:</span>
-                                  <span className="font-semibold text-green-400">Rs {product.marginPrice}</span>
-                                </div>
-                                <div className="flex justify-between text-xs text-gray-300">
-                                  <span>Retail:</span>
-                                  <span className="font-semibold text-purple-400">Rs {product.retailPrice}</span>
-                                </div>
-                              </div>
-                              <button
-                                onClick={() => addProductToItems(product)}
-                                className="mt-4 w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-lg transition-all shadow-lg hover:shadow-blue-500/25 font-medium text-white"
-                              >
-                                Add to Cart
-                              </button>
-                            </motion.div>
-                          ))
-                        )}
-                      </div>
-
-                      {/* Old table view removed/commented out for clarity */}
-                      {/*
-                      <div className="overflow-x-auto rounded-lg border border-gray-700/50">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="bg-gray-700/50">
-                              <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Name</th>
-                              <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">SKU</th>
-                              <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">Category</th>
-                              <th className="px-6 py-4 text-right text-sm font-medium text-gray-300">Standard Price</th>
-                              <th className="px-6 py-4 text-right text-sm font-medium text-gray-300">Wholesale Price</th>
-                              <th className="px-6 py-4 text-right text-sm font-medium text-gray-300">Retail Price</th>
-                              <th className="px-6 py-4 text-center text-sm font-medium text-gray-300">Action</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-700/50">
-                            {loading ? (
-                              <tr>
-                                <td colSpan="7" className="px-6 py-8 text-center">
-                                  <div className="flex items-center justify-center gap-2">
-                                    <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                                    <span className="text-gray-400">Loading products...</span>
-                                  </div>
-                                </td>
-                              </tr>
-                            ) : filteredProducts.length === 0 ? (
-                              <tr>
-                                <td colSpan="7" className="px-6 py-8 text-center text-gray-400">
-                                  No products found
-                                </td>
-                              </tr>
-                            ) : (
-                              filteredProducts.map((product) => (
-                                <motion.tr 
-                                  key={product.id}
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  className="hover:bg-gray-700/30 transition-colors"
-                                >
-                                  <td className="px-6 py-4">{product.name}</td>
-                                  <td className="px-6 py-4">{product.sku}</td>
-                                  <td className="px-6 py-4">{product.category}</td>
-                                  <td className="px-6 py-4 text-right">${product.salesPrice}</td>
-                                  <td className="px-6 py-4 text-right">${product.marginPrice}</td>
-                                  <td className="px-6 py-4 text-right">${product.retailPrice}</td>
-                                  <td className="px-6 py-4 text-center">
-                                    <button
-                                      onClick={() => addProductToItems(product)}
-                                      className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-lg transition-all shadow-lg hover:shadow-blue-500/25"
-                                    >
-                                      Add to Cart
-                                    </button>
-                                  </td>
-                                </motion.tr>
-                              ))
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                      */}
-                    </motion.div>
-                  </motion.div>
-                )}
-
-                {/* Enhanced Items Section */}
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="space-y-4"
-                >
-                  <div className="flex flex-col gap-4">
-                    {/* Header with Keyboard Shortcuts Info */}
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-4">
-                        <h3 className="text-lg font-medium text-gray-300 flex items-center gap-2">
-                          <ChevronRight className="text-blue-400" size={20} />
-                          Items
-                        </h3>
-                        <div className="flex items-center gap-2 text-sm text-gray-400">
-                          <Keyboard size={16} />
-                          <span>Keyboard Shortcuts:</span>
-                          <div className="flex items-center gap-2">
-                            <kbd className="px-2 py-1 bg-gray-700/50 rounded text-xs">Ctrl + F</kbd>
-                            <span>View Products</span>
-                            <kbd className="px-2 py-1 bg-gray-700/50 rounded text-xs">Ctrl + N</kbd>
-                            <span>Add Item</span>
-                            <kbd className="px-2 py-1 bg-gray-700/50 rounded text-xs">Ctrl + P</kbd>
-                            <span>Change Price Type</span>
-                            <kbd className="px-2 py-1 bg-gray-700/50 rounded text-xs">Ctrl + B</kbd>
-                            <span>Scan Barcode</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Actions Bar */}
-                    <div className="flex flex-wrap items-center gap-4 p-4 bg-gray-700/30 rounded-lg border border-gray-600/50">
-                      {/* Barcode Scanner */}
-                      <div className="flex items-center gap-2 flex-1">
-                        <div className="relative flex-1">
-                          <input
-                            id="barcode-input"
-                            ref={barcodeInputRef}
-                            type="text"
-                            placeholder="Scan or paste barcode"
-                            className="w-full px-4 py-2 pl-10 bg-gray-700/50 border border-gray-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                            onKeyDown={handleBarcodeKeyDown}
-                          />
-                          <Barcode className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                          {loading && (
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                              <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Price Type Selector */}
-                      <div className="flex items-center gap-2">
-                        <label className="text-sm text-gray-300">Price Type:</label>
-                        <select
-                          value={priceType}
-                          onChange={(e) => setPriceType(e.target.value)}
-                          className="px-4 py-2 bg-gray-700/50 border border-gray-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                        >
-                          <option value="standard">Standard Price</option>
-                          <option value="wholesale">Wholesale Price</option>
-                          <option value="retail">Retail Price</option>
-                        </select>
-                        <div className="relative group">
-                          <Info size={16} className="text-gray-400 cursor-help" />
-                          <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-800 rounded-lg shadow-lg text-sm text-gray-300 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                            <p>Standard: Regular selling price</p>
-                            <p>Wholesale: Bulk purchase price</p>
-                            <p>Retail: Individual customer price</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex items-center gap-4">
-                        <button
-                          onClick={() => {
-                            setShowProductModal(true)
-                            fetchProducts()
-                          }}
-                          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-lg transition-all shadow-lg hover:shadow-green-500/25 group relative"
-                        >
-                          <ShoppingCart size={18} />
-                          <span>View Products</span>
-                          <kbd className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-800 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                            Ctrl + F
-                          </kbd>
-                        </button>
-                        <button
-                          onClick={addItem}
-                          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-lg transition-all shadow-lg hover:shadow-blue-500/25 group relative"
-                        >
-                          <Plus size={18} />
-                          <span>Add Item</span>
-                          <kbd className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-gray-800 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                            Ctrl + N
-                          </kbd>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Items List */}
-                    <div className="space-y-3">
-                      {items.map((item, index) => (
-                        <motion.div
-                          key={item.id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          className="grid grid-cols-12 gap-2 items-center bg-gray-700/30 p-4 rounded-lg border border-gray-600/50 hover:border-blue-500/50 transition-all group"
-                        >
-                          <div className="col-span-4 relative">
-                            <input
-                              type="text"
-                              placeholder="Item name"
-                              value={item.name}
-                              onChange={(e) => updateItem(item.id, "name", e.target.value)}
-                              className="w-full px-4 py-2 bg-gray-600/50 border border-gray-500/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                            />
-                            {!item.name && (
-                              <div className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">
-                                Required
-                              </div>
-                            )}
-                          </div>
-                          <div className="col-span-2 relative">
-                            <input
-                              type="number"
-                              placeholder="Qty"
-                              value={item.quantity}
-                              onChange={(e) => updateItem(item.id, "quantity", Number.parseFloat(e.target.value) || 0)}
-                              className="w-full px-4 py-2 bg-gray-600/50 border border-gray-500/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                              min="1"
-                            />
-                            <div className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">
-                              units
-                            </div>
-                          </div>
-                          <div className="col-span-2 relative">
-                            <input
-                              type="number"
-                              placeholder="Price"
-                              value={item.price}
-                              onChange={(e) => updateItem(item.id, "price", Number.parseFloat(e.target.value) || 0)}
-                              className="w-full px-4 py-2 bg-gray-600/50 border border-gray-500/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                              min="0"
-                              step="0.01"
-                            />
-                            <div className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">
-                              Rs
-                            </div>
-                          </div>
-                          <div className="col-span-1 relative">
-                            <input
-                              type="number"
-                              placeholder="Tax%"
-                              value={item.tax}
-                              onChange={(e) => updateItem(item.id, "tax", Number.parseFloat(e.target.value) || 0)}
-                              className="w-full px-4 py-2 bg-gray-600/50 border border-gray-500/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                              min="0"
-                              max="100"
-                            />
-                            <div className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">
-                              %
-                            </div>
-                          </div>
-                          <div className="col-span-2 relative">
-                            <input
-                              type="number"
-                              placeholder="Disc%"
-                              value={item.discount}
-                              onChange={(e) => updateItem(item.id, "discount", Number.parseFloat(e.target.value) || 0)}
-                              className="w-full px-4 py-2 bg-gray-600/50 border border-gray-500/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
-                              min="0"
-                              max="100"
-                            />
-                            <div className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">
-                              %
-                            </div>
-                          </div>
-                          {/* Show total for this item */}
-                          <div className="col-span-1 text-right text-green-400 font-semibold text-sm">
-                            Total: Rs {calculateItemTotal(item).toFixed(2)}
-                          </div>
-                          <button
-                            onClick={() => removeItem(item.id)}
-                            className="col-span-1 p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                            title="Remove Item"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </motion.div>
-                      ))}
-                      {/* Show full total below all items */}
-                      <div className="flex justify-end mt-4">
-                        <div className="bg-gray-800/70 rounded-lg px-6 py-3 border border-gray-600/50 text-lg font-bold text-green-300 shadow">
-                          Full Total: Rs {totals.total.toFixed(2)}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Empty State */}
-                    {items.length === 0 && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="text-center py-8 bg-gray-700/30 rounded-lg border border-gray-600/50"
-                      >
-                        <ShoppingCart size={32} className="mx-auto text-gray-400 mb-2" />
-                        <p className="text-gray-400">No items added yet</p>
-                        <p className="text-sm text-gray-500 mt-1">Use Ctrl + N to add an item or click the button above</p>
-                      </motion.div>
-                    )}
-                  </div>
-                </motion.div>
-
-                {/* Enhanced Payment Method Section */}
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="space-y-4"
-                >
-                  <h3 className="text-lg font-medium text-gray-300 flex items-center gap-2">
-                    <ChevronRight className="text-blue-400" size={20} />
-                    Payment Method
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <PaymentMethodCard
-                      method="card"
-                      icon={CreditCard}
-                      title="Card Payment"
-                      description="Secure card payment processing"
-                      isSelected={selectedPaymentMethod === "card"}
-                      onClick={() => setSelectedPaymentMethod(selectedPaymentMethod === "card" ? "" : "card")}
-                    />
-                    <PaymentMethodCard
-                      method="cash"
-                      icon={Banknote}
-                      title="Cash Payment"
-                      description="Direct cash payment handling"
-                      isSelected={selectedPaymentMethod === "cash"}
-                      onClick={() => setSelectedPaymentMethod(selectedPaymentMethod === "cash" ? "" : "cash")}
-                    />
-                  </div>
-
-                  {/* Enhanced Payment Details Forms */}
-                  <AnimatePresence>
-                    {selectedPaymentMethod === "card" && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="bg-gray-700/30 p-6 rounded-lg border border-gray-600/50 space-y-4"
-                      >
-                        <h4 className="font-medium text-gray-300">Bank Transfer Details</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <input
-                            type="text"
-                            placeholder="Bank Name"
-                            value={cardPaymentDetails.bankName}
-                            onChange={(e) => setCardPaymentDetails({ ...cardPaymentDetails, bankName: e.target.value })}
-                            className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Account Number"
-                            value={cardPaymentDetails.accountNumber}
-                            onChange={(e) =>
-                              setCardPaymentDetails({ ...cardPaymentDetails, accountNumber: e.target.value })
-                            }
-                            className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                          <input
-                            type="text"
-                            placeholder="Routing Number"
-                            value={cardPaymentDetails.routingNumber}
-                            onChange={(e) =>
-                              setCardPaymentDetails({ ...cardPaymentDetails, routingNumber: e.target.value })
-                            }
-                            className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                          <input
-                            type="text"
-                            placeholder="SWIFT Code"
-                            value={cardPaymentDetails.swiftCode}
-                            onChange={(e) => setCardPaymentDetails({ ...cardPaymentDetails, swiftCode: e.target.value })}
-                            className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                          <input
-                            type="number"
-                            placeholder="Amount Received"
-                            value={cardPaymentDetails.amount}
-                            onChange={(e) => {
-                              const amount = Number(e.target.value) || 0;
-                              const balance = amount - totals.total;
-                              setCardPaymentDetails({ 
-                                ...cardPaymentDetails, 
-                                amount: amount,
-                                balance: balance
-                              });
-                            }}
-                            className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                          <div className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md">
-                            <div className="text-sm text-gray-300">Balance:</div>
-                            <div className={`text-lg font-semibold ${cardPaymentDetails.balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                              ${Math.abs(cardPaymentDetails.balance).toFixed(2)} {cardPaymentDetails.balance >= 0 ? 'to be returned' : 'remaining'}
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {selectedPaymentMethod === "cash" && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="bg-gray-700/30 p-6 rounded-lg border border-gray-600/50 space-y-4"
-                      >
-                        <h4 className="font-medium text-gray-300">Cash Payment Details</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <input
-                            type="number"
-                            placeholder="Amount Received"
-                            value={cashPaymentDetails.amount}
-                            onChange={(e) => {
-                              const amount = Number(e.target.value) || 0;
-                              const balance = amount - totals.total;
-                              setCashPaymentDetails({ 
-                                ...cashPaymentDetails, 
-                                amount: amount,
-                                balance: balance
-                              });
-                            }}
-                            className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                          <input
-                            type="date"
-                            placeholder="Payment Date"
-                            value={cashPaymentDetails.date}
-                            onChange={(e) => setCashPaymentDetails({ ...cashPaymentDetails, date: e.target.value })}
-                            className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          />
-                          <div className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md">
-                            <div className="text-sm text-gray-300">Balance:</div>
-                            <div className={`text-lg font-semibold ${cashPaymentDetails.balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                              ${Math.abs(cashPaymentDetails.balance).toFixed(2)} {cashPaymentDetails.balance >= 0 ? 'to be returned' : 'remaining'}
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-                {/* Enhanced Save and Print Buttons */}
-                <div className="flex justify-center gap-4">
-                  <button
-                    onClick={saveInvoice}
-                    className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 rounded-lg transition-all shadow-lg hover:shadow-green-500/25 text-lg font-medium flex items-center gap-2"
-                  >
-                    <span>Save Invoice</span>
-                  </button>
-                  <button
-                    onClick={() => setShowPreview(true)}
-                    className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-lg transition-all shadow-lg hover:shadow-blue-500/25 text-lg font-medium flex items-center gap-2"
-                  >
-                    <Printer size={20} />
-                    <span>Preview & Print</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Invoice Preview Modal */}
-              <AnimatePresence>
-                {showPreview && (
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-                  >
-                    <motion.div
-                      initial={{ scale: 0.9, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0.9, opacity: 0 }}
-                      className="bg-white text-black rounded-xl p-8 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200 relative"
-                    >
-                      <button
-                        onClick={() => setShowPreview(false)}
-                        className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 transition-colors"
-                      >
-                        <X size={24} />
-                      </button>
-
-                      <div className="space-y-6">
-                        {/* Header */}
-                        <div className="flex justify-between items-start border-b border-gray-300 pb-6">
-                          <div>
-                            <h1 className="text-3xl font-bold text-blue-600">{companyInfo.name || "Your Company"}</h1>
-                            <div className="text-sm text-gray-600 mt-2">
-                              {companyInfo.address && <div>{companyInfo.address}</div>}
-                              {companyInfo.city && <div>{companyInfo.city}</div>}
-                              {companyInfo.phone && <div>Phone: {companyInfo.phone}</div>}
-                              {companyInfo.email && <div>Email: {companyInfo.email}</div>}
-                              {companyInfo.website && <div>Website: {companyInfo.website}</div>}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <h2 className="text-2xl font-bold text-gray-800">INVOICE</h2>
-                            <div className="text-sm text-gray-600 mt-2">
-                              <div>Invoice #: {invoiceDetails.number}</div>
-                              <div>Date: {invoiceDetails.date}</div>
-                              {invoiceDetails.dueDate && <div>Due Date: {invoiceDetails.dueDate}</div>}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* ... rest of the invoice preview content ... */}
-
-                        {/* Print Button */}
-                        <div className="flex justify-center gap-4 print:hidden">
-                          <button
-                            onClick={handlePrint}
-                            className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                          >
-                            <Printer size={16} />
-                            Print Invoice
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          ) : (
-            /* Enhanced Invoice History Tab */
-            <motion.div
-              key="history"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-gray-700/50"
-            >
-              <h2 className="text-2xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 mb-6">
-                Invoice History
-              </h2>
-
-              {savedInvoices.length === 0 ? (
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-center py-12"
-                >
-                  <p className="text-gray-400 text-lg">No invoices saved yet</p>
-                  <p className="text-gray-500 text-sm mt-2">Create your first invoice to see it here</p>
-                </motion.div>
-              ) : (
-                <div className="space-y-4">
-                  {savedInvoices.map((invoice, index) => (
-                    <motion.div
-                      key={invoice.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="bg-gray-700/30 rounded-lg p-4 flex justify-between items-center border border-gray-600/50 hover:border-blue-500/50 transition-all"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-4">
-                          <div>
-                            <h3 className="font-medium text-white">{invoice.invoiceDetails.number}</h3>
-                            <p className="text-sm text-gray-400">
-                              {invoice.clientInfo.name || "No client name"} • ${invoice.totals.total.toFixed(2)}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              Created: {new Date(invoice.createdAt).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            setCompanyInfo(invoice.companyInfo)
-                            setClientInfo(invoice.clientInfo)
-                            setInvoiceDetails(invoice.invoiceDetails)
-                            setItems(invoice.items)
-                            setNotes(invoice.notes)
-                            setTerms(invoice.terms)
-                            setSelectedPaymentMethod(invoice.paymentMethod)
-                            if (invoice.paymentMethod === "card") {
-                              setCardPaymentDetails(invoice.paymentDetails)
-                            } else {
-                              setCashPaymentDetails(invoice.paymentDetails)
-                            }
-                            setActiveTab("create")
-                          }}
-                          className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-all"
-                          title="Edit Invoice"
-                        >
-                          <Eye size={18} />
-                        </button>
-                        <button
-                          onClick={() => deleteInvoice(invoice.id)}
-                          className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all"
-                          title="Delete Invoice"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </div>
   )
 }
+
+// Main Billing POS Component
+const BillingPOSSystem = () => {
+  const [products, setProducts] = useState([])
+  const [customers] = useState(mockCustomers)
+  const [cart, setCart] = useState([])
+  const [searchTerm, setSearchTerm] = useState("")
+  const [barcodeInput, setBarcodeInput] = useState("")
+  const [selectedPriceType, setSelectedPriceType] = useState("standard")
+  const [selectedCategory, setSelectedCategory] = useState("All")
+  const [selectedCustomer, setSelectedCustomer] = useState(null)
+  const [discount, setDiscount] = useState({ type: "amount", value: 0 })
+  const [taxRate, setTaxRate] = useState(0)
+  const [showPayment, setShowPayment] = useState(false)
+  const [showInvoice, setShowInvoice] = useState(false)
+  const [showCustomerModal, setShowCustomerModal] = useState(false)
+  const [currentInvoice, setCurrentInvoice] = useState(null)
+  const [currentEmployee] = useState({ id: 1, name: "Admin User", role: "Cashier" })
+  const [showProductsModal, setShowProductsModal] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Toast state
+  const [toast, setToast] = useState({ message: "", type: "", isVisible: false })
+
+  const barcodeRef = useRef(null)
+
+  // Fetch products and inventory data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true)
+        // Fetch products
+        const productsResponse = await fetch('http://localhost:3001/api/products')
+        const productsData = await productsResponse.json()
+
+        // Fetch inventory
+        const inventoryResponse = await fetch('http://localhost:3001/api/inventory')
+        const inventoryData = await inventoryResponse.json()
+
+        // Combine products with inventory data
+        const combinedProducts = productsData.map(product => {
+          // Find matching inventory record
+          const inventory = inventoryData.find(inv => inv.productId === product.id)
+          
+          return {
+            id: product.id,
+            name: product.name,
+            barcode: product.barcode,
+            category: product.category,
+            stock: inventory ? inventory.totalQuantity : 0,
+            standardPrice: product.salesPrice,
+            wholesalePrice: product.marginPrice,
+            retailPrice: product.retailPrice,
+            cost: product.costPrice,
+            description: product.description,
+            image: product.imageUrl,
+          }
+        })
+
+        setProducts(combinedProducts)
+        setIsLoading(false)
+      } catch (error) {
+        console.error('Error fetching data:', error)
+        showToast('Failed to load products', 'error')
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      // Only trigger if not typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      if (e.ctrlKey) {
+        switch (e.key.toLowerCase()) {
+          case 'b':
+            e.preventDefault();
+            barcodeRef.current?.focus();
+            break;
+          case 'p':
+            e.preventDefault();
+            if (cart.length > 0) setShowPayment(true);
+            break;
+          case 'd':
+            e.preventDefault();
+            setSelectedPriceType(prev => 
+              prev === 'standard' ? 'wholesale' : 
+              prev === 'wholesale' ? 'retail' : 'standard'
+            );
+            break;
+          case 't':
+            e.preventDefault();
+            clearCart();
+            break;
+          case 'f':
+            e.preventDefault();
+            setShowProductsModal(true);
+            break;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [cart.length]);
+
+  // Show toast notification
+  const showToast = (message, type = "info") => {
+    setToast({ message, type, isVisible: true })
+  }
+
+  const hideToast = () => {
+    setToast({ ...toast, isVisible: false })
+  }
+
+  // Effect to update cart prices when price type changes
+  useEffect(() => {
+    setCart(prevCart => 
+      prevCart.map(item => {
+        const product = products.find(p => p.id === item.id)
+        if (product) {
+          const priceKey = `${selectedPriceType}Price`
+          return {
+            ...item,
+            price: product[priceKey]
+          }
+        }
+        return item
+      })
+    )
+  }, [selectedPriceType, products])
+
+  // Calculations
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const discountAmount = discount.type === "percentage" ? (subtotal * discount.value) / 100 : discount.value
+  const loyaltyDiscount = selectedCustomer ? Math.min(selectedCustomer.loyaltyPoints * 0.1, subtotal * 0.1) : 0
+  const totalDiscount = discountAmount + loyaltyDiscount
+  const taxableAmount = subtotal - totalDiscount
+  const taxAmount = taxableAmount * (taxRate / 100)
+  const grandTotal = taxableAmount + taxAmount
+
+  // Filter products
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch =
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.barcode.includes(searchTerm) ||
+      product.category.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = selectedCategory === "All" || product.category === selectedCategory
+    return matchesSearch && matchesCategory
+  })
+
+  // Add product to cart
+  const addToCart = (product) => {
+    const priceKey = `${selectedPriceType}Price`
+    const price = product[priceKey]
+
+    const existingItem = cart.find((item) => item.id === product.id)
+
+    if (existingItem) {
+      setCart(cart.map((item) => (item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item)))
+    } else {
+      setCart([
+        ...cart,
+        {
+          id: product.id,
+          name: product.name,
+          price: price,
+          quantity: 1,
+          barcode: product.barcode,
+          category: product.category,
+        },
+      ])
+    }
+  }
+
+  // Update cart item quantity
+  const updateQuantity = (id, newQuantity) => {
+    if (newQuantity <= 0) {
+      removeFromCart(id)
+    } else {
+      setCart(cart.map((item) => (item.id === id ? { ...item, quantity: newQuantity } : item)))
+    }
+  }
+
+  // Remove from cart
+  const removeFromCart = (id) => {
+    setCart(cart.filter((item) => item.id !== id))
+  }
+
+  // Clear cart
+  const clearCart = () => {
+    setCart([])
+    setDiscount({ type: "amount", value: 0 })
+    setSelectedCustomer(null)
+    showToast("Cart cleared", "info")
+  }
+
+  // Handle barcode scan
+  const handleBarcodeScan = (e) => {
+    if (e.key === "Enter" && barcodeInput.trim()) {
+      const product = products.find((p) => p.barcode === barcodeInput.trim())
+      if (product) {
+        addToCart(product)
+        showToast(`Product found: ${product.name}`, "success")
+        setBarcodeInput("")
+      } else {
+        showToast("Product not found", "error")
+        setBarcodeInput("")
+      }
+    }
+  }
+
+  // Complete payment
+  const completePayment = (paymentData) => {
+    const invoice = {
+      id: `INV-${Date.now()}`,
+      date: new Date(),
+      items: cart,
+      customer: selectedCustomer,
+      subtotal,
+      discountAmount: totalDiscount,
+      taxAmount,
+      total: grandTotal,
+      payments: paymentData.payments,
+      change: paymentData.change,
+      employee: currentEmployee,
+      loyaltyPointsEarned: Math.floor(grandTotal / 100),
+    }
+
+    setCurrentInvoice(invoice)
+    setShowInvoice(true)
+    setShowPayment(false)
+    clearCart()
+    showToast("Payment completed successfully", "success")
+
+    // Update customer loyalty points
+    if (selectedCustomer) {
+      selectedCustomer.loyaltyPoints += Math.floor(grandTotal / 100)
+      selectedCustomer.totalSpent += grandTotal
+      selectedCustomer.visits += 1
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-gray-100">
+      {/* Toast Notification */}
+      <Toast message={toast.message} type={toast.type} isVisible={toast.isVisible} onClose={hideToast} />
+      
+      {/* Loading State */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg">
+            <div className="text-white text-lg">Loading products...</div>
+          </div>
+        </div>
+      )}
+
+      {/* Keyboard Shortcuts Help */}
+      <div className="fixed top-4 left-4 bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs text-gray-400 z-50">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+          <span>Ctrl+B: Barcode</span>
+          <span>Ctrl+P: Payment</span>
+          <span>Ctrl+D: Price Type</span>
+          <span>Ctrl+T: Clear Cart</span>
+          <span>Ctrl+F: Show Products</span>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-6">
+        {/* Main Content - Single Column Layout */}
+        <div className="space-y-6">
+          {/* Products Section */}
+          <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
+            {/* Barcode Scanner */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-300 mb-2">Barcode Scanner</label>
+              <input
+                ref={barcodeRef}
+                type="text"
+                value={barcodeInput}
+                onChange={(e) => setBarcodeInput(e.target.value)}
+                onKeyPress={handleBarcodeScan}
+                placeholder="Scan or enter barcode..."
+                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Search and Controls Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {/* Price Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Price Type</label>
+                <select
+                  value={selectedPriceType}
+                  onChange={(e) => setSelectedPriceType(e.target.value)}
+                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="standard">Standard</option>
+                  <option value="wholesale">Wholesale</option>
+                  <option value="retail">Retail</option>
+                </select>
+              </div>
+              
+              
+              <div>
+                <button
+                  onClick={() => setShowProductsModal(true)}
+                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Show Products
+                </button>
+              </div>       
+            </div>
+          </div>
+
+          {/* Shopping Cart Section */}
+          <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-white">Shopping Cart</h2>
+              <button
+                onClick={clearCart}
+                className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+              >
+                Clear
+              </button>
+            </div>
+
+            {/* Cart Items */}
+            <div className="max-h-60 overflow-y-auto mb-4 space-y-2">
+              {cart.length === 0 ? (
+                <div className="text-center py-4 text-gray-400">Cart is empty</div>
+              ) : (
+                cart.map((item) => (
+                  <CartItem key={item.id} item={item} updateQuantity={updateQuantity} removeFromCart={removeFromCart} />
+                ))
+              )}
+            </div>
+
+            {/* Cart Summary */}
+            {cart.length > 0 && (
+              <div className="space-y-2 text-sm border-t border-gray-600 pt-4">
+                <div className="flex justify-between text-gray-300">
+                  <span>Subtotal:</span>
+                  <span>Rs {subtotal.toFixed(2)}</span>
+                </div>
+                {discount.value > 0 && (
+                  <div className="flex justify-between text-red-400">
+                    <span>Manual Discount:</span>
+                    <span>-Rs {(discount.type === "percentage" ? (subtotal * discount.value) / 100 : discount.value).toFixed(2)}</span>
+                  </div>
+                )}
+                {loyaltyDiscount > 0 && (
+                  <div className="flex justify-between text-green-400">
+                    <span>Loyalty Discount:</span>
+                    <span>-Rs {loyaltyDiscount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-gray-300">
+                  <span>Tax ({taxRate}%):</span>
+                  <span>Rs {taxAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-lg text-white border-t border-gray-600 pt-2">
+                  <span>Total:</span>
+                  <span>Rs {grandTotal.toFixed(2)}</span>
+                </div>
+                <button
+                  onClick={() => setShowPayment(true)}
+                  className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 font-semibold transition-colors mt-2"
+                >
+                  Checkout
+                </button>
+
+                {/* Tax and Discount Table */}
+                <div className="mt-4 bg-gray-700 rounded-lg p-4">
+                  <h3 className="text-white font-medium mb-3">Tax & Discount Details</h3>
+                  <div className="space-y-3">
+                    {/* Tax Input */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Tax Rate (%)</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          value={taxRate}
+                          onChange={(e) => setTaxRate(Number(e.target.value))}
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
+                        />
+                        <button
+                          onClick={() => setTaxRate(0)}
+                          className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500"
+                        >
+                          Reset
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Discount Table */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Discount</label>
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <select
+                            value={discount.type}
+                            onChange={(e) => setDiscount({ ...discount, type: e.target.value })}
+                            className="w-1/3 px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="amount">Amount</option>
+                            <option value="percentage">Percentage</option>
+                          </select>
+                          <input
+                            type="number"
+                            value={discount.value}
+                            onChange={(e) => setDiscount({ ...discount, value: Number(e.target.value) })}
+                            min="0"
+                            step="0.01"
+                            placeholder={discount.type === "percentage" ? "Enter percentage" : "Enter amount"}
+                            className="w-2/3 px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <button
+                          onClick={() => setDiscount({ type: "amount", value: 0 })}
+                          className="w-full px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500"
+                        >
+                          Clear Discount
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Quick Discount Buttons */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Quick Discounts</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[5, 10, 15, 20].map((percent) => (
+                          <button
+                            key={percent}
+                            onClick={() => setDiscount({ type: "percentage", value: percent })}
+                            className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500"
+                          >
+                            {percent}%
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Modals */}
+      {showPayment && (
+        <PaymentModal
+          grandTotal={grandTotal}
+          subtotal={subtotal}
+          taxRate={taxRate}
+          discount={discount}
+          onClose={() => setShowPayment(false)}
+          onPaymentComplete={completePayment}
+        />
+      )}
+
+      {showInvoice && currentInvoice && (
+        <InvoiceModal invoice={currentInvoice} onClose={() => setShowInvoice(false)} />
+      )}
+
+      
+
+      {showProductsModal && (
+        <ProductsModal
+          products={products}
+          selectedPriceType={selectedPriceType}
+          onAddToCart={addToCart}
+          onClose={() => setShowProductsModal(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+// Product Card Component
+const ProductCard = ({ product, onAddToCart, selectedPriceType }) => {
+  const priceKey = `${selectedPriceType}Price`
+  const currentPrice = product[priceKey]
+  const isLowStock = product.stock <= product.minStock
+
+  return (
+    <div className="bg-gray-700 border border-gray-600 rounded-lg p-4 hover:border-blue-500 transition-all duration-200">
+      <div className="space-y-2">
+        <div className="flex justify-between items-start">
+          <h3 className="font-medium text-white text-sm leading-tight">{product.name}</h3>
+          <span className={`px-2 py-1 rounded text-xs font-medium ${
+            isLowStock ? "bg-red-900 text-red-200" : "bg-green-900 text-green-200"
+          }`}>
+            {product.stock}
+          </span>
+        </div>
+
+        <div className="text-xs text-gray-400">
+          <div>SKU: {product.barcode}</div>
+          <div>Category: {product.category}</div>
+        </div>
+
+        <div className="text-lg font-bold text-blue-400">Rs {currentPrice.toFixed(2)}</div>
+
+        <button
+          onClick={() => onAddToCart(product)}
+          disabled={product.stock === 0}
+          className={`w-full py-2 px-4 rounded-lg font-medium text-sm ${
+            product.stock === 0
+              ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+              : "bg-blue-600 text-white hover:bg-blue-700"
+          }`}
+        >
+          {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// Cart Item Component
+const CartItem = ({ item, updateQuantity, removeFromCart }) => {
+  return (
+    <div className="bg-gray-700 rounded-lg p-3 border border-gray-600">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex-1 min-w-0">
+          <h4 className="font-medium text-white text-sm truncate">{item.name}</h4>
+          <div className="text-xs text-gray-400">
+            Rs {item.price.toFixed(2)} each • {item.category}
+          </div>
+        </div>
+        <button onClick={() => removeFromCart(item.id)} className="text-red-400 hover:text-red-300 ml-2 p-1">
+          ×
+        </button>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+            className="w-7 h-7 bg-gray-600 rounded text-white hover:bg-gray-500 flex items-center justify-center"
+          >
+            -
+          </button>
+
+          <input
+            type="number"
+            value={item.quantity}
+            onChange={(e) => updateQuantity(item.id, Number.parseInt(e.target.value) || 0)}
+            className="w-16 text-center text-sm bg-gray-600 border border-gray-500 rounded text-white"
+            min="0"
+          />
+
+          <button
+            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+            className="w-7 h-7 bg-gray-600 rounded text-white hover:bg-gray-500 flex items-center justify-center"
+          >
+            +
+          </button>
+        </div>
+
+        <div className="text-right">
+          <div className="font-medium text-white">Rs {(item.price * item.quantity).toFixed(2)}</div>
+          <div className="text-xs text-gray-400">
+            {item.quantity} × Rs {item.price.toFixed(2)}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Payment Modal Component
+const PaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose, onPaymentComplete }) => {
+  const [paymentMethod, setPaymentMethod] = useState("cash")
+  const [amountReceived, setAmountReceived] = useState("")
+  const [cardDetails, setCardDetails] = useState({
+    number: "",
+    expiry: "",
+    cvv: ""
+  })
+
+  const quickAmounts = [1000, 2000, 5000, 10000]
+  const changeAmount = Number.parseFloat(amountReceived) - grandTotal
+
+  const handleQuickAmount = (amount) => {
+    setAmountReceived(amount.toString())
+  }
+
+  const handleCardInput = (field, value) => {
+    let formattedValue = value
+
+    // Format card number with spaces
+    if (field === "number") {
+      formattedValue = value.replace(/\s/g, "").replace(/(\d{4})/g, "$1 ").trim()
+    }
+    // Format expiry date
+    else if (field === "expiry") {
+      formattedValue = value
+        .replace(/\D/g, "")
+        .replace(/(\d{2})(\d{0,2})/, "$1/$2")
+        .substr(0, 5)
+    }
+    // Format CVV
+    else if (field === "cvv") {
+      formattedValue = value.replace(/\D/g, "").substr(0, 3)
+    }
+
+    setCardDetails(prev => ({
+      ...prev,
+      [field]: formattedValue
+    }))
+  }
+
+  const completePayment = () => {
+    if (paymentMethod === "cash") {
+      const finalAmount = Number.parseFloat(amountReceived) || 0
+      if (finalAmount >= grandTotal) {
+        onPaymentComplete({
+          payments: [{
+            method: paymentMethod,
+            amount: finalAmount,
+            timestamp: new Date(),
+          }],
+          change: changeAmount > 0 ? changeAmount : 0,
+        })
+      }
+    } else {
+      // Validate card details
+      if (cardDetails.number.replace(/\s/g, "").length === 16 &&
+          cardDetails.expiry.length === 5 &&
+          cardDetails.cvv.length === 3) {
+        onPaymentComplete({
+          payments: [{
+            method: paymentMethod,
+            amount: grandTotal,
+            timestamp: new Date(),
+            cardDetails: {
+              last4: cardDetails.number.slice(-4),
+              expiry: cardDetails.expiry
+            }
+          }],
+          change: 0,
+        })
+      }
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-white">Payment Processing</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl">
+            ×
+          </button>
+        </div>
+
+        {/* Summary Section - More Compact */}
+        <div className="space-y-1 mb-4 p-3 bg-gray-700 rounded-lg text-sm">
+          <div className="flex justify-between text-gray-300">
+            <span>Subtotal:</span>
+            <span>Rs {subtotal.toFixed(2)}</span>
+          </div>
+          {discount.value > 0 && (
+            <div className="flex justify-between text-red-400">
+              <span>Discount:</span>
+              <span>-Rs {discount.type === "percentage" ? (subtotal * discount.value) / 100 : discount.value}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-gray-300">
+            <span>Tax ({taxRate}%):</span>
+            <span>Rs {(subtotal * (taxRate / 100)).toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between font-bold text-white border-t border-gray-600 pt-1 mt-1">
+            <span>Total:</span>
+            <span>Rs {grandTotal.toFixed(2)}</span>
+          </div>
+        </div>
+
+        {/* Payment Method Selection */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-300 mb-2">Payment Method</label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setPaymentMethod("cash")}
+              className={`p-3 rounded-lg border-2 ${
+                paymentMethod === "cash"
+                  ? "border-blue-500 bg-blue-900 text-white"
+                  : "border-gray-600 bg-gray-700 text-gray-300 hover:border-gray-500"
+              }`}
+            >
+              Cash
+            </button>
+            <button
+              onClick={() => setPaymentMethod("card")}
+              className={`p-3 rounded-lg border-2 ${
+                paymentMethod === "card"
+                  ? "border-blue-500 bg-blue-900 text-white"
+                  : "border-gray-600 bg-gray-700 text-gray-300 hover:border-gray-500"
+              }`}
+            >
+              Card
+            </button>
+          </div>
+        </div>
+
+        {paymentMethod === "card" ? (
+          <div className="space-y-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Card Number</label>
+              <input
+                type="text"
+                value={cardDetails.number}
+                onChange={(e) => handleCardInput("number", e.target.value)}
+                placeholder="1234 5678 9012 3456"
+                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
+                maxLength="19"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Expiry</label>
+                <input
+                  type="text"
+                  value={cardDetails.expiry}
+                  onChange={(e) => handleCardInput("expiry", e.target.value)}
+                  placeholder="MM/YY"
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
+                  maxLength="5"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">CVV</label>
+                <input
+                  type="text"
+                  value={cardDetails.cvv}
+                  onChange={(e) => handleCardInput("cvv", e.target.value)}
+                  placeholder="123"
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
+                  maxLength="3"
+                />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Quick Amounts */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-300 mb-2">Quick Amounts</label>
+              <div className="grid grid-cols-2 gap-2">
+                {quickAmounts.map((amount) => (
+                  <button
+                    key={amount}
+                    onClick={() => handleQuickAmount(amount)}
+                    className="p-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                  >
+                    Rs {amount.toLocaleString()}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Amount Input */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-300 mb-2">Amount Received</label>
+              <input
+                type="number"
+                value={amountReceived}
+                onChange={(e) => setAmountReceived(e.target.value)}
+                placeholder={`Rs ${grandTotal.toFixed(2)}`}
+                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 text-lg focus:ring-2 focus:ring-blue-500"
+                step="0.01"
+              />
+            </div>
+
+            {/* Change Amount Display */}
+            {Number.parseFloat(amountReceived) > grandTotal && (
+              <div className="mb-6 p-4 bg-green-900 border border-green-700 rounded-lg">
+                <div className="flex justify-between font-bold text-green-200 text-lg">
+                  <span>Change Due:</span>
+                  <span>Rs {changeAmount.toFixed(2)}</span>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-3 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={completePayment}
+            disabled={
+              paymentMethod === "cash" 
+                ? Number.parseFloat(amountReceived) < grandTotal
+                : !(cardDetails.number.replace(/\s/g, "").length === 16 &&
+                   cardDetails.expiry.length === 5 &&
+                   cardDetails.cvv.length === 3)
+            }
+            className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors font-semibold"
+          >
+            Complete Payment
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Invoice Modal Component
+const InvoiceModal = ({ invoice, onClose }) => {
+  const printInvoice = () => {
+    window.print()
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-white">Invoice</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl">
+            ×
+          </button>
+        </div>
+
+        <div className="bg-white text-black p-8 rounded-lg mb-6">
+          <div className="flex justify-between items-start mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-blue-600 mb-2">Sri Lanka POS</h1>
+              <div className="text-gray-600">
+                <p>123 Business Street</p>
+                <p>Colombo, Sri Lanka</p>
+                <p>Phone: +94 11 123 4567</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">INVOICE</h2>
+              <div className="text-gray-600">
+                <p><strong>Invoice #:</strong> {invoice.id}</p>
+                <p><strong>Date:</strong> {invoice.date.toLocaleDateString()}</p>
+                <p><strong>Time:</strong> {invoice.date.toLocaleTimeString()}</p>
+              </div>
+            </div>
+          </div>
+
+          {invoice.customer && (
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">Bill To:</h3>
+              <div className="text-gray-600">
+                <p><strong>{invoice.customer.name}</strong></p>
+                <p>{invoice.customer.email}</p>
+                <p>{invoice.customer.phone}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="mb-8">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="border-b-2 border-gray-300">
+                  <th className="text-left py-3 px-2 font-semibold text-gray-800">Item</th>
+                  <th className="text-center py-3 px-2 font-semibold text-gray-800">Qty</th>
+                  <th className="text-right py-3 px-2 font-semibold text-gray-800">Unit Price</th>
+                  <th className="text-right py-3 px-2 font-semibold text-gray-800">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoice.items.map((item, index) => (
+                  <tr key={index} className="border-b border-gray-200">
+                    <td className="py-3 px-2">
+                      <div>
+                        <div className="font-medium">{item.name}</div>
+                        <div className="text-sm text-gray-500">{item.category}</div>
+                      </div>
+                    </td>
+                    <td className="text-center py-3 px-2">{item.quantity}</td>
+                    <td className="text-right py-3 px-2">Rs {item.price.toFixed(2)}</td>
+                    <td className="text-right py-3 px-2 font-medium">Rs {(item.price * item.quantity).toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex justify-end mb-8">
+            <div className="w-80">
+              <div className="space-y-2">
+                <div className="flex justify-between py-1">
+                  <span className="text-gray-600">Subtotal:</span>
+                  <span className="font-medium">Rs {invoice.subtotal.toFixed(2)}</span>
+                </div>
+                {invoice.discountAmount > 0 && (
+                  <div className="flex justify-between py-1 text-red-600">
+                    <span>Discount:</span>
+                    <span>-Rs {invoice.discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between py-1">
+                  <span className="text-gray-600">Tax:</span>
+                  <span className="font-medium">Rs {invoice.taxAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between py-3 font-bold text-lg border-t-2 border-gray-300">
+                  <span>Total:</span>
+                  <span>Rs {invoice.total.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center text-gray-500 text-sm border-t pt-4">
+            <p>Thank you for your business!</p>
+            <p>For support, contact us at support@srilankapos.com</p>
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={printInvoice}
+            className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            Print Invoice
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-3 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Customer Modal Component
+const CustomerModal = ({ customers, selectedCustomer, setSelectedCustomer, onClose }) => {
+  const [searchTerm, setSearchTerm] = useState("")
+
+  const filteredCustomers = customers.filter(
+    (customer) =>
+      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.phone.includes(searchTerm)
+  )
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold text-white">Select Customer</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl">
+            ×
+          </button>
+        </div>
+
+        <div className="mb-6">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search customers by name, email, or phone..."
+            className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div className="space-y-3 mb-6">
+          {filteredCustomers.map((customer) => (
+            <div
+              key={customer.id}
+              onClick={() => {
+                setSelectedCustomer(customer)
+                onClose()
+              }}
+              className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+                selectedCustomer?.id === customer.id
+                  ? "border-blue-500 bg-blue-900"
+                  : "border-gray-600 bg-gray-700 hover:border-gray-500 hover:bg-gray-600"
+              }`}
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-medium text-white">{customer.name}</h3>
+                  <p className="text-sm text-gray-400">{customer.email}</p>
+                  <p className="text-sm text-gray-400">{customer.phone}</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-green-400 font-medium">{customer.loyaltyPoints} points</div>
+                  <div className="text-sm text-gray-400">Rs {customer.totalSpent.toFixed(2)} spent</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {filteredCustomers.length === 0 && (
+          <div className="text-center py-8 text-gray-400">No customers found</div>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            onClick={() => {
+              setSelectedCustomer(null)
+              onClose()
+            }}
+            className="flex-1 px-4 py-3 border border-gray-600 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors"
+          >
+            No Customer
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Products Modal Component
+const ProductsModal = ({ products, selectedPriceType, onAddToCart, onClose }) => {
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState("All")
+
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch =
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.barcode.includes(searchTerm) ||
+      product.category.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = selectedCategory === "All" || product.category === selectedCategory
+    return matchesSearch && matchesCategory
+  })
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-6xl max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold text-white">Products</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl">
+            ×
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search products..."
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
+            >
+              {categories.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {filteredProducts.map((product) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              onAddToCart={onAddToCart}
+              selectedPriceType={selectedPriceType}
+            />
+          ))}
+        </div>
+
+        {filteredProducts.length === 0 && (
+          <div className="text-center py-8 text-gray-400">No products found</div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default BillingPOSSystem
