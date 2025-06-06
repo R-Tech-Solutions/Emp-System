@@ -93,7 +93,7 @@ const Toast = ({ message, type, isVisible, onClose }) => {
 // Main Billing POS Component
 const BillingPOSSystem = () => {
   const [products, setProducts] = useState([])
-  const [customers] = useState(mockCustomers)
+  const [customers, setCustomers] = useState(mockCustomers)
   const [cart, setCart] = useState([])
   const [searchTerm, setSearchTerm] = useState("")
   const [barcodeInput, setBarcodeInput] = useState("")
@@ -114,6 +114,44 @@ const BillingPOSSystem = () => {
   const [toast, setToast] = useState({ message: "", type: "", isVisible: false })
 
   const barcodeRef = useRef(null)
+
+  // Add new state variables
+  const [purchaseHistory, setPurchaseHistory] = useState([])
+  const [lowStockAlerts, setLowStockAlerts] = useState([])
+  const [dailySales, setDailySales] = useState({ total: 0, count: 0 })
+  const [paymentMethods, setPaymentMethods] = useState([
+    { id: 'cash', name: 'Cash', icon: '💵' },
+    { id: 'card', name: 'Card', icon: '💳' },
+    { id: 'mobile', name: 'Mobile Pay', icon: '📱' },
+    { id: 'credit', name: 'Credit', icon: '📝' }
+  ])
+  const [showAnalytics, setShowAnalytics] = useState(false)
+  const [selectedDateRange, setSelectedDateRange] = useState('today')
+
+  // Add new state variables for enhanced billing
+  const [quickActions] = useState([
+    { id: 'hold', name: 'Hold Bill', icon: '⏸️', shortcut: 'Ctrl+H' },
+    { id: 'split', name: 'Split Bill', icon: '✂️', shortcut: 'Ctrl+S' },
+    { id: 'merge', name: 'Merge Bills', icon: '🔄', shortcut: 'Ctrl+M' },
+    { id: 'return', name: 'Return Item', icon: '↩️', shortcut: 'Ctrl+R' },
+  ])
+  const [heldBills, setHeldBills] = useState([])
+  const [splitBills, setSplitBills] = useState([])
+  const [selectedItems, setSelectedItems] = useState([])
+  const [showCustomerSearch, setShowCustomerSearch] = useState(false)
+  const [customerSearchTerm, setCustomerSearchTerm] = useState('')
+  const [showBatchActions, setShowBatchActions] = useState(false)
+  const [paymentHistory, setPaymentHistory] = useState([])
+
+  // Add new state for active tab
+  const [activeTab, setActiveTab] = useState('pos') // 'pos' or 'invoices'
+
+  // Add new state for invoice list
+  const [invoices, setInvoices] = useState([])
+  const [invoiceSearchTerm, setInvoiceSearchTerm] = useState('')
+  const [invoiceDateRange, setInvoiceDateRange] = useState('all')
+  const [showInvoiceDetails, setShowInvoiceDetails] = useState(false)
+  const [selectedInvoice, setSelectedInvoice] = useState(null)
 
   // Fetch products and inventory data
   useEffect(() => {
@@ -172,7 +210,7 @@ const BillingPOSSystem = () => {
             e.preventDefault();
             barcodeRef.current?.focus();
             break;
-          case 'p':
+          case 'v':
             e.preventDefault();
             if (cart.length > 0) setShowPayment(true);
             break;
@@ -305,35 +343,298 @@ const BillingPOSSystem = () => {
     }
   }
 
-  // Complete payment
-  const completePayment = (paymentData) => {
-    const invoice = {
-      id: `INV-${Date.now()}`,
-      date: new Date(),
-      items: cart,
+  // Add new functions for advanced features
+  const fetchPurchaseHistory = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/purchases')
+      const data = await response.json()
+      setPurchaseHistory(data)
+    } catch (error) {
+      console.error('Error fetching purchase history:', error)
+    }
+  }
+
+  const checkLowStock = () => {
+    const alerts = products.filter(product => product.stock <= 5)
+    setLowStockAlerts(alerts)
+  }
+
+  const calculateDailySales = () => {
+    const today = new Date().toISOString().split('T')[0]
+    const todaySales = purchaseHistory.filter(purchase => 
+      purchase.createdAt.split('T')[0] === today
+    )
+    
+    const total = todaySales.reduce((sum, purchase) => sum + purchase.total, 0)
+    setDailySales({ total, count: todaySales.length })
+  }
+
+  // Enhanced completePayment function
+  const completePayment = async (paymentData) => {
+    try {
+      const invoice = {
+        id: `INV-${Date.now()}`,
+        date: new Date(),
+        items: cart,
+        customer: selectedCustomer,
+        subtotal,
+        discountAmount: totalDiscount,
+        taxAmount,
+        total: grandTotal,
+        payments: paymentData.payments,
+        change: paymentData.change,
+        employee: currentEmployee,
+        loyaltyPointsEarned: Math.floor(grandTotal / 100),
+      }
+
+      // Save to backend
+      const response = await fetch('http://localhost:3001/api/purchases', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(invoice)
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to save purchase')
+      }
+
+      // Update inventory
+      for (const item of cart) {
+        await fetch('http://localhost:3001/api/inventory', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            productId: item.id,
+            quantity: -item.quantity, // Negative to reduce stock
+            supplierEmail: 'pos@system.com'
+          })
+        })
+      }
+
+      setCurrentInvoice(invoice)
+      setShowInvoice(true)
+      setShowPayment(false)
+      clearCart()
+      showToast("Payment completed successfully", "success")
+
+      // Update customer loyalty points
+      if (selectedCustomer) {
+        selectedCustomer.loyaltyPoints += Math.floor(grandTotal / 100)
+        selectedCustomer.totalSpent += grandTotal
+        selectedCustomer.visits += 1
+      }
+
+      // Refresh data
+      fetchPurchaseHistory()
+      checkLowStock()
+      calculateDailySales()
+    } catch (error) {
+      console.error('Error completing payment:', error)
+      showToast('Failed to complete payment', 'error')
+    }
+  }
+
+  // Add useEffect for new features
+  useEffect(() => {
+    fetchPurchaseHistory()
+    checkLowStock()
+    calculateDailySales()
+  }, [products])
+
+  // Enhanced cart management functions
+  const handleHoldBill = () => {
+    if (cart.length === 0) {
+      showToast('Cart is empty', 'error')
+      return
+    }
+    const billToHold = {
+      id: `HOLD-${Date.now()}`,
+      items: [...cart],
       customer: selectedCustomer,
       subtotal,
-      discountAmount: totalDiscount,
-      taxAmount,
-      total: grandTotal,
-      payments: paymentData.payments,
-      change: paymentData.change,
-      employee: currentEmployee,
-      loyaltyPointsEarned: Math.floor(grandTotal / 100),
+      discount,
+      taxRate,
+      timestamp: new Date(),
     }
-
-    setCurrentInvoice(invoice)
-    setShowInvoice(true)
-    setShowPayment(false)
+    setHeldBills([...heldBills, billToHold])
     clearCart()
-    showToast("Payment completed successfully", "success")
+    showToast('Bill held successfully', 'success')
+  }
 
-    // Update customer loyalty points
-    if (selectedCustomer) {
-      selectedCustomer.loyaltyPoints += Math.floor(grandTotal / 100)
-      selectedCustomer.totalSpent += grandTotal
-      selectedCustomer.visits += 1
+  const handleSplitBill = () => {
+    if (cart.length === 0) {
+      showToast('Cart is empty', 'error')
+      return
     }
+    setSplitBills([...splitBills, { items: [...cart], customer: selectedCustomer }])
+    clearCart()
+    showToast('Bill split successfully', 'success')
+  }
+
+  const handleMergeBills = () => {
+    if (splitBills.length < 2) {
+      showToast('Need at least 2 bills to merge', 'error')
+      return
+    }
+    const mergedItems = splitBills.flatMap(bill => bill.items)
+    setCart(mergedItems)
+    setSplitBills([])
+    showToast('Bills merged successfully', 'success')
+  }
+
+  const handleReturnItem = (item) => {
+    const returnData = {
+      itemId: item.id,
+      quantity: item.quantity,
+      reason: 'Customer Return',
+      timestamp: new Date(),
+    }
+    // Add to payment history for refund
+    setPaymentHistory([...paymentHistory, { type: 'return', data: returnData }])
+    removeFromCart(item.id)
+    showToast('Item returned successfully', 'success')
+  }
+
+  // Enhanced customer management
+  const handleCustomerSearch = async (term) => {
+    setCustomerSearchTerm(term)
+    if (term.length < 3) return
+    
+    try {
+      const response = await fetch(`http://localhost:3001/api/customers/search?term=${term}`)
+      const data = await response.json()
+      // Update customer list with search results
+      setCustomers(data)
+    } catch (error) {
+      console.error('Error searching customers:', error)
+    }
+  }
+
+  // Enhanced payment processing
+  const handleBatchPayment = async (items) => {
+    const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+    const paymentData = {
+      items,
+      total,
+      customer: selectedCustomer,
+      timestamp: new Date(),
+    }
+    await completePayment(paymentData)
+  }
+
+  // Add function to fetch invoices
+  const fetchInvoices = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/purchases')
+      const data = await response.json()
+      setInvoices(data)
+    } catch (error) {
+      console.error('Error fetching invoices:', error)
+      showToast('Failed to load invoices', 'error')
+    }
+  }
+
+  // Add useEffect to fetch invoices
+  useEffect(() => {
+    if (activeTab === 'invoices') {
+      fetchInvoices()
+    }
+  }, [activeTab])
+
+  // Add new InvoicesList component
+  const InvoicesList = () => {
+    const filteredInvoices = invoices.filter(invoice => {
+      const matchesSearch = 
+        invoice.id.toLowerCase().includes(invoiceSearchTerm.toLowerCase()) ||
+        (invoice.customer && invoice.customer.name.toLowerCase().includes(invoiceSearchTerm.toLowerCase()))
+      
+      const invoiceDate = new Date(invoice.createdAt)
+      const now = new Date()
+      
+      switch(invoiceDateRange) {
+        case 'today':
+          return matchesSearch && invoiceDate.toDateString() === now.toDateString()
+        case 'week':
+          const weekAgo = new Date(now.setDate(now.getDate() - 7))
+          return matchesSearch && invoiceDate >= weekAgo
+        case 'month':
+          const monthAgo = new Date(now.setMonth(now.getMonth() - 1))
+          return matchesSearch && invoiceDate >= monthAgo
+        default:
+          return matchesSearch
+      }
+    })
+
+    return (
+      <div className="space-y-6">
+        {/* Search and Filter Controls */}
+        <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <input
+                type="text"
+                value={invoiceSearchTerm}
+                onChange={(e) => setInvoiceSearchTerm(e.target.value)}
+                placeholder="Search by invoice number or customer..."
+                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <select
+                value={invoiceDateRange}
+                onChange={(e) => setInvoiceDateRange(e.target.value)}
+                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="week">Last 7 Days</option>
+                <option value="month">Last 30 Days</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Invoices List */}
+        <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
+          <div className="space-y-4">
+            {filteredInvoices.map(invoice => (
+              <div
+                key={invoice.id}
+                className="bg-gray-700 rounded-lg p-4 hover:bg-gray-600 cursor-pointer transition-colors"
+                onClick={() => {
+                  setSelectedInvoice(invoice)
+                  setShowInvoiceDetails(true)
+                }}
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="font-medium text-white">Invoice #{invoice.id}</div>
+                    <div className="text-sm text-gray-400">
+                      {new Date(invoice.createdAt).toLocaleString()}
+                    </div>
+                    {invoice.customer && (
+                      <div className="text-sm text-gray-400 mt-1">
+                        Customer: {invoice.customer.name}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium text-white">Rs {invoice.total.toFixed(2)}</div>
+                    <div className="text-sm text-gray-400">{invoice.items.length} items</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {filteredInvoices.length === 0 && (
+            <div className="text-center py-8 text-gray-400">No invoices found</div>
+          )}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -350,201 +651,269 @@ const BillingPOSSystem = () => {
         </div>
       )}
 
-      {/* Keyboard Shortcuts Help */}
-      <div className="fixed top-4 left-4 bg-gray-800 border border-gray-700 rounded-lg p-2 text-xs text-gray-400 z-50">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-          <span>Ctrl+B: Barcode</span>
-          <span>Ctrl+P: Payment</span>
-          <span>Ctrl+D: Price Type</span>
-          <span>Ctrl+T: Clear Cart</span>
-          <span>Ctrl+F: Show Products</span>
-        </div>
-      </div>
-
-      {/* Main Content */}
+      {/* Tabs */}
       <div className="container mx-auto px-4 py-6">
-        {/* Main Content - Single Column Layout */}
-        <div className="space-y-6">
-          {/* Products Section */}
-          <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-            {/* Barcode Scanner */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-300 mb-2">Barcode Scanner</label>
-              <input
-                ref={barcodeRef}
-                type="text"
-                value={barcodeInput}
-                onChange={(e) => setBarcodeInput(e.target.value)}
-                onKeyPress={handleBarcodeScan}
-                placeholder="Scan or enter barcode..."
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+        <div className="flex space-x-4 mb-6">
+          <button
+            onClick={() => setActiveTab('pos')}
+            className={`px-4 py-2 rounded-lg font-medium ${
+              activeTab === 'pos'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
+          >
+            POS System
+          </button>
+          <button
+            onClick={() => setActiveTab('invoices')}
+            className={`px-4 py-2 rounded-lg font-medium ${
+              activeTab === 'invoices'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
+          >
+            Invoices
+          </button>
+        </div>
 
-            {/* Search and Controls Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              {/* Price Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Price Type</label>
-                <select
-                  value={selectedPriceType}
-                  onChange={(e) => setSelectedPriceType(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="standard">Standard</option>
-                  <option value="wholesale">Wholesale</option>
-                  <option value="retail">Retail</option>
-                </select>
+        {activeTab === 'pos' ? (
+          <div className="space-y-6">
+            {/* Products Section */}
+            <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
+              {/* Barcode Scanner */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-300 mb-2">Barcode Scanner</label>
+                <input
+                  ref={barcodeRef}
+                  type="text"
+                  value={barcodeInput}
+                  onChange={(e) => setBarcodeInput(e.target.value)}
+                  onKeyPress={handleBarcodeScan}
+                  placeholder="Scan or enter barcode..."
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
               </div>
-              
-              
-              <div>
-                <button
-                  onClick={() => setShowProductsModal(true)}
-                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Show Products
-                </button>
-              </div>       
-            </div>
-          </div>
 
-          {/* Shopping Cart Section */}
-          <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-white">Shopping Cart</h2>
-              <button
-                onClick={clearCart}
-                className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-              >
-                Clear
-              </button>
-            </div>
-
-            {/* Cart Items */}
-            <div className="max-h-60 overflow-y-auto mb-4 space-y-2">
-              {cart.length === 0 ? (
-                <div className="text-center py-4 text-gray-400">Cart is empty</div>
-              ) : (
-                cart.map((item) => (
-                  <CartItem key={item.id} item={item} updateQuantity={updateQuantity} removeFromCart={removeFromCart} />
-                ))
-              )}
+              {/* Search and Controls Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {/* Price Type */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Price Type</label>
+                  <select
+                    value={selectedPriceType}
+                    onChange={(e) => setSelectedPriceType(e.target.value)}
+                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="standard">Standard</option>
+                    <option value="wholesale">Wholesale</option>
+                    <option value="retail">Retail</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <button
+                    onClick={() => setShowProductsModal(true)}
+                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Show Products
+                  </button>
+                </div>       
+              </div>
             </div>
 
-            {/* Cart Summary */}
-            {cart.length > 0 && (
-              <div className="space-y-2 text-sm border-t border-gray-600 pt-4">
-                <div className="flex justify-between text-gray-300">
-                  <span>Subtotal:</span>
-                  <span>Rs {subtotal.toFixed(2)}</span>
+            {/* Shopping Cart Section */}
+            <div className="bg-gray-800 rounded-lg border border-gray-700 p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-white">Shopping Cart</h2>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowCustomerSearch(true)}
+                    className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    {selectedCustomer ? 'Change Customer' : 'Select Customer'}
+                  </button>
+                  <button
+                    onClick={clearCart}
+                    className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                  >
+                    Clear
+                  </button>
                 </div>
-                {discount.value > 0 && (
-                  <div className="flex justify-between text-red-400">
-                    <span>Manual Discount:</span>
-                    <span>-Rs {(discount.type === "percentage" ? (subtotal * discount.value) / 100 : discount.value).toFixed(2)}</span>
-                  </div>
-                )}
-                {loyaltyDiscount > 0 && (
-                  <div className="flex justify-between text-green-400">
-                    <span>Loyalty Discount:</span>
-                    <span>-Rs {loyaltyDiscount.toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-gray-300">
-                  <span>Tax ({taxRate}%):</span>
-                  <span>Rs {taxAmount.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between font-bold text-lg text-white border-t border-gray-600 pt-2">
-                  <span>Total:</span>
-                  <span>Rs {grandTotal.toFixed(2)}</span>
-                </div>
-                <button
-                  onClick={() => setShowPayment(true)}
-                  className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 font-semibold transition-colors mt-2"
-                >
-                  Checkout
-                </button>
+              </div>
 
-                {/* Tax and Discount Table */}
-                <div className="mt-4 bg-gray-700 rounded-lg p-4">
-                  <h3 className="text-white font-medium mb-3">Tax & Discount Details</h3>
-                  <div className="space-y-3">
-                    {/* Tax Input */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Tax Rate (%)</label>
-                      <div className="flex gap-2">
-                        <input
-                          type="number"
-                          value={taxRate}
-                          onChange={(e) => setTaxRate(Number(e.target.value))}
-                          min="0"
-                          max="100"
-                          step="0.1"
-                          className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
-                        />
-                        <button
-                          onClick={() => setTaxRate(0)}
-                          className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500"
-                        >
-                          Reset
-                        </button>
-                      </div>
+              {/* Cart Items with Enhanced Features */}
+              <div className="max-h-60 overflow-y-auto mb-4 space-y-2">
+                {cart.length === 0 ? (
+                  <div className="text-center py-4 text-gray-400">Cart is empty</div>
+                ) : (
+                  cart.map((item) => (
+                    <div key={item.id} className="relative group">
+                      <CartItem
+                        item={item}
+                        updateQuantity={updateQuantity}
+                        removeFromCart={removeFromCart}
+                        onSelect={() => {
+                          if (selectedItems.includes(item.id)) {
+                            setSelectedItems(selectedItems.filter(id => id !== item.id))
+                          } else {
+                            setSelectedItems([...selectedItems, item.id])
+                          }
+                        }}
+                        isSelected={selectedItems.includes(item.id)}
+                      />
                     </div>
+                  ))
+                )}
+              </div>
 
-                    {/* Discount Table */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Discount</label>
-                      <div className="space-y-2">
+              {/* Batch Actions */}
+              {selectedItems.length > 0 && (
+                <div className="bg-gray-700 p-3 rounded-lg mb-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-white">
+                      {selectedItems.length} items selected
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          selectedItems.forEach(id => removeFromCart(id))
+                          setSelectedItems([])
+                        }}
+                        className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                      >
+                        Remove Selected
+                      </button>
+                      <button
+                        onClick={() => {
+                          const selectedCartItems = cart.filter(item => selectedItems.includes(item.id))
+                          handleBatchPayment(selectedCartItems)
+                          setSelectedItems([])
+                        }}
+                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                      >
+                        Pay Selected
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Cart Summary */}
+              {cart.length > 0 && (
+                <div className="space-y-2 text-sm border-t border-gray-600 pt-4">
+                  <div className="flex justify-between text-gray-300">
+                    <span>Subtotal:</span>
+                    <span>Rs {subtotal.toFixed(2)}</span>
+                  </div>
+                  {discount.value > 0 && (
+                    <div className="flex justify-between text-red-400">
+                      <span>Manual Discount:</span>
+                      <span>-Rs {(discount.type === "percentage" ? (subtotal * discount.value) / 100 : discount.value).toFixed(2)}</span>
+                    </div>
+                  )}
+                  {loyaltyDiscount > 0 && (
+                    <div className="flex justify-between text-green-400">
+                      <span>Loyalty Discount:</span>
+                      <span>-Rs {loyaltyDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-gray-300">
+                    <span>Tax ({taxRate}%):</span>
+                    <span>Rs {taxAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between font-bold text-lg text-white border-t border-gray-600 pt-2">
+                    <span>Total:</span>
+                    <span>Rs {grandTotal.toFixed(2)}</span>
+                  </div>
+                  <button
+                    onClick={() => setShowPayment(true)}
+                    className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 font-semibold transition-colors mt-2"
+                  >
+                    Checkout
+                  </button>
+
+                  {/* Tax and Discount Table */}
+                  <div className="mt-4 bg-gray-700 rounded-lg p-4">
+                    <h3 className="text-white font-medium mb-3">Tax & Discount Details</h3>
+                    <div className="space-y-3">
+                      {/* Tax Input */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Tax Rate (%)</label>
                         <div className="flex gap-2">
-                          <select
-                            value={discount.type}
-                            onChange={(e) => setDiscount({ ...discount, type: e.target.value })}
-                            className="w-1/3 px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
-                          >
-                            <option value="amount">Amount</option>
-                            <option value="percentage">Percentage</option>
-                          </select>
                           <input
                             type="number"
-                            value={discount.value}
-                            onChange={(e) => setDiscount({ ...discount, value: Number(e.target.value) })}
+                            value={taxRate}
+                            onChange={(e) => setTaxRate(Number(e.target.value))}
                             min="0"
-                            step="0.01"
-                            placeholder={discount.type === "percentage" ? "Enter percentage" : "Enter amount"}
-                            className="w-2/3 px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
+                            max="100"
+                            step="0.1"
+                            className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
                           />
-                        </div>
-                        <button
-                          onClick={() => setDiscount({ type: "amount", value: 0 })}
-                          className="w-full px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500"
-                        >
-                          Clear Discount
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Quick Discount Buttons */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Quick Discounts</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {[5, 10, 15, 20].map((percent) => (
                           <button
-                            key={percent}
-                            onClick={() => setDiscount({ type: "percentage", value: percent })}
+                            onClick={() => setTaxRate(0)}
                             className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500"
                           >
-                            {percent}%
+                            Reset
                           </button>
-                        ))}
+                        </div>
+                      </div>
+
+                      {/* Discount Table */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Discount</label>
+                        <div className="space-y-2">
+                          <div className="flex gap-2">
+                            <select
+                              value={discount.type}
+                              onChange={(e) => setDiscount({ ...discount, type: e.target.value })}
+                              className="w-1/3 px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="amount">Amount</option>
+                              <option value="percentage">Percentage</option>
+                            </select>
+                            <input
+                              type="number"
+                              value={discount.value}
+                              onChange={(e) => setDiscount({ ...discount, value: Number(e.target.value) })}
+                              min="0"
+                              step="0.01"
+                              placeholder={discount.type === "percentage" ? "Enter percentage" : "Enter amount"}
+                              className="w-2/3 px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <button
+                            onClick={() => setDiscount({ type: "amount", value: 0 })}
+                            className="w-full px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500"
+                          >
+                            Clear Discount
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Quick Discount Buttons */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Quick Discounts</label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {[5, 10, 15, 20].map((percent) => (
+                            <button
+                              key={percent}
+                              onClick={() => setDiscount({ type: "percentage", value: percent })}
+                              className="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500"
+                            >
+                              {percent}%
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <InvoicesList />
+        )}
       </div>
 
       {/* Modals */}
@@ -563,8 +932,6 @@ const BillingPOSSystem = () => {
         <InvoiceModal invoice={currentInvoice} onClose={() => setShowInvoice(false)} />
       )}
 
-      
-
       {showProductsModal && (
         <ProductsModal
           products={products}
@@ -573,6 +940,66 @@ const BillingPOSSystem = () => {
           onClose={() => setShowProductsModal(false)}
         />
       )}
+
+      {/* Add Analytics Button */}
+      <button
+        onClick={() => setShowAnalytics(true)}
+        className="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+      >
+        Analytics
+      </button>
+
+      {/* Add new modals */}
+      {showAnalytics && (
+        <AnalyticsModal
+          onClose={() => setShowAnalytics(false)}
+          dailySales={dailySales}
+          purchaseHistory={purchaseHistory}
+          selectedDateRange={selectedDateRange}
+          setSelectedDateRange={setSelectedDateRange}
+        />
+      )}
+
+      <LowStockAlerts
+        alerts={lowStockAlerts}
+        onClose={() => setLowStockAlerts([])}
+      />
+
+      {/* Add Invoice Details Modal */}
+      {showInvoiceDetails && selectedInvoice && (
+        <InvoiceModal
+          invoice={selectedInvoice}
+          onClose={() => {
+            setShowInvoiceDetails(false)
+            setSelectedInvoice(null)
+          }}
+        />
+      )}
+
+      {/* Quick Actions */}
+      <div className="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+        <QuickActions
+          actions={quickActions}
+          onAction={(action) => {
+            switch(action) {
+              case 'hold':
+                handleHoldBill()
+                break
+              case 'split':
+                handleSplitBill()
+                break
+              case 'merge':
+                handleMergeBills()
+                break
+              case 'return':
+                if (selectedItems.length > 0) {
+                  selectedItems.forEach(handleReturnItem)
+                }
+                break
+            }
+          }}
+        />
+      </div>
     </div>
   )
 }
@@ -580,7 +1007,7 @@ const BillingPOSSystem = () => {
 // Product Card Component
 const ProductCard = ({ product, onAddToCart, selectedPriceType }) => {
   const priceKey = `${selectedPriceType}Price`
-  const currentPrice = product[priceKey]
+  const currentPrice = product[priceKey] || 0
   const isLowStock = product.stock <= product.minStock
 
   return (
@@ -619,7 +1046,7 @@ const ProductCard = ({ product, onAddToCart, selectedPriceType }) => {
 }
 
 // Cart Item Component
-const CartItem = ({ item, updateQuantity, removeFromCart }) => {
+const CartItem = ({ item, updateQuantity, removeFromCart, onSelect, isSelected }) => {
   return (
     <div className="bg-gray-700 rounded-lg p-3 border border-gray-600">
       <div className="flex items-center justify-between mb-2">
@@ -1187,6 +1614,278 @@ const ProductsModal = ({ products, selectedPriceType, onAddToCart, onClose }) =>
         {filteredProducts.length === 0 && (
           <div className="text-center py-8 text-gray-400">No products found</div>
         )}
+      </div>
+    </div>
+  )
+}
+
+// Analytics Modal Component
+const AnalyticsModal = ({ onClose, dailySales, purchaseHistory, selectedDateRange, setSelectedDateRange }) => {
+  const [salesData, setSalesData] = useState([])
+  const [topProducts, setTopProducts] = useState([])
+
+  useEffect(() => {
+    // Calculate sales data based on date range
+    const filteredSales = purchaseHistory.filter(purchase => {
+      const purchaseDate = new Date(purchase.createdAt)
+      const now = new Date()
+      
+      switch(selectedDateRange) {
+        case 'today':
+          return purchaseDate.toDateString() === now.toDateString()
+        case 'week':
+          const weekAgo = new Date(now.setDate(now.getDate() - 7))
+          return purchaseDate >= weekAgo
+        case 'month':
+          const monthAgo = new Date(now.setMonth(now.getMonth() - 1))
+          return purchaseDate >= monthAgo
+        default:
+          return true
+      }
+    })
+
+    // Calculate top products
+    const productSales = {}
+    filteredSales.forEach(purchase => {
+      purchase.items.forEach(item => {
+        if (!productSales[item.id]) {
+          productSales[item.id] = {
+            name: item.name,
+            quantity: 0,
+            revenue: 0
+          }
+        }
+        productSales[item.id].quantity += item.quantity
+        productSales[item.id].revenue += item.price * item.quantity
+      })
+    })
+
+    setTopProducts(Object.values(productSales)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5)
+    )
+
+    setSalesData(filteredSales)
+  }, [purchaseHistory, selectedDateRange])
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-white">Sales Analytics</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl">
+            ×
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="bg-gray-700 p-4 rounded-lg">
+            <h3 className="text-lg font-semibold text-white mb-2">Daily Summary</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between text-gray-300">
+                <span>Total Sales:</span>
+                <span>Rs {dailySales.total.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-gray-300">
+                <span>Transactions:</span>
+                <span>{dailySales.count}</span>
+              </div>
+              <div className="flex justify-between text-gray-300">
+                <span>Average Sale:</span>
+                <span>Rs {(dailySales.total / (dailySales.count || 1)).toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-700 p-4 rounded-lg">
+            <h3 className="text-lg font-semibold text-white mb-2">Date Range</h3>
+            <select
+              value={selectedDateRange}
+              onChange={(e) => setSelectedDateRange(e.target.value)}
+              className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white"
+            >
+              <option value="today">Today</option>
+              <option value="week">Last 7 Days</option>
+              <option value="month">Last 30 Days</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="bg-gray-700 p-4 rounded-lg mb-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Top Products</h3>
+          <div className="space-y-4">
+            {topProducts.map((product, index) => (
+              <div key={index} className="flex justify-between items-center">
+                <div>
+                  <div className="font-medium text-white">{product.name}</div>
+                  <div className="text-sm text-gray-400">{product.quantity} units sold</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-medium text-white">Rs {product.revenue.toFixed(2)}</div>
+                  <div className="text-sm text-gray-400">
+                    Rs {(product.revenue / product.quantity).toFixed(2)} avg
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-gray-700 p-4 rounded-lg">
+          <h3 className="text-lg font-semibold text-white mb-4">Recent Transactions</h3>
+          <div className="space-y-4">
+            {salesData.slice(0, 5).map((sale, index) => (
+              <div key={index} className="border-b border-gray-600 pb-4 last:border-0">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <div className="font-medium text-white">Invoice #{sale.id}</div>
+                    <div className="text-sm text-gray-400">
+                      {new Date(sale.createdAt).toLocaleString()}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium text-white">Rs {sale.total.toFixed(2)}</div>
+                    <div className="text-sm text-gray-400">{sale.items.length} items</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Low Stock Alerts Component
+const LowStockAlerts = ({ alerts, onClose }) => {
+  if (alerts.length === 0) return null
+
+  return (
+    <div className="fixed bottom-4 right-4 z-50">
+      <div className="bg-red-900 border border-red-700 rounded-lg p-4 shadow-lg">
+        <div className="flex justify-between items-start mb-2">
+          <h3 className="text-white font-medium">Low Stock Alerts</h3>
+          <button onClick={onClose} className="text-red-300 hover:text-white">
+            ×
+          </button>
+        </div>
+        <div className="space-y-2">
+          {alerts.map(product => (
+            <div key={product.id} className="text-red-200 text-sm">
+              {product.name}: {product.stock} units remaining
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Add new component for Quick Actions
+const QuickActions = ({ actions, onAction }) => {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+      {actions.map(action => (
+        <button
+          key={action.id}
+          onClick={() => onAction(action.id)}
+          className="flex items-center justify-center gap-2 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+        >
+          <span className="text-xl">{action.icon}</span>
+          <span className="text-sm">{action.name}</span>
+          <span className="text-xs text-gray-400">{action.shortcut}</span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// Add new component for Held Bills
+const HeldBills = ({ bills, onRestore }) => {
+  return (
+    <div className="bg-gray-800 rounded-lg p-4 mb-4">
+      <h3 className="text-lg font-semibold text-white mb-3">Held Bills</h3>
+      <div className="space-y-2">
+        {bills.map(bill => (
+          <div key={bill.id} className="flex justify-between items-center p-3 bg-gray-700 rounded-lg">
+            <div>
+              <div className="text-white font-medium">Bill #{bill.id}</div>
+              <div className="text-sm text-gray-400">
+                {bill.items.length} items • Rs {bill.subtotal.toFixed(2)}
+              </div>
+            </div>
+            <button
+              onClick={() => onRestore(bill)}
+              className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Restore
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Add new component for Customer Search
+const CustomerSearch = ({ onSelect, onClose }) => {
+  const [searchResults, setSearchResults] = useState([])
+  const [isSearching, setIsSearching] = useState(false)
+
+  const handleSearch = async (term) => {
+    setIsSearching(true)
+    try {
+      const response = await fetch(`http://localhost:3001/api/customers/search?term=${term}`)
+      const data = await response.json()
+      setSearchResults(data)
+    } catch (error) {
+      console.error('Error searching customers:', error)
+    }
+    setIsSearching(false)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+      <div className="bg-gray-800 rounded-lg p-6 w-full max-w-lg">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-white">Search Customer</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white">
+            ×
+          </button>
+        </div>
+        
+        <div className="mb-4">
+          <input
+            type="text"
+            placeholder="Search by name, email, or phone..."
+            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+            onChange={(e) => handleSearch(e.target.value)}
+          />
+        </div>
+
+        <div className="max-h-96 overflow-y-auto">
+          {isSearching ? (
+            <div className="text-center py-4 text-gray-400">Searching...</div>
+          ) : (
+            <div className="space-y-2">
+              {searchResults.map(customer => (
+                <div
+                  key={customer.id}
+                  onClick={() => {
+                    onSelect(customer)
+                    onClose()
+                  }}
+                  className="p-3 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600"
+                >
+                  <div className="font-medium text-white">{customer.name}</div>
+                  <div className="text-sm text-gray-400">{customer.email}</div>
+                  <div className="text-sm text-gray-400">{customer.phone}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
