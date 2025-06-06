@@ -593,65 +593,6 @@ export default function InvoiceGenerator() {
             >
               {/* Invoice Form */}
               <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 space-y-6 shadow-xl border border-gray-700/50">
-                <h2 className="text-2xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 mb-6">
-                  Invoice Details
-                </h2>
-
-                {/* Company Info Section */}
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="space-y-4"
-                >
-                  <h3 className="text-lg font-medium text-gray-300 flex items-center gap-2">
-                    <ChevronRight className="text-blue-400" size={20} />
-                    Company Information
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input
-                      type="text"
-                      placeholder="Company Name"
-                      value={companyInfo.name}
-                      readOnly
-                      className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-lg cursor-not-allowed opacity-75 focus:ring-2 focus:ring-blue-500/50 transition-all"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Address"
-                      value={companyInfo.address}
-                      readOnly
-                      className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-lg cursor-not-allowed opacity-75 focus:ring-2 focus:ring-blue-500/50 transition-all"
-                    />
-                    <input
-                      type="text"
-                      placeholder="City"
-                      value={companyInfo.city}
-                      readOnly
-                      className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-lg cursor-not-allowed opacity-75 focus:ring-2 focus:ring-blue-500/50 transition-all"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Phone"
-                      value={companyInfo.phone}
-                      readOnly
-                      className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-lg cursor-not-allowed opacity-75 focus:ring-2 focus:ring-blue-500/50 transition-all"
-                    />
-                    <input
-                      type="email"
-                      placeholder="Email"
-                      value={companyInfo.email}
-                      readOnly
-                      className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-lg cursor-not-allowed opacity-75 focus:ring-2 focus:ring-blue-500/50 transition-all"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Website"
-                      value={companyInfo.website}
-                      readOnly
-                      className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-lg cursor-not-allowed opacity-75 focus:ring-2 focus:ring-blue-500/50 transition-all"
-                    />
-                  </div>
-                </motion.div>
 
                 {/* Enhanced Product Selection Modal */}
                 {showProductModal && (
@@ -1115,33 +1056,6 @@ export default function InvoiceGenerator() {
                     )}
                   </AnimatePresence>
                 </motion.div>
-
-                {/* Enhanced Notes and Terms Section */}
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="space-y-4"
-                >
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Notes</label>
-                    <textarea
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      placeholder="Additional notes..."
-                      className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all h-24 resize-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Terms & Conditions</label>
-                    <textarea
-                      value={terms}
-                      onChange={(e) => setTerms(e.target.value)}
-                      placeholder="Terms and conditions..."
-                      className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all h-24 resize-none"
-                    />
-                  </div>
-                </motion.div>
-
                 {/* Enhanced Save and Print Buttons */}
                 <div className="flex justify-center gap-4">
                   <button
