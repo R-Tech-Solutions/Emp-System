@@ -8,13 +8,9 @@ export default function CashbookApp() {
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [openingBalance, setOpeningBalance] = useState(() => {
-    const savedBalance = localStorage.getItem('cashbookOpeningBalance')
-    return savedBalance ? Number(savedBalance) : null
-  })
-  const [showOpeningBalanceModal, setShowOpeningBalanceModal] = useState(() => {
-    return !localStorage.getItem('cashbookOpeningBalance')
-  })
+  const [openingBalance, setOpeningBalance] = useState(null)
+  const [summaryData, setSummaryData] = useState(null)
+  const [showOpeningBalanceModal, setShowOpeningBalanceModal] = useState(false)
 
   const [showModal, setShowModal] = useState(false)
   const [editingEntry, setEditingEntry] = useState(null)
@@ -60,6 +56,22 @@ export default function CashbookApp() {
     fetchEntries()
   }, [])
 
+  // Fetch summary (Additional) from backend
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        const res = await axios.get('http://localhost:3001/api/additional')
+        setSummaryData(res.data)
+        setOpeningBalance(res.data.openingBalance)
+        setShowOpeningBalanceModal(false)
+      } catch (err) {
+        // If not set, show modal
+        setShowOpeningBalanceModal(true)
+      }
+    }
+    fetchSummary()
+  }, [])
+
   // Filtered and searched entries
   const filteredEntries = useMemo(() => {
     const filtered = entries.filter((entry) => {
@@ -77,15 +89,21 @@ export default function CashbookApp() {
       return matchesSearch && matchesDateFrom && matchesDateTo && matchesType && matchesCategory && matchesPaymentMode
     })
 
-    return filtered.sort((a, b) => new Date(b.date) - new Date(a.date))
+    // Sort chronologically (oldest to newest)
+    return filtered.sort((a, b) => new Date(a.date) - new Date(b.date))
   }, [entries, searchTerm, filters])
 
-  // Save opening balance to localStorage
-  const saveOpeningBalance = (balance) => {
-    const numericBalance = Number(balance)
-    setOpeningBalance(numericBalance)
-    localStorage.setItem('cashbookOpeningBalance', numericBalance.toString())
-    setShowOpeningBalanceModal(false)
+  // Save opening balance to backend
+  const saveOpeningBalance = async (balance) => {
+    try {
+      const numericBalance = Number(balance)
+      const res = await axios.post('http://localhost:3001/api/additional/opening', { openingBalance: numericBalance })
+      setSummaryData(res.data)
+      setOpeningBalance(numericBalance)
+      setShowOpeningBalanceModal(false)
+    } catch (err) {
+      alert('Failed to set opening balance. It may already be set.')
+    }
   }
 
   // Calculate running balance for each entry
@@ -110,20 +128,18 @@ export default function CashbookApp() {
       : openingBalance
   }, [entriesWithBalance, openingBalance])
 
-  // Summary calculations
-  const summary = useMemo(() => {
-    const totalCashIn = entries
-      .filter((entry) => entry.type === "Cash In")
-      .reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0)
-
-    const totalCashOut = entries
-      .filter((entry) => entry.type === "Cash Out")
-      .reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0)
-
-    const netBalance = totalCashIn - totalCashOut
-
-    return { totalCashIn, totalCashOut, netBalance }
-  }, [entries])
+  // Update summary in backend whenever entries change
+  useEffect(() => {
+    if (!summaryData) return
+    const totalCashIn = entries.filter(e => e.type === 'Cash In').reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
+    const totalCashOut = entries.filter(e => e.type === 'Cash Out').reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
+    const currentBalance = (summaryData.openingBalance || 0) + totalCashIn - totalCashOut
+    axios.put('http://localhost:3001/api/additional/summary', {
+      currentBalance,
+      totalCashIn,
+      totalCashOut
+    }).then(res => setSummaryData(res.data)).catch(() => {})
+  }, [entries, summaryData?.openingBalance])
 
   const resetForm = () => {
     setFormData({
@@ -199,19 +215,19 @@ export default function CashbookApp() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-gray-700 p-4 rounded-lg">
               <h3 className="text-sm font-medium text-gray-300">Opening Balance</h3>
-              <p className="text-xl font-semibold text-white">₹{(openingBalance || 0).toLocaleString()}</p>
+              <p className="text-xl font-semibold text-white">LKR {(summaryData?.openingBalance || 0).toLocaleString()}</p>
             </div>
             <div className="bg-gray-700 p-4 rounded-lg">
               <h3 className="text-sm font-medium text-gray-300">Current Balance</h3>
-              <p className="text-xl font-semibold text-white">₹{(currentBalance || 0).toLocaleString()}</p>
+              <p className="text-xl font-semibold text-white">LKR {(summaryData?.currentBalance || 0).toLocaleString()}</p>
             </div>
             <div className="bg-gray-700 p-4 rounded-lg">
               <h3 className="text-sm font-medium text-gray-300">Total Cash In</h3>
-              <p className="text-xl font-semibold text-green-400">₹{(summary.totalCashIn || 0).toLocaleString()}</p>
+              <p className="text-xl font-semibold text-green-400">LKR {(summaryData?.totalCashIn || 0).toLocaleString()}</p>
             </div>
             <div className="bg-gray-700 p-4 rounded-lg">
               <h3 className="text-sm font-medium text-gray-300">Total Cash Out</h3>
-              <p className="text-xl font-semibold text-red-400">₹{(summary.totalCashOut || 0).toLocaleString()}</p>
+              <p className="text-xl font-semibold text-red-400">LKR {(summaryData?.totalCashOut || 0).toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -234,7 +250,7 @@ export default function CashbookApp() {
                     Type
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Amount
+                    Amount (LKR)
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Mode
@@ -243,7 +259,7 @@ export default function CashbookApp() {
                     Category
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Balance
+                    New Opening Balance (LKR)
                   </th>
                 </tr>
               </thead>
@@ -271,16 +287,24 @@ export default function CashbookApp() {
                         entry.type === "Cash In" ? "text-green-400" : "text-red-400"
                       }`}
                     >
-                      ₹{(entry.amount || 0).toLocaleString()}
+                      LKR {(entry.amount || 0).toLocaleString()}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-300 capitalize">{entry.mode}</td>
                     <td className="px-4 py-3 text-sm text-gray-300 capitalize">{entry.category}</td>
                     <td className="px-4 py-3 text-sm font-medium text-gray-300">
-                      ₹{(entry.balance || 0).toLocaleString()}
+                      LKR {(entry.balance || 0).toLocaleString()}
                     </td>
                   </tr>
                 ))}
               </tbody>
+              <tfoot>
+                <tr className="bg-gray-900 border-t border-gray-700">
+                  <td colSpan="7" className="px-4 py-3 text-right font-semibold text-gray-200">Total Balance (LKR)</td>
+                  <td className="px-4 py-3 text-sm font-bold text-white">
+                    LKR {(currentBalance || 0).toLocaleString()}
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
 

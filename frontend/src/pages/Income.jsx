@@ -9,7 +9,8 @@ import {
   createExpense,
   getAllExpenses,
   updateExpense,
-  deleteExpense
+  deleteExpense,
+  getAllInvoices // Import the new function
 } from "../services/financeService"
 
 const FinanceDashboard = () => {
@@ -30,11 +31,26 @@ const FinanceDashboard = () => {
     setLoading(true)
     setError(null)
     try {
-      const [incomesResponse, expensesResponse] = await Promise.all([
+      const [incomesResponse, expensesResponse, invoicesResponse] = await Promise.all([
         getAllIncomes(),
-        getAllExpenses()
+        getAllExpenses(),
+        getAllInvoices()
       ])
-      setIncomes(incomesResponse.data || [])
+      // Map invoices to income-like objects
+      const mappedInvoices = (invoicesResponse || []).map(inv => ({
+        id: inv.id || inv.invoiceNumber,
+        date: inv.date || inv.createdAt || '',
+        title: inv.invoiceNumber,
+        category: 'invoice',
+        amount: inv.total || 0,
+        receivedFrom: 'invoice',
+        paymentMethod: Array.isArray(inv.payments) && inv.payments.length > 0 ? inv.payments[0].method : '',
+        status: 'Received',
+        project: '',
+        description: '',
+        isRecurring: false
+      }))
+      setIncomes([...(incomesResponse.data || []), ...mappedInvoices])
       setExpenses(expensesResponse.data || [])
     } catch (err) {
       setError(err.message || 'Error fetching data')
@@ -670,19 +686,23 @@ const FinanceDashboard = () => {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex gap-2">
-                            <button
-                              onClick={() => handleIncomeEdit(income)}
-                              className="text-blue-400 hover:text-blue-300 text-sm"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleIncomeDelete(income.id)}
-                              className="text-red-400 hover:text-red-300 text-sm"
-                            >
-                              Delete
-                            </button>
-                            <button className="text-gray-400 hover:text-gray-300 text-sm">View</button>
+                            {income.category !== 'invoice' && (
+                              <>
+                                <button
+                                  onClick={() => handleIncomeEdit(income)}
+                                  className="text-blue-400 hover:text-blue-300 text-sm"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleIncomeDelete(income.id)}
+                                  className="text-red-400 hover:text-red-300 text-sm"
+                                >
+                                  Delete
+                                </button>
+                                <button className="text-gray-400 hover:text-gray-300 text-sm">View</button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
