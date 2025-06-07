@@ -760,14 +760,14 @@ const BillingPOSSystem = () => {
               {/* Floating Show Products Button */}
               <button
                 onClick={() => setShowProductsModal(true)}
-                className="absolute top-6 right-6 z-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg p-3 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="absolute top-8 right-6 z-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg p-3 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 title="Show All Products"
               >
                 <span
                   className="material-icons align-middle"
                   style={{ fontSize: 24 }}
                 >
-                  apps
+                  Products
                 </span>
               </button>
 

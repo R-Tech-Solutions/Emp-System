@@ -340,6 +340,9 @@ export default function PurchaseApp() {
             });
             setCartItems([]);
             setCurrentView("list");
+
+            // Fast page refresh after saving
+            window.location.reload();
         } catch (error) {
             console.error('Error saving purchase:', error);
             alert('Failed to save purchase. Please try again.');

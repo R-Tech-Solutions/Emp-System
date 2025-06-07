@@ -39,21 +39,51 @@ export default function CashbookApp() {
 
   // Fetch entries from API
   useEffect(() => {
-    const fetchEntries = async () => {
+    const fetchEntriesAndInvoices = async () => {
       try {
         setLoading(true)
-        const response = await axios.get('http://localhost:3001/api/cashbook')
-        setEntries(response.data)
+        // Fetch cashbook entries
+        const [cashbookRes, invoicesRes] = await Promise.all([
+          axios.get('http://localhost:3001/api/cashbook'),
+          axios.get('http://localhost:3001/api/invoices')
+        ])
+        let cashbookEntries = cashbookRes.data
+        let invoiceEntries = []
+        // Fetch contacts for invoices with customer array
+        for (const invoice of invoicesRes.data) {
+          let particulars = null
+          if (Array.isArray(invoice.customer) && invoice.customer.length > 0) {
+            try {
+              const contactId = invoice.customer[0]
+              const contactRes = await axios.get(`http://localhost:3001/api/contacts/${contactId}`)
+              particulars = contactRes.data?.email || null
+            } catch {
+              particulars = null
+            }
+          }
+          invoiceEntries.push({
+            date: invoice.date,
+            particulars,
+            voucher: invoice.invoiceNumber,
+            type: 'Cash In',
+            amount: invoice.total,
+            mode: Array.isArray(invoice.payments) && invoice.payments.length > 0 ? invoice.payments[0].method : '',
+            category: 'POS',
+          })
+        }
+        // Merge and sort by date
+        const allEntries = [...cashbookEntries, ...invoiceEntries].sort((a, b) => new Date(a.date) - new Date(b.date))
+        setEntries(allEntries)
         setError(null)
       } catch (err) {
-        console.error('Error fetching cashbook entries:', err)
-        setError('Failed to fetch cashbook entries')
+        console.error('Error fetching cashbook/invoice entries:', err)
+        setError('Failed to fetch cashbook/invoice entries')
       } finally {
         setLoading(false)
       }
     }
 
-    fetchEntries()
+    fetchEntriesAndInvoices()
   }, [])
 
   // Fetch summary (Additional) from backend
@@ -76,15 +106,15 @@ export default function CashbookApp() {
   const filteredEntries = useMemo(() => {
     const filtered = entries.filter((entry) => {
       const matchesSearch =
-        entry.particulars.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        entry.voucher.toLowerCase().includes(searchTerm.toLowerCase())
+        (entry.particulars ? entry.particulars.toLowerCase() : "").includes(searchTerm.toLowerCase()) ||
+        (entry.voucher ? entry.voucher.toLowerCase() : "").includes(searchTerm.toLowerCase())
 
       const matchesDateFrom = !filters.dateFrom || entry.date >= filters.dateFrom
       const matchesDateTo = !filters.dateTo || entry.date <= filters.dateTo
       const matchesType = !filters.transactionType || entry.type === filters.transactionType
       const matchesCategory = !filters.category || entry.category === filters.category
       const matchesPaymentMode = !filters.paymentMode || 
-        entry.mode.toLowerCase().includes(filters.paymentMode.toLowerCase())
+        (entry.mode ? entry.mode.toLowerCase() : "").includes(filters.paymentMode.toLowerCase())
 
       return matchesSearch && matchesDateFrom && matchesDateTo && matchesType && matchesCategory && matchesPaymentMode
     })
