@@ -128,13 +128,7 @@ const BillingPOSSystem = () => {
   const [showAnalytics, setShowAnalytics] = useState(false)
   const [selectedDateRange, setSelectedDateRange] = useState('today')
 
-  // Add new state variables for enhanced billing
-  const [quickActions] = useState([
-    { id: 'hold', name: 'Hold Bill', icon: '⏸️', shortcut: 'Ctrl+H' },
-    { id: 'split', name: 'Split Bill', icon: '✂️', shortcut: 'Ctrl+S' },
-    { id: 'merge', name: 'Merge Bills', icon: '🔄', shortcut: 'Ctrl+M' },
-    { id: 'return', name: 'Return Item', icon: '↩️', shortcut: 'Ctrl+R' },
-  ])
+
   const [heldBills, setHeldBills] = useState([])
   const [splitBills, setSplitBills] = useState([])
   const [selectedItems, setSelectedItems] = useState([])
@@ -283,37 +277,50 @@ const BillingPOSSystem = () => {
   })
 
   // Add product to cart
-  const addToCart = (product) => {
-    const priceKey = `${selectedPriceType}Price`
-    const price = product[priceKey]
+ const addToCart = (product) => {
+  const priceKey = `${selectedPriceType}Price`
+  const price = product[priceKey]
 
-    const existingItem = cart.find((item) => item.id === product.id)
+  const existingItem = cart.find((item) => item.id === product.id)
 
-    if (existingItem) {
-      setCart(cart.map((item) => (item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item)))
-    } else {
-      setCart([
-        ...cart,
-        {
-          id: product.id,
-          name: product.name,
-          price: price,
-          quantity: 1,
-          barcode: product.barcode,
-          category: product.category,
-        },
-      ])
+  if (existingItem) {
+    if (existingItem.quantity >= product.stock) {
+      showToast(`Cannot add more than available stock (${product.stock})`, 'error')
+      return
     }
-  }
-
-  // Update cart item quantity
-  const updateQuantity = (id, newQuantity) => {
-    if (newQuantity <= 0) {
-      removeFromCart(id)
-    } else {
-      setCart(cart.map((item) => (item.id === id ? { ...item, quantity: newQuantity } : item)))
+    setCart(cart.map((item) => (item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item)))
+  } else {
+    if (product.stock <= 0) {
+      showToast('Product is out of stock', 'error')
+      return
     }
+    setCart([
+      ...cart,
+      {
+        id: product.id,
+        name: product.name,
+        price: price,
+        quantity: 1,
+        barcode: product.barcode,
+        category: product.category,
+      },
+    ])
   }
+}
+
+const updateQuantity = (id, newQuantity) => {
+  const product = products.find((p) => p.id === id)
+  if (!product) return
+  if (newQuantity > product.stock) {
+    showToast(`Cannot set quantity more than available stock (${product.stock})`, 'error')
+    return
+  }
+  if (newQuantity <= 0) {
+    removeFromCart(id)
+  } else {
+    setCart(cart.map((item) => (item.id === id ? { ...item, quantity: newQuantity } : item)))
+  }
+}
 
   // Remove from cart
   const removeFromCart = (id) => {
@@ -974,32 +981,7 @@ const BillingPOSSystem = () => {
             setSelectedInvoice(null)
           }}
         />
-      )}
-
-      {/* Quick Actions */}
-      <div className="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-        <QuickActions
-          actions={quickActions}
-          onAction={(action) => {
-            switch(action) {
-              case 'hold':
-                handleHoldBill()
-                break
-              case 'split':
-                handleSplitBill()
-                break
-              case 'merge':
-                handleMergeBills()
-                break
-              case 'return':
-                if (selectedItems.length > 0) {
-                  selectedItems.forEach(handleReturnItem)
-                }
-                break
-            }
-          }}
-        />
-      </div>
+      )}      
     </div>
   )
 }
@@ -1782,113 +1764,5 @@ const LowStockAlerts = ({ alerts, onClose }) => {
   )
 }
 
-// Add new component for Quick Actions
-const QuickActions = ({ actions, onAction }) => {
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
-      {actions.map(action => (
-        <button
-          key={action.id}
-          onClick={() => onAction(action.id)}
-          className="flex items-center justify-center gap-2 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
-        >
-          <span className="text-xl">{action.icon}</span>
-          <span className="text-sm">{action.name}</span>
-          <span className="text-xs text-gray-400">{action.shortcut}</span>
-        </button>
-      ))}
-    </div>
-  )
-}
-
-// Add new component for Held Bills
-const HeldBills = ({ bills, onRestore }) => {
-  return (
-    <div className="bg-gray-800 rounded-lg p-4 mb-4">
-      <h3 className="text-lg font-semibold text-white mb-3">Held Bills</h3>
-      <div className="space-y-2">
-        {bills.map(bill => (
-          <div key={bill.id} className="flex justify-between items-center p-3 bg-gray-700 rounded-lg">
-            <div>
-              <div className="text-white font-medium">Bill #{bill.id}</div>
-              <div className="text-sm text-gray-400">
-                {bill.items.length} items • Rs {bill.subtotal.toFixed(2)}
-              </div>
-            </div>
-            <button
-              onClick={() => onRestore(bill)}
-              className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Restore
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// Add new component for Customer Search
-const CustomerSearch = ({ onSelect, onClose }) => {
-  const [searchResults, setSearchResults] = useState([])
-  const [isSearching, setIsSearching] = useState(false)
-
-  const handleSearch = async (term) => {
-    setIsSearching(true)
-    try {
-      const response = await fetch(`http://localhost:3001/api/customers/search?term=${term}`)
-      const data = await response.json()
-      setSearchResults(data)
-    } catch (error) {
-      console.error('Error searching customers:', error)
-    }
-    setIsSearching(false)
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-lg p-6 w-full max-w-lg">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-white">Search Customer</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
-            ×
-          </button>
-        </div>
-        
-        <div className="mb-4">
-          <input
-            type="text"
-            placeholder="Search by name, email, or phone..."
-            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
-            onChange={(e) => handleSearch(e.target.value)}
-          />
-        </div>
-
-        <div className="max-h-96 overflow-y-auto">
-          {isSearching ? (
-            <div className="text-center py-4 text-gray-400">Searching...</div>
-          ) : (
-            <div className="space-y-2">
-              {searchResults.map(customer => (
-                <div
-                  key={customer.id}
-                  onClick={() => {
-                    onSelect(customer)
-                    onClose()
-                  }}
-                  className="p-3 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600"
-                >
-                  <div className="font-medium text-white">{customer.name}</div>
-                  <div className="text-sm text-gray-400">{customer.email}</div>
-                  <div className="text-sm text-gray-400">{customer.phone}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
 
 export default BillingPOSSystem
