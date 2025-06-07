@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react"
 import { Plus, Edit2, Trash2, Search, Filter, X, Save, DollarSign, FileText } from "lucide-react"
 import axios from "axios"
+import { backEndURL } from "../Backendurl";
 
 export default function CashbookApp() {
   const [entries, setEntries] = useState([])
@@ -44,8 +45,8 @@ export default function CashbookApp() {
         setLoading(true)
         // Fetch cashbook entries
         const [cashbookRes, invoicesRes] = await Promise.all([
-          axios.get('http://localhost:3001/api/cashbook'),
-          axios.get('http://localhost:3001/api/invoices')
+          axios.get(`${backEndURL}/api/cashbook`),
+          axios.get(`${backEndURL}/api/invoices`)
         ])
         let cashbookEntries = cashbookRes.data
         let invoiceEntries = []
@@ -55,7 +56,7 @@ export default function CashbookApp() {
           if (Array.isArray(invoice.customer) && invoice.customer.length > 0) {
             try {
               const contactId = invoice.customer[0]
-              const contactRes = await axios.get(`http://localhost:3001/api/contacts/${contactId}`)
+              const contactRes = await axios.get(`${backEndURL}/api/contacts/${contactId}`)
               particulars = contactRes.data?.email || null
             } catch {
               particulars = null
@@ -90,7 +91,7 @@ export default function CashbookApp() {
   useEffect(() => {
     const fetchSummary = async () => {
       try {
-        const res = await axios.get('http://localhost:3001/api/additional')
+        const res = await axios.get(`${backEndURL}/api/additional`)
         setSummaryData(res.data)
         setOpeningBalance(res.data.openingBalance)
         setShowOpeningBalanceModal(false)
@@ -127,7 +128,7 @@ export default function CashbookApp() {
   const saveOpeningBalance = async (balance) => {
     try {
       const numericBalance = Number(balance)
-      const res = await axios.post('http://localhost:3001/api/additional/opening', { openingBalance: numericBalance })
+      const res = await axios.post(`${backEndURL}/api/additional/opening`, { openingBalance: numericBalance })
       setSummaryData(res.data)
       setOpeningBalance(numericBalance)
       setShowOpeningBalanceModal(false)
@@ -164,7 +165,7 @@ export default function CashbookApp() {
     const totalCashIn = entries.filter(e => e.type === 'Cash In').reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
     const totalCashOut = entries.filter(e => e.type === 'Cash Out').reduce((sum, e) => sum + (Number(e.amount) || 0), 0)
     const currentBalance = (summaryData.openingBalance || 0) + totalCashIn - totalCashOut
-    axios.put('http://localhost:3001/api/additional/summary', {
+    axios.put(`${backEndURL}/api/additional/summary`, {
       currentBalance,
       totalCashIn,
       totalCashOut

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { backEndURL } from "../Backendurl";
+import DotSpinner from "../loaders/Loader";
 
 // Toast Notification Component
 const Toast = ({ message, type, isVisible, onClose }) => {
@@ -110,19 +111,19 @@ const BillingPOSSystem = () => {
         setIsLoading(true);
         // Fetch products
         const productsResponse = await fetch(
-          "http://localhost:3001/api/products"
+          `${backEndURL}/api/products`
         );
         const productsData = await productsResponse.json();
 
         // Fetch inventory
         const inventoryResponse = await fetch(
-          "http://localhost:3001/api/inventory"
+          `${backEndURL}/api/inventory`
         );
         const inventoryData = await inventoryResponse.json();
 
         // Fetch customers from /api/contacts (only those with categoryType === "Customer")
         const customersResponse = await fetch(
-          "http://localhost:3001/api/contacts"
+          `${backEndURL}/api/contacts`
         );
         const contactsData = await customersResponse.json();
         const customerContacts = contactsData.filter(
@@ -168,7 +169,7 @@ const BillingPOSSystem = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch("http://localhost:3001/api/products");
+        const response = await fetch(`${backEndURL}/api/products`);
         const products = await response.json();
         const uniqueCategories = Array.from(
           new Set(products.map((p) => p.category).filter(Boolean))
@@ -208,7 +209,7 @@ const BillingPOSSystem = () => {
                 : "standard"
             );
             break;
-          case "t":
+          case "c":
             e.preventDefault(); // Prevent browser tab open
             clearCart();
             break;
@@ -386,7 +387,7 @@ const BillingPOSSystem = () => {
   // Add new functions for advanced features
   const fetchPurchaseHistory = async () => {
     try {
-      const response = await fetch("http://localhost:3001/api/purchases");
+      const response = await fetch(`${backEndURL}/api/purchases`);
       const data = await response.json();
       setPurchaseHistory(data);
     } catch (error) {
@@ -436,7 +437,7 @@ const BillingPOSSystem = () => {
       };
 
       // Save to backend (POST to /api/invoices)
-      const response = await fetch("http://localhost:3001/api/invoices", {
+      const response = await fetch(`${backEndURL}/api/invoices`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -474,7 +475,7 @@ const BillingPOSSystem = () => {
   // Add function to fetch invoices
   const fetchInvoices = async () => {
     try {
-      const response = await fetch("http://localhost:3001/api/invoices");
+      const response = await fetch(`${backEndURL}/api/invoices`);
       const data = await response.json();
       setInvoices(data);
     } catch (error) {
@@ -676,6 +677,14 @@ const BillingPOSSystem = () => {
       .catch(() => setNotesTerms({ notes: "", terms: [] }));
   }, []);
 
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50">
+          <DotSpinner />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
       {/* Status Bar */}
@@ -699,9 +708,13 @@ const BillingPOSSystem = () => {
               </span>{" "}
               <span className="text-blue-200">Switch Price Type</span>
               <span className="bg-blue-700 text-white px-2 py-1 rounded">
-                Ctrl+T
+                Ctrl+C
+              </span>
+              <span className="bg-blue-700 text-white px-2 py-1 rounded">
+                Esc
               </span>{" "}
               <span className="text-blue-200">Clear Cart</span>
+
               <span className="bg-blue-700 text-white px-2 py-1 rounded">
                 Ctrl+F
               </span>{" "}
@@ -723,7 +736,8 @@ const BillingPOSSystem = () => {
       {isLoading && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-lg">
-            <div className="text-white text-lg">Loading products...</div>
+            <DotSpinner />
+            <div className="text-white text-lg mt-4">Loading products...</div>
           </div>
         </div>
       )}
@@ -984,7 +998,7 @@ const BillingPOSSystem = () => {
                   </button>
                   <button
                     onClick={clearCart}
-                    className="px-3 py-1 rounded bg-red-700 text-white hover:bg-red-800 font-semibold ml-4"
+                     className="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 font-semibold transition-colors mt-2"
                     title="Clear Cart (ESC)"
                   >
                     Clear Cart
@@ -1603,7 +1617,7 @@ const InvoiceModal = ({ invoice, onClose }) => {
       if (invoice.customer && invoice.customer.id) {
         try {
           const res = await fetch(
-            `http://localhost:3001/api/contacts/${invoice.customer.id}`
+            `${backEndURL}/api/contacts/${invoice.customer.id}`
           );
           if (res.ok) {
             const data = await res.json();
@@ -1911,7 +1925,7 @@ const CustomerModal = ({
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("http://localhost:3001/api/contacts", {
+      const res = await fetch(`${backEndURL}/api/contacts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, categoryType: "Customer" }),

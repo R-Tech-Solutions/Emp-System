@@ -5,6 +5,7 @@ import { Eye, FileDown, Printer, FileText } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { backEndURL } from "../Backendurl";
 
 export default function InventoryManagement() {
     const [items, setItems] = useState([])
@@ -31,7 +32,7 @@ export default function InventoryManagement() {
     useEffect(() => {
         async function fetchProducts() {
             try {
-                const res = await fetch("http://localhost:3001/api/products")
+                const res = await fetch(`${backEndURL}/api/products`)
                 const data = await res.json()
                 setItems(data)
             } catch (err) {
@@ -45,7 +46,7 @@ export default function InventoryManagement() {
     useEffect(() => {
         async function fetchInventory() {
             try {
-                const res = await fetch("http://localhost:3001/api/inventory");
+                const res = await fetch(`${backEndURL}/api/inventory`);
                 const data = await res.json();
                 setInventory(data);
             } catch (err) {
@@ -161,7 +162,7 @@ export default function InventoryManagement() {
     const fetchSuppliersForHistory = async (history) => {
         if (!history || history.length === 0) return [];
         try {
-            const res = await fetch("http://localhost:3001/api/contacts");
+            const res = await fetch(`${backEndURL}/api/contacts`);
             const contacts = await res.json();
             return history.map(h => ({
                 ...h,

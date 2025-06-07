@@ -132,12 +132,11 @@ exports.addPayment = async (req, res) => {
 exports.getPaymentHistory = async (req, res) => {
   try {
     const { purchaseId } = req.params;
-    console.log('Fetching payment history for purchaseId:', purchaseId);
+
     
     // First check if the purchase exists
     const purchaseDoc = await db.collection('purchases').doc(purchaseId).get();
     if (!purchaseDoc.exists) {
-      console.log('Purchase not found:', purchaseId);
       return res.status(404).json({ error: "Purchase not found" });
     }
 
@@ -146,10 +145,7 @@ exports.getPaymentHistory = async (req, res) => {
       .where('purchaseId', '==', purchaseId)
       .get();
 
-    console.log('Found supplier records:', suppliersSnapshot.size);
-
     if (suppliersSnapshot.empty) {
-      console.log('No supplier record found, creating new one');
       const purchase = purchaseDoc.data();
       const newSupplier = supplierData({
         contactId: purchase.customerEmail,
@@ -177,14 +173,7 @@ exports.getPaymentHistory = async (req, res) => {
     // Get the first matching document
     const supplierDoc = suppliersSnapshot.docs[0];
     const supplier = supplierDoc.data();
-    
-    console.log('Supplier data:', {
-      id: supplierDoc.id,
-      purchaseId: supplier.purchaseId,
-      paymentHistoryLength: supplier.paidAmountHistory?.length || 0,
-      totalPaid: supplier.paidAmountTotal,
-      pendingAmount: supplier.pendingAmount
-    });
+  
 
     // Return the payment history and related data
     const response = {
@@ -196,8 +185,6 @@ exports.getPaymentHistory = async (req, res) => {
       status: supplier.status || "Pending",
       totalAmount: supplier.totalAmount || 0
     };
-
-    console.log('Sending response:', response);
     res.json(response);
   } catch (err) {
     console.error('Error fetching payment history:', err);

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { backEndURL } from "../Backendurl";
 
 export default function PurchaseApp() {
     const [currentView, setCurrentView] = useState("list") // "list", "create", "details"
@@ -113,7 +114,7 @@ export default function PurchaseApp() {
     useEffect(() => {
         if (supplierType === "existing") {
             setLoadingSuppliers(true)
-            fetch("http://localhost:3001/api/contacts")
+            fetch(`${backEndURL}/api/contacts`)
                 .then(res => res.json())
                 .then(data => {
                     // Only suppliers
@@ -146,7 +147,7 @@ export default function PurchaseApp() {
         async function fetchProducts() {
             setProductsLoading(true)
             try {
-                const res = await fetch("http://localhost:3001/api/products")
+                const res = await fetch(`${backEndURL}/api/products`)
                 const data = await res.json()
                 setProducts(data)
             } catch (err) {
@@ -178,7 +179,7 @@ export default function PurchaseApp() {
     useEffect(() => {
         const fetchPurchases = async () => {
             try {
-                const response = await fetch('http://localhost:3001/api/purchase');
+                const response = await fetch(`${backEndURL}/api/purchase`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch purchases');
                 }
@@ -228,7 +229,7 @@ export default function PurchaseApp() {
 
     const viewPurchase = async (purchaseId) => {
         try {
-            const response = await fetch(`http://localhost:3001/api/purchase/${purchaseId}`);
+            const response = await fetch(`${backEndURL}/api/purchase/${purchaseId}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch purchase details');
             }
@@ -285,7 +286,7 @@ export default function PurchaseApp() {
 
         try {
             // Save to backend
-            const response = await fetch('http://localhost:3001/api/purchase', {
+            const response = await fetch(`${backEndURL}/api/purchase`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -304,7 +305,7 @@ export default function PurchaseApp() {
 
             // Send each product to inventory
             for (const item of cartItems) {
-                await fetch('http://localhost:3001/api/inventory', {
+                await fetch(`${backEndURL}/api/inventory`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -392,7 +393,7 @@ export default function PurchaseApp() {
         if (supplierType === "new") {
             setSavingSupplier(true)
             try {
-                const res = await fetch("http://localhost:3001/api/contacts", {
+                const res = await fetch(`${backEndURL}/api/contacts`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -456,7 +457,7 @@ export default function PurchaseApp() {
         );
         // Update product costPrice in backend
         try {
-            await fetch(`http://localhost:3001/api/products/${item.sku}`, {
+            await fetch(`${backEndURL}/api/products/${item.sku}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ costPrice: newPrice }),
@@ -478,7 +479,7 @@ export default function PurchaseApp() {
         setNewProductLoading(true);
         setNewProductError("");
         try {
-            const res = await fetch("http://localhost:3001/api/products", {
+            const res = await fetch(`${backEndURL}/api/products`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

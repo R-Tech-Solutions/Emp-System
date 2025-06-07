@@ -15,6 +15,7 @@ import {
   Globe,
 } from "lucide-react"
 import axios from "axios"
+import { backEndURL } from "../Backendurl";
 
 export default function SupplierManagement() {
   const [suppliers, setSuppliers] = useState([])
@@ -74,9 +75,9 @@ export default function SupplierManagement() {
 
   const fetchSuppliers = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/contacts');
-      const purchasesResponse = await axios.get('http://localhost:3001/api/purchase');
-      const suppliersResponse = await axios.get('http://localhost:3001/api/suppliers');
+      const response = await axios.get(`${backEndURL}/api/contacts`);
+      const purchasesResponse = await axios.get(`${backEndURL}/api/purchase`);
+      const suppliersResponse = await axios.get(`${backEndURL}/api/suppliers`);
 
       const supplierData = response.data
         .filter(contact => contact.categoryType === "Supplier")
@@ -116,7 +117,7 @@ export default function SupplierManagement() {
 
   const fetchSupplierTotals = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/purchase');
+      const response = await axios.get(`${backEndURL}/api/purchase`);
       const purchases = response.data;
       const totals = {};
       const purchaseDetails = {}; // New object to store purchase details
@@ -146,7 +147,7 @@ export default function SupplierManagement() {
 
   const fetchSupplierPaidAmounts = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/suppliers');
+      const response = await axios.get(`${backEndURL}/api/suppliers`);
       const paidAmounts = {};
       response.data.forEach(supplier => {
         if (supplier.purchaseId) {
@@ -202,7 +203,7 @@ export default function SupplierManagement() {
       };
 
       // Create contact
-      const contactResponse = await axios.post('http://localhost:3001/api/contacts', supplier);
+      const contactResponse = await axios.post(`${backEndURL}/api/contacts`, supplier);
       const contactId = contactResponse.data.id;
 
       // Create supplier record
@@ -216,7 +217,7 @@ export default function SupplierManagement() {
         status: "No Purchases"
       };
 
-      await axios.post('http://localhost:3001/api/suppliers', supplierData);
+      await axios.post(`${backEndURL}/api/suppliers`, supplierData);
 
       setNewSupplier({
         name: "",
@@ -241,7 +242,7 @@ export default function SupplierManagement() {
     e.preventDefault();
     try {
       // Update contact
-      await axios.put(`http://localhost:3001/api/contacts/${editingSupplier.id}`, editingSupplier);
+      await axios.put(`${backEndURL}/api/contacts/${editingSupplier.id}`, editingSupplier);
       
       setEditingSupplier(null);
       await fetchSuppliers();
@@ -254,15 +255,15 @@ export default function SupplierManagement() {
     if (window.confirm("Are you sure you want to delete this supplier?")) {
       try {
         // Delete contact
-        await axios.delete(`http://localhost:3001/api/contacts/${id}`);
+        await axios.delete(`${backEndURL}/api/contacts/${id}`);
         
         // Delete supplier records
-        const supplierRecords = await axios.get('http://localhost:3001/api/suppliers');
+        const supplierRecords = await axios.get(`${backEndURL}/api/suppliers`);
         const recordsToDelete = supplierRecords.data.filter(record => record.contactId === id);
         
         await Promise.all(
           recordsToDelete.map(record => 
-            axios.delete(`http://localhost:3001/api/suppliers/${record.id}`)
+            axios.delete(`${backEndURL}/api/suppliers/${record.id}`)
           )
         );
 
@@ -325,7 +326,7 @@ export default function SupplierManagement() {
       };
 
       // Add payment to supplier record using the new endpoint
-      const response = await axios.post(`http://localhost:3001/api/suppliers/payment/${purchase.id}`, paymentData);
+      const response = await axios.post(`${backEndURL}api/suppliers/payment/${purchase.id}`, paymentData);
       console.log('Payment processed:', response.data);
 
       // Immediately update the paid amounts state
@@ -417,11 +418,11 @@ export default function SupplierManagement() {
       const historyKey = `${supplierId}-${purchaseId || 'all'}`;
       
       // Fetch payment history from the endpoint
-      const response = await axios.get(`http://localhost:3001/api/suppliers/payment-history/${purchaseId}`);
+      const response = await axios.get(`${backEndURL}/api/suppliers/payment-history/${purchaseId}`);
       console.log('Payment history response:', response.data);
 
       // Fetch supplier data to get paidAmountTotal
-      const supplierResponse = await axios.get(`http://localhost:3001/api/suppliers`);
+      const supplierResponse = await axios.get(`${backEndURL}/api/suppliers`);
       const supplierData = supplierResponse.data.find(s => s.purchaseId === purchaseId);
       console.log('Supplier data:', supplierData);
       
