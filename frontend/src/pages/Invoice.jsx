@@ -694,7 +694,7 @@ const BillingPOSSystem = () => {
                   onChange={(e) => setBarcodeInput(e.target.value)}
                   onKeyPress={handleBarcodeScan}
                   placeholder="Scan or enter barcode..."
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -783,8 +783,19 @@ const BillingPOSSystem = () => {
                 </div>
               </div>
 
+              {/* Show selected customer details if any */}
+              {selectedCustomer && (
+                <div className="mb-4 p-3 rounded bg-gray-700 border border-gray-600 text-white">
+                  <div className="font-semibold">Customer:</div>
+                  <div>{selectedCustomer.name}</div>
+                  {selectedCustomer.phone && <div>📞 {selectedCustomer.phone}</div>}
+                  {selectedCustomer.email && <div>✉️ {selectedCustomer.email}</div>}
+                  {selectedCustomer.company && <div>🏢 {selectedCustomer.company}</div>}
+                </div>
+              )}
+
               {/* Cart Items with Enhanced Features */}
-              <div className="max-h-60 overflow-y-auto mb-4 space-y-2">
+              <div className="flex-1 min-h-0 overflow-y-auto mb-4 space-y-2">
                 {cart.length === 0 ? (
                   <div className="text-center py-4 text-gray-400">
                     Cart is empty
@@ -808,7 +819,7 @@ const BillingPOSSystem = () => {
                         isSelected={selectedItems.includes(item.id)}
                       />
                     </div>
-                  )) // ✅ this closing parenthesis was missing
+                  ))
                 )}
               </div>
 
@@ -844,9 +855,9 @@ const BillingPOSSystem = () => {
                 </div>
               )}
 
-              {/* Cart Summary (Sticky at bottom) */}
+              {/* Cart Summary (Always visible at the bottom) */}
               {cart.length > 0 && (
-                <div className="mt-auto space-y-2 text-sm border-t border-gray-600 pt-4 sticky bottom-0 bg-gray-800 z-10">
+                <div className="space-y-2 text-sm border-t border-gray-600 pt-4 bg-gray-800 z-10">
                   <div className="flex justify-between text-gray-300">
                     <span>Subtotal:</span>
                     <span>Rs {subtotal.toFixed(2)}</span>
@@ -1528,22 +1539,6 @@ const InvoiceModal = ({ invoice, onClose }) => {
               </div>
             </div>
           </div>
-
-          {invoice.customer && (
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                Bill To:
-              </h3>
-              <div className="text-gray-600">
-                <p>
-                  <strong>{invoice.customer.name}</strong>
-                </p>
-                <p>{invoice.customer.email}</p>
-                <p>{invoice.customer.phone}</p>
-              </div>
-            </div>
-          )}
-
           <div className="mb-8">
             <table className="w-full border-collapse">
               <thead>
@@ -1647,6 +1642,41 @@ const CustomerModal = ({
   setSelectedCustomer,
   onClose,
 }) => {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    company: "",
+    website: "",
+    notes: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleAddCustomer = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("http://localhost:3001/api/contacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, categoryType: "Customer" }),
+      });
+      if (!res.ok) throw new Error("Failed to add customer");
+      const newCustomer = await res.json();
+      setSelectedCustomer(newCustomer);
+      setShowAddForm(false);
+      setForm({ name: "", email: "", phone: "", company: "", website: "", notes: "" });
+      // Optionally, update customers list in parent if needed
+    } catch (err) {
+      setError(err.message || "Error adding customer");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto relative">
@@ -1657,40 +1687,113 @@ const CustomerModal = ({
           ×
         </button>
         <h2 className="text-xl font-semibold text-white mb-4">
-          Select Customer
+          {showAddForm ? "Add New Customer" : "Select Customer"}
         </h2>
-        <div className="space-y-2">
-          {customers.length === 0 ? (
-            <div className="text-gray-400 text-center py-8">
-              No customers found
-            </div>
-          ) : (
-            customers.map((customer) => (
-              <div
-                key={customer.id}
-                className={`p-3 rounded-lg cursor-pointer border border-gray-700 hover:bg-blue-800 transition-colors flex justify-between items-center ${
-                  selectedCustomer && selectedCustomer.id === customer.id
-                    ? "bg-blue-900"
-                    : "bg-gray-700"
-                }`}
-                onClick={() => {
-                  setSelectedCustomer(customer);
-                  onClose();
-                }}
+        {showAddForm ? (
+          <form onSubmit={handleAddCustomer} className="space-y-3">
+            <input
+              type="text"
+              required
+              placeholder="Name"
+              className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white"
+              value={form.name}
+              onChange={e => setForm({ ...form, name: e.target.value })}
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white"
+              value={form.email}
+              onChange={e => setForm({ ...form, email: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Phone"
+              className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white"
+              value={form.phone}
+              onChange={e => setForm({ ...form, phone: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Company"
+              className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white"
+              value={form.company}
+              onChange={e => setForm({ ...form, company: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Website"
+              className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white"
+              value={form.website}
+              onChange={e => setForm({ ...form, website: e.target.value })}
+            />
+            <textarea
+              placeholder="Notes"
+              className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white"
+              value={form.notes}
+              onChange={e => setForm({ ...form, notes: e.target.value })}
+            />
+            {error && <div className="text-red-400 text-sm">{error}</div>}
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500"
+                onClick={() => setShowAddForm(false)}
+                disabled={loading}
               >
-                <div>
-                  <div className="font-medium text-white">{customer.name}</div>
-                  <div className="text-xs text-gray-400">
-                    {customer.email} | {customer.phone}
-                  </div>
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                disabled={loading}
+              >
+                {loading ? "Adding..." : "Add Customer"}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <>
+            <div className="space-y-2 mb-4">
+              {customers.length === 0 ? (
+                <div className="text-gray-400 text-center py-8">
+                  No customers found
                 </div>
-                {selectedCustomer && selectedCustomer.id === customer.id && (
-                  <span className="text-green-400 font-bold">✓</span>
-                )}
-              </div>
-            )) // ✅ This was missing
-          )}
-        </div>
+              ) : (
+                customers.map((customer) => (
+                  <div
+                    key={customer.id}
+                    className={`p-3 rounded-lg cursor-pointer border border-gray-700 hover:bg-blue-800 transition-colors flex justify-between items-center ${
+                      selectedCustomer && selectedCustomer.id === customer.id
+                        ? "bg-blue-900"
+                        : "bg-gray-700"
+                    }`}
+                    onClick={() => {
+                      setSelectedCustomer(customer);
+                      onClose();
+                    }}
+                  >
+                    <div>
+                      <div className="font-medium text-white">{customer.name}</div>
+                      <div className="text-xs text-gray-400">
+                        {customer.email} | {customer.phone}
+                      </div>
+                    </div>
+                    {selectedCustomer && selectedCustomer.id === customer.id && (
+                      <span className="text-green-400 font-bold">✓</span>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+            <button
+              className="w-full mt-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              onClick={() => setShowAddForm(true)}
+            >
+              + Add New Customer
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
