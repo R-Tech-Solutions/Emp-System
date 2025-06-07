@@ -1,16 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-
-const categories = [
-  "All",
-  "Beverages",
-  "Bakery",
-  "Dairy",
-  "Fruits",
-  "Meat",
-  "Electronics",
-];
+import axios from "axios";
+import { backEndURL } from "../Backendurl";
 
 // Toast Notification Component
 const Toast = ({ message, type, isVisible, onClose }) => {
@@ -69,6 +61,7 @@ const BillingPOSSystem = () => {
   const [currentInvoice, setCurrentInvoice] = useState(null);
   const [showProductsModal, setShowProductsModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [categories, setCategories] = useState(["All"]);
 
   // Toast state
   const [toast, setToast] = useState({
@@ -169,6 +162,23 @@ const BillingPOSSystem = () => {
     };
 
     fetchData();
+  }, []);
+
+  // Fetch categories from products API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch("http://localhost:3001/api/products");
+        const products = await response.json();
+        const uniqueCategories = Array.from(
+          new Set(products.map((p) => p.category).filter(Boolean))
+        );
+        setCategories(["All", ...uniqueCategories]);
+      } catch (error) {
+        setCategories(["All"]);
+      }
+    };
+    fetchCategories();
   }, []);
 
   // Keyboard shortcuts
@@ -587,6 +597,85 @@ const BillingPOSSystem = () => {
     );
   };
 
+  // Print-specific CSS to hide modal overlay and buttons during print
+  const printStyles = `
+  @media print {
+    html, body {
+      height: 100%;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100vw !important;
+      background: white !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      box-sizing: border-box;
+      overflow: visible !important;
+    }
+    #printable-invoice {
+      position: fixed !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 210mm !important;
+      min-width: 210mm !important;
+      max-width: 210mm !important;
+      height: 297mm !important;
+      min-height: 297mm !important;
+      max-height: 297mm !important;
+      background: white !important;
+      color: black !important;
+      z-index: 9999 !important;
+      box-shadow: none !important;
+      margin: 0 auto !important;
+      padding: 0 !important;
+      overflow: visible !important;
+      page-break-inside: avoid !important;
+    }
+    #printable-invoice * {
+      visibility: visible !important;
+      color: black !important;
+      box-shadow: none !important;
+      background: transparent !important;
+      page-break-inside: avoid !important;
+    }
+    .no-print {
+      display: none !important;
+    }
+    .bg-white, .text-black, .rounded-lg, .mb-6, .p-8 {
+      background: white !important;
+      color: black !important;
+      box-shadow: none !important;
+    }
+    table, th, td {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+    tr {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+    @page {
+      size: A4 portrait;
+      margin: 10mm;
+    }
+  }
+  `;
+
+  // Notes and Terms
+  const [notesTerms, setNotesTerms] = useState({ notes: "", terms: [] });
+  useEffect(() => {
+    axios
+      .get(`${backEndURL}/api/additional/notes-terms`)
+      .then((res) => {
+        if (res.data) {
+          setNotesTerms({
+            notes: res.data.notes || "",
+            terms: Array.isArray(res.data.terms) ? res.data.terms : [],
+          });
+        }
+      })
+      .catch(() => setNotesTerms({ notes: "", terms: [] }));
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
       {/* Status Bar */}
@@ -755,8 +844,7 @@ const BillingPOSSystem = () => {
                         )}
                       </div>
                     ))
-                  )}{" "}
-                  {/* ✅ This closing parenthesis was missing */}
+                  )}
                 </div>
               </div>
             </div>
@@ -788,9 +876,15 @@ const BillingPOSSystem = () => {
                 <div className="mb-4 p-3 rounded bg-gray-700 border border-gray-600 text-white">
                   <div className="font-semibold">Customer:</div>
                   <div>{selectedCustomer.name}</div>
-                  {selectedCustomer.phone && <div>📞 {selectedCustomer.phone}</div>}
-                  {selectedCustomer.email && <div>✉️ {selectedCustomer.email}</div>}
-                  {selectedCustomer.company && <div>🏢 {selectedCustomer.company}</div>}
+                  {selectedCustomer.phone && (
+                    <div>📞 {selectedCustomer.phone}</div>
+                  )}
+                  {selectedCustomer.email && (
+                    <div>✉️ {selectedCustomer.email}</div>
+                  )}
+                  {selectedCustomer.company && (
+                    <div>🏢 {selectedCustomer.company}</div>
+                  )}
                 </div>
               )}
 
@@ -1030,6 +1124,7 @@ const BillingPOSSystem = () => {
       {showProductsModal && (
         <ProductsModal
           products={products}
+          categories={categories}
           selectedPriceType={selectedPriceType}
           onAddToCart={addToCart}
           onClose={() => setShowProductsModal(false)}
@@ -1484,15 +1579,64 @@ const PaymentModal = ({
 
 // Invoice Modal Component
 const InvoiceModal = ({ invoice, onClose }) => {
+  const [customerDetails, setCustomerDetails] = useState(null);
+  const printableRef = useRef();
+
+  useEffect(() => {
+    // Inject print styles on mount
+    let styleTag = document.getElementById("invoice-print-style");
+    if (!styleTag) {
+      styleTag = document.createElement("style");
+      styleTag.id = "invoice-print-style";
+      // styleTag.innerHTML = printStyles;
+      document.head.appendChild(styleTag);
+    }
+    return () => {
+      // Optionally remove style on unmount
+      // if (styleTag) styleTag.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    // Fetch customer details if invoice.customer?.id exists
+    const fetchCustomer = async () => {
+      if (invoice.customer && invoice.customer.id) {
+        try {
+          const res = await fetch(
+            `http://localhost:3001/api/contacts/${invoice.customer.id}`
+          );
+          if (res.ok) {
+            const data = await res.json();
+            setCustomerDetails(data);
+          }
+        } catch (e) {
+          setCustomerDetails(null);
+        }
+      } else {
+        setCustomerDetails(null);
+      }
+    };
+    fetchCustomer();
+  }, [invoice.customer]);
+
   const printInvoice = () => {
-    window.print();
+    // Scroll to invoice, then print
+    setTimeout(() => {
+      if (printableRef.current) {
+        printableRef.current.scrollIntoView({ behavior: "instant" });
+      }
+      window.print();
+    }, 100);
   };
 
   // Fix: Ensure invoice.date is a Date object
   let invoiceDateObj;
   if (invoice.date instanceof Date) {
     invoiceDateObj = invoice.date;
-  } else if (typeof invoice.date === 'string' || typeof invoice.date === 'number') {
+  } else if (
+    typeof invoice.date === "string" ||
+    typeof invoice.date === "number"
+  ) {
     invoiceDateObj = new Date(invoice.date);
   } else if (invoice.createdAt) {
     invoiceDateObj = new Date(invoice.createdAt);
@@ -1500,8 +1644,24 @@ const InvoiceModal = ({ invoice, onClose }) => {
     invoiceDateObj = new Date();
   }
 
+  // Notes and Terms
+  const [notesTerms, setNotesTerms] = useState({ notes: "", terms: [] });
+  useEffect(() => {
+    axios
+      .get(`${backEndURL}/api/additional/notes-terms`)
+      .then((res) => {
+        if (res.data) {
+          setNotesTerms({
+            notes: res.data.notes || "",
+            terms: Array.isArray(res.data.terms) ? res.data.terms : [],
+          });
+        }
+      })
+      .catch(() => setNotesTerms({ notes: "", terms: [] }));
+  }, []);
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 no-print">
       <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-white">Invoice</h2>
@@ -1513,20 +1673,65 @@ const InvoiceModal = ({ invoice, onClose }) => {
           </button>
         </div>
 
-        <div className="bg-white text-black p-8 rounded-lg mb-6">
+        {/* Printable Invoice Content */}
+        <div
+          id="printable-invoice"
+          ref={printableRef}
+          className="bg-white text-black p-8 rounded-lg mb-6"
+        >
           <div className="flex justify-between items-start mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-blue-600 mb-2">
-                R-tech Solution
-              </h1>
-              <div className="text-gray-600">
-                <p>262 Peradeniya road Kandy </p>
-                <p>Phone: +94 11 123 4567</p>
+              {/* Logo and Company Info */}
+              <div className="flex items-center mb-2">
+                <img
+                  src="images/logo.jpg"
+                  alt="R-tech Solution Logo"
+                  className="h-12 w-12 mr-3"
+                  style={{ objectFit: "contain" }}
+                  onError={(e) => {
+                    e.target.style.display = "none";
+                  }}
+                />
+                <h1 className="text-3xl font-bold text-blue-600">
+                  R-tech Solution
+                </h1>
               </div>
+              <div className="text-gray-600 text-sm">
+                <p>262 Peradeniya road, Kandy</p>
+                <p>Phone: +94 11 123 4567</p>
+                <p>Email: support@srilankapos.com</p>
+              </div>
+              {/* Bill To Section */}
+              {(customerDetails ||
+                (invoice.customer && invoice.customer.id)) && (
+                <div className="mt-6 bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+                  <div className="font-semibold text-blue-800 mb-1">
+                    Bill To:
+                  </div>
+                  <div className="text-gray-800">
+                    {customerDetails?.name || ""}
+                  </div>
+                  {customerDetails?.company && (
+                    <div className="text-gray-600">
+                      {customerDetails.company}
+                    </div>
+                  )}
+                  {customerDetails?.phone && (
+                    <div className="text-gray-600">
+                      📞 {customerDetails.phone}
+                    </div>
+                  )}
+                  {customerDetails?.email && (
+                    <div className="text-gray-600">
+                      ✉️ {customerDetails.email}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <div className="text-right">
               <h2 className="text-2xl font-bold text-gray-800 mb-2">INVOICE</h2>
-              <div className="text-gray-600">
+              <div className="text-gray-600 text-sm">
                 <p>
                   <strong>Invoice #:</strong> {invoice.id}
                 </p>
@@ -1539,6 +1744,7 @@ const InvoiceModal = ({ invoice, onClose }) => {
               </div>
             </div>
           </div>
+          {/* Items Table */}
           <div className="mb-8">
             <table className="w-full border-collapse">
               <thead>
@@ -1566,6 +1772,11 @@ const InvoiceModal = ({ invoice, onClose }) => {
                         <div className="text-sm text-gray-500">
                           {item.category}
                         </div>
+                        {item.barcode && (
+                          <div className="text-xs text-gray-400">
+                            SKU: {item.barcode}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="text-center py-3 px-2">{item.quantity}</td>
@@ -1580,9 +1791,9 @@ const InvoiceModal = ({ invoice, onClose }) => {
               </tbody>
             </table>
           </div>
-
-          <div className="flex justify-end mb-8">
-            <div className="w-80">
+          {/* Summary Section */}
+          <div className="flex flex-col md:flex-row justify-end mb-8 gap-6">
+            <div className="w-full md:w-80">
               <div className="space-y-2">
                 <div className="flex justify-between py-1">
                   <span className="text-gray-600">Subtotal:</span>
@@ -1606,17 +1817,58 @@ const InvoiceModal = ({ invoice, onClose }) => {
                   <span>Total:</span>
                   <span>Rs {invoice.total.toFixed(2)}</span>
                 </div>
+                {/* Payment Method(s) */}
+                {invoice.payments && invoice.payments.length > 0 && (
+                  <div className="pt-2">
+                    <div className="font-semibold text-gray-700 mb-1">
+                      Payment:
+                    </div>
+                    {invoice.payments.map((p, idx) => (
+                      <div key={idx} className="flex justify-between text-sm">
+                        <span className="capitalize">{p.method}</span>
+                        <span>Rs {p.amount.toFixed(2)}</span>
+                      </div>
+                    ))}
+                    {invoice.change > 0 && (
+                      <div className="flex justify-between text-green-700 text-sm">
+                        <span>Change</span>
+                        <span>Rs {invoice.change.toFixed(2)}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
-
-          <div className="text-center text-gray-500 text-sm border-t pt-4">
+          {/* Notes and Terms */}
+          <div className="mt-8">
+            <div className="mb-4">
+              <div className="font-semibold text-gray-700 mb-1">Notes:</div>
+              <div className="text-gray-600 text-sm">
+                {notesTerms.notes || "—"}
+              </div>
+            </div>
+            <div>
+              <div className="font-semibold text-gray-700 mb-1">
+                Terms &amp; Conditions:
+              </div>
+              <ul className="list-disc pl-5 text-gray-500 text-xs space-y-1">
+                {notesTerms.terms && notesTerms.terms.length > 0 ? (
+                  notesTerms.terms.map((term, idx) => <li key={idx}>{term}</li>)
+                ) : (
+                  <li>No terms &amp; conditions set.</li>
+                )}
+              </ul>
+            </div>
+          </div>
+          {/* Footer */}
+          <div className="text-center text-gray-400 text-xs border-t pt-4 mt-8">
             <p>Thank you for your business!</p>
-            <p>For support, contact us at support@srilankapos.com</p>
+            <p>Powered by R-tech Solution POS</p>
           </div>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-3 no-print">
           <button
             onClick={printInvoice}
             className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -1668,7 +1920,14 @@ const CustomerModal = ({
       const newCustomer = await res.json();
       setSelectedCustomer(newCustomer);
       setShowAddForm(false);
-      setForm({ name: "", email: "", phone: "", company: "", website: "", notes: "" });
+      setForm({
+        name: "",
+        email: "",
+        phone: "",
+        company: "",
+        website: "",
+        notes: "",
+      });
       // Optionally, update customers list in parent if needed
     } catch (err) {
       setError(err.message || "Error adding customer");
@@ -1697,41 +1956,41 @@ const CustomerModal = ({
               placeholder="Name"
               className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white"
               value={form.name}
-              onChange={e => setForm({ ...form, name: e.target.value })}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
             <input
               type="email"
               placeholder="Email"
               className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white"
               value={form.email}
-              onChange={e => setForm({ ...form, email: e.target.value })}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
             <input
               type="text"
               placeholder="Phone"
               className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white"
               value={form.phone}
-              onChange={e => setForm({ ...form, phone: e.target.value })}
+              onChange={(e) => setForm({ ...form, phone: e.target.value })}
             />
             <input
               type="text"
               placeholder="Company"
               className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white"
               value={form.company}
-              onChange={e => setForm({ ...form, company: e.target.value })}
+              onChange={(e) => setForm({ ...form, company: e.target.value })}
             />
             <input
               type="text"
               placeholder="Website"
               className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white"
               value={form.website}
-              onChange={e => setForm({ ...form, website: e.target.value })}
+              onChange={(e) => setForm({ ...form, website: e.target.value })}
             />
             <textarea
               placeholder="Notes"
               className="w-full px-3 py-2 rounded bg-gray-700 border border-gray-600 text-white"
               value={form.notes}
-              onChange={e => setForm({ ...form, notes: e.target.value })}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
             />
             {error && <div className="text-red-400 text-sm">{error}</div>}
             <div className="flex gap-2 justify-end">
@@ -1774,18 +2033,22 @@ const CustomerModal = ({
                     }}
                   >
                     <div>
-                      <div className="font-medium text-white">{customer.name}</div>
+                      <div className="font-medium text-white">
+                        {customer.name}
+                      </div>
                       <div className="text-xs text-gray-400">
                         {customer.email} | {customer.phone}
                       </div>
                     </div>
-                    {selectedCustomer && selectedCustomer.id === customer.id && (
-                      <span className="text-green-400 font-bold">✓</span>
-                    )}
+                    {selectedCustomer &&
+                      selectedCustomer.id === customer.id && (
+                        <span className="text-green-400 font-bold">✓</span>
+                      )}
                   </div>
                 ))
               )}
             </div>
+
             <button
               className="w-full mt-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
               onClick={() => setShowAddForm(true)}
@@ -1799,9 +2062,9 @@ const CustomerModal = ({
   );
 };
 
-// Products Modal Component
 const ProductsModal = ({
   products,
+  categories,
   selectedPriceType,
   onAddToCart,
   onClose,
@@ -1989,7 +2252,9 @@ const AnalyticsModal = ({
         </div>
 
         <div className="bg-gray-700 p-4 rounded-lg mb-6">
-          <h3 className="text-lg font-semibold text-white mb-4">Top Products</h3>
+          <h3 className="text-lg font-semibold text-white mb-4">
+            Top Products
+          </h3>
           <div className="space-y-4">
             {topProducts.map((product, index) => (
               <div key={index} className="flex justify-between items-center">
@@ -2018,7 +2283,10 @@ const AnalyticsModal = ({
           </h3>
           <div className="space-y-4">
             {salesData.slice(0, 5).map((sale, index) => (
-              <div key={index} className="border-b border-gray-600 pb-4 last:border-0">
+              <div
+                key={index}
+                className="border-b border-gray-600 pb-4 last:border-0"
+              >
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <div className="font-medium text-white">
