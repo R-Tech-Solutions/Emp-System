@@ -3,12 +3,28 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
+// Create reusable transporter object with increased limits
 const transporter = nodemailer.createTransport({
-  service: 'gmail', // Use Gmail's SMTP server
+  service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER, // Your Gmail address
-    pass: process.env.EMAIL_PASSWORD, // Your App Password or Gmail password
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD, // Use App Password for Gmail
   },
+  tls: {
+    rejectUnauthorized: false // Only use this in development
+  },
+  maxConnections: 5,
+  maxMessages: 100,
+  pool: true
+});
+
+// Verify transporter configuration
+transporter.verify(function(error, success) {
+  if (error) {
+    console.log('Mailer configuration error:', error);
+  } else {
+    console.log('Mailer is ready to send messages');
+  }
 });
 
 const sendEmployeeCredentials = async (email, password, employeeName) => {
@@ -86,18 +102,21 @@ const sendTaskNotification = async (email, recipientName, taskDetails) => {
 
 const sendEmail = async ({ to, subject, html, attachments }) => {
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    from: `"R-Tech Solutions" <${process.env.EMAIL_USER}>`,
     to,
     subject,
     html,
     attachments,
+    maxSize: 25 * 1024 * 1024 // 25MB limit
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent successfully:', info.messageId);
+    return info;
   } catch (error) {
-    console.error('Error sending email to:', to, error);
-    throw new Error('Failed to send email. Please try again.');
+    console.error('Error sending email:', error);
+    throw new Error(`Failed to send email: ${error.message}`);
   }
 };
 
@@ -105,5 +124,5 @@ module.exports = {
   sendEmployeeCredentials, 
   sendAnnouncementEmail, 
   sendTaskNotification,
-  sendEmail, // Export the new function
+  sendEmail
 };

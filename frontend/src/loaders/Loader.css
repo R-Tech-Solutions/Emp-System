@@ -1,4 +1,4 @@
-.loaderNew {
+.dotSpinner {
   transform: rotateZ(45deg);
   perspective: 1000px;
   border-radius: 50%;
@@ -7,8 +7,8 @@
   color: #ffffff;
 }
 
-.loaderNew:before,
-.loaderNew:after {
+.dotSpinner:before,
+.dotSpinner:after {
   content: '';
   display: block;
   position: absolute;
@@ -21,7 +21,7 @@
   animation: 1s spin linear infinite;
 }
 
-.loaderNew:after {
+.dotSpinner:after {
   color: #0095ff;
   transform: rotateY(70deg);
   animation-delay: .4s;

@@ -1,38 +1,59 @@
+// In SendQuotationMailController.js
 const QuotationModel = require('../models/QuatationModel');
 const { sendEmail } = require('../config/mailer');
-const { jsPDF } = require("jspdf"); // Or use pdfkit, or accept PDF from frontend
-const fs = require('fs');
-const path = require('path');
 
-// For simplicity, let's assume the frontend sends the PDF as a base64 string
 exports.sendQuotationEmail = async (req, res) => {
   try {
     const { quotationId, to, subject, message, pdfBase64 } = req.body;
+    
+    // Validate required fields
     if (!to || !subject || !pdfBase64) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // Prepare attachment
-    const buffer = Buffer.from(pdfBase64, 'base64');
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(to)) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+
+    // Prepare attachment with proper buffer handling
     const attachments = [
       {
         filename: `Quotation-${quotationId}.pdf`,
-        content: buffer,
+        content: pdfBase64,
+        encoding: 'base64',
         contentType: 'application/pdf'
       }
     ];
 
-    // Send email
-    await sendEmail({
-      to,
-      subject,
-      html: message,
-      attachments
-    });
+    // Send email with error handling
+    try {
+      await sendEmail({
+        to,
+        subject,
+        html: message,
+        attachments
+      });
 
-    res.json({ success: true });
+      // Update quotation status if needed
+      if (quotationId) {
+        await QuotationModel.updateStatus(quotationId, 'Quotation Sent');
+      }
+
+      res.json({ success: true, message: 'Email sent successfully' });
+    } catch (emailError) {
+      console.error('Email sending error:', emailError);
+      res.status(500).json({ 
+        error: 'Failed to send email', 
+        details: emailError.message 
+      });
+    }
   } catch (err) {
     console.error('Send Quotation Email Error:', err);
-    res.status(500).json({ error: 'Failed to send quotation email' });
+    res.status(500).json({ 
+      error: 'Failed to process quotation email', 
+      details: err.message 
+    });
   }
-}; 
+};

@@ -10,7 +10,7 @@ router.post('/', QuotationController.createQuotation);
 router.get('/', QuotationController.getAllQuotations);
 
 // GET /api/quotation/:id
-router.get('/:id', QuotationController.getQuotationById);
+router.get('/:id', QuotationController.getQuotationById); 
 
 // POST /api/quotation/send-mail
 router.post('/send-mail', SendQuotationMailController.sendQuotationEmail);

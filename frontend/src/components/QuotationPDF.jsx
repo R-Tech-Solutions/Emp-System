@@ -126,6 +126,23 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "#6b7280",
     textAlign: "center"
+  },
+  notesSection: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: "#f8fafc",
+    borderRadius: 4
+  },
+  noteItem: {
+    marginBottom: 8,
+    fontSize: 11,
+    color: "#374151"
+  },
+  expirationDate: {
+    color: "#dc2626",
+    fontWeight: "bold",
+    fontSize: 11,
+    marginTop: 4
   }
 });
 
@@ -155,6 +172,12 @@ const QuotationPDF = ({ quotation }) => (
           <Text style={styles.label}>Created Date: </Text>
           {quotation.createdAt ? new Date(quotation.createdAt).toLocaleString() : ""}
         </Text>
+        <Text>
+          <Text style={styles.label}>Expiration Date: </Text>
+          <Text style={styles.expirationDate}>
+            {quotation.Expiration ? new Date(quotation.Expiration).toLocaleDateString() : ""}
+          </Text>
+        </Text>
       </View>
       <View style={styles.divider} />
       <View style={styles.section}>
@@ -165,7 +188,6 @@ const QuotationPDF = ({ quotation }) => (
         <Text>Created by: {quotation.CreatedBy}</Text>
         <Text>Pricelist: {quotation.Pricelist}</Text>
         <Text>Payment Terms: {quotation.PaymentTerms}</Text>
-        <Text>Expiration: {quotation.Expiration}</Text>
       </View>
       <View style={styles.divider} />
       <View style={styles.section}>
@@ -205,6 +227,31 @@ const QuotationPDF = ({ quotation }) => (
           </Text>
         </View>
       </View>
+
+      {/* Notes Section */}
+      {quotation.Notes && quotation.Notes.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Notes</Text>
+          <View style={styles.notesSection}>
+            {quotation.Notes.map((note, idx) => (
+              <Text key={idx} style={styles.noteItem}>• {note.note}</Text>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {/* Sections */}
+      {quotation.Sections && quotation.Sections.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Sections</Text>
+          <View style={styles.notesSection}>
+            {quotation.Sections.map((section, idx) => (
+              <Text key={idx} style={styles.noteItem}>• {section.sectionName}</Text>
+            ))}
+          </View>
+        </View>
+      )}
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Terms & Conditions</Text>
         <Text style={styles.terms}>{quotation.TermsConditions}</Text>
