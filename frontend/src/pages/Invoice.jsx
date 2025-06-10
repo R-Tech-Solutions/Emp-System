@@ -46,7 +46,6 @@ const Toast = ({ message, type, isVisible, onClose }) => {
 // Main Billing POS Component
 const BillingPOSSystem = () => {
   const [products, setProducts] = useState([]);
-  // Fetch customers from /api/contacts instead of using mockCustomers
   const [customers, setCustomers] = useState([]);
   const [cart, setCart] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -83,7 +82,6 @@ const BillingPOSSystem = () => {
     { id: "mobile", name: "Mobile Pay", icon: "📱" },
     { id: "credit", name: "Credit", icon: "📝" },
   ]);
-  const [showAnalytics, setShowAnalytics] = useState(false);
   const [selectedDateRange, setSelectedDateRange] = useState("today");
 
   const [heldBills, setHeldBills] = useState([]);
@@ -104,56 +102,61 @@ const BillingPOSSystem = () => {
   const [showInvoiceDetails, setShowInvoiceDetails] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
 
+  // Define refreshProductData before any useEffect hooks
+  const refreshProductData = async () => {
+    try {
+      // Fetch products
+      const productsResponse = await fetch(`${backEndURL}/api/products`);
+      const productsData = await productsResponse.json();
+
+      // Fetch inventory
+      const inventoryResponse = await fetch(`${backEndURL}/api/inventory`);
+      const inventoryData = await inventoryResponse.json();
+
+      // Combine products with inventory data
+      const combinedProducts = productsData.map((product) => {
+        // Find matching inventory record
+        const inventory = inventoryData.find(
+          (inv) => inv.productId === product.id
+        );
+
+        return {
+          id: product.id,
+          name: product.name,
+          barcode: product.barcode,
+          category: product.category,
+          stock: inventory ? inventory.totalQuantity : 0,
+          standardPrice: product.salesPrice,
+          wholesalePrice: product.marginPrice,
+          retailPrice: product.retailPrice,
+          cost: product.costPrice,
+          description: product.description,
+          image: product.imageUrl,
+        };
+      });
+
+      setProducts(combinedProducts);
+    } catch (error) {
+      console.error("Error refreshing product data:", error);
+      showToast("Failed to refresh product data", "error");
+    }
+  };
+
   // Fetch products and inventory data
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        // Fetch products
-        const productsResponse = await fetch(
-          `${backEndURL}/api/products`
-        );
-        const productsData = await productsResponse.json();
-
-        // Fetch inventory
-        const inventoryResponse = await fetch(
-          `${backEndURL}/api/inventory`
-        );
-        const inventoryData = await inventoryResponse.json();
+        await refreshProductData();
 
         // Fetch customers from /api/contacts (only those with categoryType === "Customer")
-        const customersResponse = await fetch(
-          `${backEndURL}/api/contacts`
-        );
+        const customersResponse = await fetch(`${backEndURL}/api/contacts`);
         const contactsData = await customersResponse.json();
         const customerContacts = contactsData.filter(
           (c) => c.categoryType === "Customer"
         );
         setCustomers(customerContacts);
 
-        // Combine products with inventory data
-        const combinedProducts = productsData.map((product) => {
-          // Find matching inventory record
-          const inventory = inventoryData.find(
-            (inv) => inv.productId === product.id
-          );
-
-          return {
-            id: product.id,
-            name: product.name,
-            barcode: product.barcode,
-            category: product.category,
-            stock: inventory ? inventory.totalQuantity : 0,
-            standardPrice: product.salesPrice,
-            wholesalePrice: product.marginPrice,
-            retailPrice: product.retailPrice,
-            cost: product.costPrice,
-            description: product.description,
-            image: product.imageUrl,
-          };
-        });
-
-        setProducts(combinedProducts);
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -225,7 +228,6 @@ const BillingPOSSystem = () => {
         else if (showInvoice) setShowInvoice(false);
         else if (showProductsModal) setShowProductsModal(false);
         else if (showCustomerModal) setShowCustomerModal(false);
-        else if (showAnalytics) setShowAnalytics(false);
         else if (showInvoiceDetails) setShowInvoiceDetails(false);
         else if (cart.length > 0) clearCart();
       }
@@ -239,7 +241,6 @@ const BillingPOSSystem = () => {
     showInvoice,
     showProductsModal,
     showCustomerModal,
-    showAnalytics,
     showInvoiceDetails,
   ]);
 
@@ -424,7 +425,6 @@ const BillingPOSSystem = () => {
       }));
 
       const invoice = {
-        // id will be auto-generated by backend
         date: new Date(),
         items: invoiceItems,
         customer: selectedCustomer ? { id: selectedCustomer.id } : null,
@@ -457,6 +457,10 @@ const BillingPOSSystem = () => {
         date: new Date(savedInvoice.createdAt || invoice.date),
         createdAt: savedInvoice.createdAt || new Date().toISOString(),
       });
+
+      // Refresh product data after successful sale
+      await refreshProductData();
+
       setShowInvoice(true);
       setShowPayment(false);
       clearCart();
@@ -1145,24 +1149,6 @@ const BillingPOSSystem = () => {
         />
       )}
 
-      {/* Add Analytics Button */}
-      <button
-        onClick={() => setShowAnalytics(true)}
-        className="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 shadow-lg"
-      >
-        Analytics
-      </button>
-
-      {/* Add new modals */}
-      {showAnalytics && (
-        <AnalyticsModal
-          onClose={() => setShowAnalytics(false)}
-          dailySales={dailySales}
-          purchaseHistory={purchaseHistory}
-          selectedDateRange={selectedDateRange}
-          setSelectedDateRange={setSelectedDateRange}
-        />
-      )}
 
       <LowStockAlerts
         alerts={lowStockAlerts}
@@ -2155,178 +2141,6 @@ const ProductsModal = ({
   );
 };
 
-// Analytics Modal Component
-const AnalyticsModal = ({
-  onClose,
-  dailySales,
-  purchaseHistory,
-  selectedDateRange,
-  setSelectedDateRange,
-}) => {
-  const [salesData, setSalesData] = useState([]);
-  const [topProducts, setTopProducts] = useState([]);
-
-  useEffect(() => {
-    // Filter sales by date range
-    const filteredSales = purchaseHistory.filter((purchase) => {
-      const purchaseDate = new Date(purchase.createdAt);
-      const now = new Date();
-      switch (selectedDateRange) {
-        case "today":
-          return purchaseDate.toDateString() === now.toDateString();
-        case "week": {
-          const weekAgo = new Date(now);
-          weekAgo.setDate(now.getDate() - 7);
-          return purchaseDate >= weekAgo;
-        }
-        case "month": {
-          const monthAgo = new Date(now);
-          monthAgo.setMonth(now.getMonth() - 1);
-          return purchaseDate >= monthAgo;
-        }
-        default:
-          return true;
-      }
-    });
-
-    // Calculate top products
-    const productSales = {};
-    filteredSales.forEach((purchase) => {
-      (purchase.items || []).forEach((item) => {
-        if (!productSales[item.id]) {
-          productSales[item.id] = {
-            name: item.name,
-            quantity: 0,
-            revenue: 0,
-          };
-        }
-        productSales[item.id].quantity += item.quantity;
-        productSales[item.id].revenue += item.price * item.quantity;
-      });
-    });
-
-    setTopProducts(
-      Object.values(productSales)
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 5)
-    );
-    setSalesData(filteredSales);
-  }, [purchaseHistory, selectedDateRange]);
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-white">Sales Analytics</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white text-2xl"
-          >
-            ×
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="bg-gray-700 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold text-white mb-2">
-              Daily Summary
-            </h3>
-            <div className="space-y-2">
-              <div className="flex justify-between text-gray-300">
-                <span>Total Sales:</span>
-                <span>Rs {dailySales.total.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between text-gray-300">
-                <span>Transactions:</span>
-                <span>{dailySales.count}</span>
-              </div>
-              <div className="flex justify-between text-gray-300">
-                <span>Average Sale:</span>
-                <span>
-                  Rs {(dailySales.total / (dailySales.count || 1)).toFixed(2)}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gray-700 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold text-white mb-2">
-              Date Range
-            </h3>
-            <select
-              value={selectedDateRange}
-              onChange={(e) => setSelectedDateRange(e.target.value)}
-              className="w-full px-4 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white"
-            >
-              <option value="today">Today</option>
-              <option value="week">Last 7 Days</option>
-              <option value="month">Last 30 Days</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="bg-gray-700 p-4 rounded-lg mb-6">
-          <h3 className="text-lg font-semibold text-white mb-4">
-            Top Products
-          </h3>
-          <div className="space-y-4">
-            {topProducts.map((product, index) => (
-              <div key={index} className="flex justify-between items-center">
-                <div>
-                  <div className="font-medium text-white">{product.name}</div>
-                  <div className="text-sm text-gray-400">
-                    {product.quantity} units sold
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-medium text-white">
-                    Rs {product.revenue.toFixed(2)}
-                  </div>
-                  <div className="text-sm text-gray-400">
-                    Rs {(product.revenue / product.quantity).toFixed(2)} avg
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-gray-700 p-4 rounded-lg">
-          <h3 className="text-lg font-semibold text-white mb-4">
-            Recent Transactions
-          </h3>
-          <div className="space-y-4">
-            {salesData.slice(0, 5).map((sale, index) => (
-              <div
-                key={index}
-                className="border-b border-gray-600 pb-4 last:border-0"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <div className="font-medium text-white">
-                      Invoice #{sale.id}
-                    </div>
-                    <div className="text-sm text-gray-400">
-                      {new Date(sale.createdAt).toLocaleString()}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-medium text-white">
-                      Rs {sale.total.toFixed(2)}
-                    </div>
-                    <div className="text-sm text-gray-400">
-                      {sale.items.length} items
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // Low Stock Alerts Component
 const LowStockAlerts = ({ alerts, onClose }) => {
@@ -2351,6 +2165,6 @@ const LowStockAlerts = ({ alerts, onClose }) => {
       </div>
     </div>
   );
-}; // ✅ Correct closing for the component
+};
 
 export default BillingPOSSystem;
