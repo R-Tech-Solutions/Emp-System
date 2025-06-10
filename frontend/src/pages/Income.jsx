@@ -537,16 +537,16 @@ const FinanceDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
             <h3 className="text-sm text-gray-400">💰 Total Income</h3>
-            <p className="text-2xl font-bold text-green-400">${incomeSummary.total.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-green-400">Rs {incomeSummary.total.toLocaleString()}</p>
           </div>
           <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
             <h3 className="text-sm text-gray-400">💸 Total Expenses</h3>
-            <p className="text-2xl font-bold text-red-400">${expenseSummary.total.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-red-400">Rs {expenseSummary.total.toLocaleString()}</p>
           </div>
           <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
             <h3 className="text-sm text-gray-400">📊 Net Profit</h3>
             <p className={`text-2xl font-bold ${netProfit >= 0 ? "text-green-400" : "text-red-400"}`}>
-              ${netProfit.toLocaleString()}
+              Rs {netProfit.toLocaleString()}
             </p>
           </div>
           <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
@@ -588,23 +588,23 @@ const FinanceDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
               <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                 <h3 className="text-sm text-gray-400">💰 Total Income</h3>
-                <p className="text-2xl font-bold text-green-400">${incomeSummary.total.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-green-400">Rs {incomeSummary.total.toLocaleString()}</p>
               </div>
               <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                 <h3 className="text-sm text-gray-400">✅ Received</h3>
-                <p className="text-2xl font-bold text-blue-400">${incomeSummary.received.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-blue-400">Rs {incomeSummary.received.toLocaleString()}</p>
               </div>
               <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                 <h3 className="text-sm text-gray-400">🕗 Pending</h3>
-                <p className="text-2xl font-bold text-yellow-400">${incomeSummary.pending.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-yellow-400">Rs {incomeSummary.pending.toLocaleString()}</p>
               </div>
               <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                 <h3 className="text-sm text-gray-400">📅 This Month</h3>
-                <p className="text-2xl font-bold text-purple-400">${incomeSummary.thisMonth.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-purple-400">Rs {incomeSummary.thisMonth.toLocaleString()}</p>
               </div>
               <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                 <h3 className="text-sm text-gray-400">🔁 Recurring</h3>
-                <p className="text-2xl font-bold text-indigo-400">${incomeSummary.recurring.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-indigo-400">Rs {incomeSummary.recurring.toLocaleString()}</p>
               </div>
             </div>
             <div className="flex justify-between items-center mb-6">
@@ -668,7 +668,7 @@ const FinanceDashboard = () => {
                           )}
                         </td>
                         <td className="px-4 py-3">{income.category}</td>
-                        <td className="px-4 py-3 font-semibold text-green-400">${income.amount.toLocaleString()}</td>
+                        <td className="px-4 py-3 font-semibold text-green-400">Rs {income.amount.toLocaleString()}</td>
                         <td className="px-4 py-3">{income.receivedFrom}</td>
                         <td className="px-4 py-3">{income.paymentMethod}</td>
                         <td className="px-4 py-3">
@@ -757,23 +757,23 @@ const FinanceDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
               <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                 <h3 className="text-sm text-gray-400">Total Expenses</h3>
-                <p className="text-2xl font-bold text-red-400">${expenseSummary.total.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-red-400">Rs {expenseSummary.total.toLocaleString()}</p>
               </div>
               <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                 <h3 className="text-sm text-gray-400">Approved</h3>
-                <p className="text-2xl font-bold text-blue-400">${expenseSummary.approved.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-blue-400">Rs {expenseSummary.approved.toLocaleString()}</p>
               </div>
               <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                 <h3 className="text-sm text-gray-400">Pending</h3>
-                <p className="text-2xl font-bold text-yellow-400">${expenseSummary.pending.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-yellow-400">Rs {expenseSummary.pending.toLocaleString()}</p>
               </div>
               <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                 <h3 className="text-sm text-gray-400">Rejected</h3>
-                <p className="text-2xl font-bold text-red-400">${expenseSummary.rejected.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-red-400">Rs {expenseSummary.rejected.toLocaleString()}</p>
               </div>
               <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                 <h3 className="text-sm text-gray-400">This Month</h3>
-                <p className="text-2xl font-bold text-purple-400">${expenseSummary.thisMonth.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-purple-400">Rs {expenseSummary.thisMonth.toLocaleString()}</p>
               </div>
             </div>
             <div className="flex justify-between items-center mb-6">
@@ -833,7 +833,7 @@ const FinanceDashboard = () => {
                         <td className="px-4 py-3">{expense.date}</td>
                         <td className="px-4 py-3 font-medium">{expense.title}</td>
                         <td className="px-4 py-3">{expense.category}</td>
-                        <td className="px-4 py-3 font-semibold">${expense.amount.toLocaleString()}</td>
+                        <td className="px-4 py-3 font-semibold">Rs {expense.amount.toLocaleString()}</td>
                         <td className="px-4 py-3">{expense.paidBy}</td>
                         <td className="px-4 py-3">{expense.department}</td>
                         <td className="px-4 py-3">

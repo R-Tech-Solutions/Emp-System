@@ -527,7 +527,7 @@ export default function PurchaseApp() {
                 </div>
                 <div className="bg-gray-800 rounded-lg p-6">
                     <div className="text-2xl font-bold text-white">
-                        ${purchases.reduce((sum, p) => sum + p.total, 0).toFixed(2)}
+                        Rs {purchases.reduce((sum, p) => sum + p.total, 0).toFixed(2)}
                     </div>
                     <div className="text-gray-400">Total Revenue</div>
                 </div>
@@ -578,7 +578,7 @@ export default function PurchaseApp() {
                                             {purchase.numberOfProducts} item{purchase.numberOfProducts !== 1 ? "s" : ""}
                                         </td>
                                         <td className="py-4 px-6 text-right">
-                                            <div className="font-semibold text-white">${purchase.total.toFixed(2)}</div>
+                                            <div className="font-semibold text-white">Rs {purchase.total.toFixed(2)}</div>
                                         </td>
                                         <td className="py-4 px-6 text-center">
                                             <span className={`px-2 py-1 rounded text-sm ${purchase.paymentStatus === "Paid by Cash"
@@ -1034,12 +1034,12 @@ export default function PurchaseApp() {
                                 <div className="space-y-3 mb-6">
                                     <div className="flex justify-between">
                                         <span className="text-gray-400">Subtotal</span>
-                                        <span>RS {subtotal.toFixed(2)}</span>
+                                        <span>Rs {subtotal.toFixed(2)}</span>
                                     </div>
                                     <div className="border-t border-gray-700 pt-3">
                                         <div className="flex justify-between text-lg font-semibold">
                                             <span>Total</span>
-                                            <span>RS {grandTotal.toFixed(2)}</span>
+                                            <span>Rs {grandTotal.toFixed(2)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1298,8 +1298,8 @@ export default function PurchaseApp() {
                                                     <div className="font-medium">{item.name}</div>
                                                 </td>
                                                 <td className="text-center py-4 px-2">{item.quantity}</td>
-                                                <td className="text-right py-4 px-2">${item.price.toFixed(2)}</td>
-                                                <td className="text-right py-4 px-2 font-semibold">${item.total.toFixed(2)}</td>
+                                                <td className="text-right py-4 px-2">Rs {item.price.toFixed(2)}</td>
+                                                <td className="text-right py-4 px-2 font-semibold">Rs {item.total.toFixed(2)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -1332,12 +1332,12 @@ export default function PurchaseApp() {
                             <div className="space-y-3 mb-6">
                                 <div className="flex justify-between">
                                     <span className="text-gray-400">Subtotal</span>
-                                    <span>${selectedPurchase.subtotal.toFixed(2)}</span>
+                                    <span>Rs {selectedPurchase.subtotal.toFixed(2)}</span>
                                 </div>
                                 <div className="border-t border-gray-700 pt-3">
                                     <div className="flex justify-between text-lg font-semibold">
                                         <span>Total</span>
-                                        <span>${selectedPurchase.total.toFixed(2)}</span>
+                                        <span>Rs {selectedPurchase.total.toFixed(2)}</span>
                                     </div>
                                 </div>
                             </div>
@@ -1408,8 +1408,8 @@ export default function PurchaseApp() {
         item.sku,
         item.name,
         item.quantity.toString(),
-        `$${item.price.toFixed(2)}`,
-        `$${item.total.toFixed(2)}`
+        `Rs ${item.price.toFixed(2)}`,
+        `Rs ${item.total.toFixed(2)}`
     ]);
 
     autoTable(doc, {
@@ -1425,9 +1425,9 @@ export default function PurchaseApp() {
     const finalY = doc.lastAutoTable.finalY || 200;
     doc.setFont('helvetica', 'bold');
     doc.text(`Subtotal:`, 140, finalY + 10);
-    doc.text(`$${selectedPurchase.subtotal.toFixed(2)}`, 180, finalY + 10, { align: 'right' });
+    doc.text(`Rs ${selectedPurchase.subtotal.toFixed(2)}`, 180, finalY + 10, { align: 'right' });
     doc.text(`Total:`, 140, finalY + 18);
-    doc.text(`$${selectedPurchase.total.toFixed(2)}`, 180, finalY + 18, { align: 'right' });
+    doc.text(`Rs ${selectedPurchase.total.toFixed(2)}`, 180, finalY + 18, { align: 'right' });
 
     // === Footer ===
     doc.setFontSize(9);

@@ -93,7 +93,7 @@ const BillingPOSSystem = () => {
   const [paymentHistory, setPaymentHistory] = useState([]);
 
   // Add new state for active tab
-  const [activeTab, setActiveTab] = useState("pos"); // 'pos' or 'invoices'
+  const [activeTab, setActiveTab] = useState("pos"); 
 
   // Add new state for invoice list
   const [invoices, setInvoices] = useState([]);

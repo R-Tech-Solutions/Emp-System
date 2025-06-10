@@ -246,19 +246,19 @@ export default function CashbookApp() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-gray-700 p-4 rounded-lg">
               <h3 className="text-sm font-medium text-gray-300">Opening Balance</h3>
-              <p className="text-xl font-semibold text-white">LKR {(summaryData?.openingBalance || 0).toLocaleString()}</p>
+              <p className="text-xl font-semibold text-white">Rs {(summaryData?.openingBalance || 0).toLocaleString()}</p>
             </div>
             <div className="bg-gray-700 p-4 rounded-lg">
               <h3 className="text-sm font-medium text-gray-300">Current Balance</h3>
-              <p className="text-xl font-semibold text-white">LKR {(summaryData?.currentBalance || 0).toLocaleString()}</p>
+              <p className="text-xl font-semibold text-white">Rs {(summaryData?.currentBalance || 0).toLocaleString()}</p>
             </div>
             <div className="bg-gray-700 p-4 rounded-lg">
               <h3 className="text-sm font-medium text-gray-300">Total Cash In</h3>
-              <p className="text-xl font-semibold text-green-400">LKR {(summaryData?.totalCashIn || 0).toLocaleString()}</p>
+              <p className="text-xl font-semibold text-green-400">Rs {(summaryData?.totalCashIn || 0).toLocaleString()}</p>
             </div>
             <div className="bg-gray-700 p-4 rounded-lg">
               <h3 className="text-sm font-medium text-gray-300">Total Cash Out</h3>
-              <p className="text-xl font-semibold text-red-400">LKR {(summaryData?.totalCashOut || 0).toLocaleString()}</p>
+              <p className="text-xl font-semibold text-red-400">Rs {(summaryData?.totalCashOut || 0).toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -281,7 +281,7 @@ export default function CashbookApp() {
                     Type
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Amount (LKR)
+                    Amount (Rs)
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Mode
@@ -290,7 +290,7 @@ export default function CashbookApp() {
                     Category
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    New Opening Balance (LKR)
+                    New Opening Balance (Rs)
                   </th>
                 </tr>
               </thead>
@@ -318,21 +318,21 @@ export default function CashbookApp() {
                         entry.type === "Cash In" ? "text-green-400" : "text-red-400"
                       }`}
                     >
-                      LKR {(entry.amount || 0).toLocaleString()}
+                      Rs {(entry.amount || 0).toLocaleString()}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-300 capitalize">{entry.mode}</td>
                     <td className="px-4 py-3 text-sm text-gray-300 capitalize">{entry.category}</td>
                     <td className="px-4 py-3 text-sm font-medium text-gray-300">
-                      LKR {(entry.balance || 0).toLocaleString()}
+                      Rs {(entry.balance || 0).toLocaleString()}
                     </td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
                 <tr className="bg-gray-900 border-t border-gray-700">
-                  <td colSpan="7" className="px-4 py-3 text-right font-semibold text-gray-200">Total Balance (LKR)</td>
+                  <td colSpan="7" className="px-4 py-3 text-right font-semibold text-gray-200">Total Balance (Rs)</td>
                   <td className="px-4 py-3 text-sm font-bold text-white">
-                    LKR {(currentBalance || 0).toLocaleString()}
+                    Rs {(currentBalance || 0).toLocaleString()}
                   </td>
                 </tr>
               </tfoot>
