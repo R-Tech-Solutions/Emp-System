@@ -1087,7 +1087,7 @@ const handleSendQuotationEmail = async () => {
                           >
                             <Download size={16} />
                           </button>
-                          {/* <button
+                          <button
                             onClick={() => {
                               setQuotationToSend(quotation);
                               setSendModalOpen(true);
@@ -1095,7 +1095,7 @@ const handleSendQuotationEmail = async () => {
                             className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm text-white"
                           >
                             <Send size={16} />
-                          </button> */}
+                          </button>
                         </div>
                       </td>
                     </tr>

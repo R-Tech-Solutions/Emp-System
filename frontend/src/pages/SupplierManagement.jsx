@@ -326,7 +326,7 @@ export default function SupplierManagement() {
       };
 
       // Add payment to supplier record using the new endpoint
-      const response = await axios.post(`${backEndURL}api/suppliers/payment/${purchase.id}`, paymentData);
+      const response = await axios.post(`${backEndURL}/api/suppliers/payment/${purchase.id}`, paymentData);
       console.log('Payment processed:', response.data);
 
       // Immediately update the paid amounts state
