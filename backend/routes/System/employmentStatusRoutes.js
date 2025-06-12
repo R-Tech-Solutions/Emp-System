@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const employmentStatusController = require("../../controllers/System/employmentStatusController");
+const employmentStatusController = require("../../controllers/system/employmentStatusController");
 
 router.get("/", employmentStatusController.getEmploymentStatus);
 router.post("/", employmentStatusController.addEmploymentStatus);
