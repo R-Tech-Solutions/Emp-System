@@ -1,6 +1,5 @@
 "use client";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useTheme } from "./contexts/ThemeContext.jsx";
 import Login from "./pages/Login.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Departments from "./pages/Departments.jsx";
@@ -27,222 +26,224 @@ import SupplierManagement from "./pages/SupplierManagement.jsx";
 import Cashbook from "./pages/Cashbook.jsx";
 import Invoice from "./pages/Invoice.jsx";
 import Income from "./pages/Income.jsx";
+import SalesDashboard from "./pages/SalesDashboard.jsx";
 
 function App() {
-  const { theme } = useTheme();
-
   const isLoggedIn = sessionStorage.getItem("isLoggedIn") === "true";
 
   return (
-    <div className={theme}>
-      <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
-        <Routes>
+    <div className="min-h-screen bg-background text-text-primary">
+      <Routes>
+        <Route
+          path="/login"
+          element={
+            isLoggedIn ? <Navigate to="/dashboard" replace /> : <Login />
+          }
+        />
+        <Route path="/" element={<Layout />}>
           <Route
-            path="/login"
+            index
             element={
-              isLoggedIn ? <Navigate to="/dashboard" replace /> : <Login />
+              <ProtectedRoute>
+                <Navigate to="/dashboard" replace />
+              </ProtectedRoute>
             }
           />
-          <Route path="/" element={<Layout />}>
-            <Route
-              index
-              element={
-                <ProtectedRoute>
-                  <Navigate to="/dashboard" replace />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="sections"
-              element={
-                <ProtectedRoute>
-                  <Departments />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="employees"
-              element={
-                <ProtectedRoute>
-                  <Employee />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="tasks"
-              element={
-                <ProtectedRoute>
-                  <TaskManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="attendance"
-              element={
-                <ProtectedRoute>
-                  <AttendanceTracking />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="leave-requests"
-              element={
-                <ProtectedRoute>
-                  <LeaveRequestSystem />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="messages"
-              element={
-                <ProtectedRoute>
-                  <MessagingSystem />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="reports"
-              element={
-                <ProtectedRoute>
-                  <Report />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="user"
-              element={
-                <ProtectedRoute>
-                  <UserAdd />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="my"
-              element={
-                <ProtectedRoute>
-                  <Mysettings />
-                </ProtectedRoute>
-              }
-            /><Route
-              path="assets"
-              element={
-                <ProtectedRoute>
-                  <Assets />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="timesheets"
-              element={
-                <ProtectedRoute>
-                  <Timesheets />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="new"
-              element={
-                <ProtectedRoute>
-                  <New />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="payroll"
-              element={
-                <ProtectedRoute>
-                  <Payrol />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="crm"
-              element={
-                <ProtectedRoute>
-                  <Crm />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="products"
-              element={
-
-                  <Products />
-
-              }
-            />
-            <Route
-              path="quatation"
-              element={
-                <ProtectedRoute>
-                  <Quatation />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="purchase"
-              element={
-                <ProtectedRoute>
-                  <Purchase />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="inventory"
-              element={
-                <ProtectedRoute>
-                  <InventoryManagement />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="supplier"
-              element={
-                <ProtectedRoute>
-                  <SupplierManagement />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="cashbook"
-              element={
-                <ProtectedRoute>
-                  <Cashbook />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="invoice"
-              element={
-
-                  <Invoice />
-
-              }
-            />
-             
-            <Route
-              path="income"
-              element={
-                <ProtectedRoute>
-                  <Income />
-                </ProtectedRoute>
-              }
-            />
-            {" "}
-          </Route>
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </div>
+          <Route
+            path="dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="sections"
+            element={
+              <ProtectedRoute>
+                <Departments />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="employees"
+            element={
+              <ProtectedRoute>
+                <Employee />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="tasks"
+            element={
+              <ProtectedRoute>
+                <TaskManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="attendance"
+            element={
+              <ProtectedRoute>
+                <AttendanceTracking />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="leave-requests"
+            element={
+              <ProtectedRoute>
+                <LeaveRequestSystem />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="messages"
+            element={
+              <ProtectedRoute>
+                <MessagingSystem />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="reports"
+            element={
+              <ProtectedRoute>
+                <Report />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="user"
+            element={
+              <ProtectedRoute>
+                <UserAdd />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="my"
+            element={
+              <ProtectedRoute>
+                <Mysettings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="assets"
+            element={
+              <ProtectedRoute>
+                <Assets />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="timesheets"
+            element={
+              <ProtectedRoute>
+                <Timesheets />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="new"
+            element={
+              <ProtectedRoute>
+                <New />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="payroll"
+            element={
+              <ProtectedRoute>
+                <Payrol />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="crm"
+            element={
+              <ProtectedRoute>
+                <Crm />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="products"
+            element={
+              <ProtectedRoute>
+                <Products />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="quatation"
+            element={
+              <ProtectedRoute>
+                <Quatation />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="purchase"
+            element={
+              <ProtectedRoute>
+                <Purchase />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="inventory"
+            element={
+              <ProtectedRoute>
+                <InventoryManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="supplier"
+            element={
+              <ProtectedRoute>
+                <SupplierManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="cashbook"
+            element={
+              <ProtectedRoute>
+                <Cashbook />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="invoice"
+            element={
+              <ProtectedRoute>
+                <Invoice />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="income"
+            element={
+              <ProtectedRoute>
+                <Income />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="salesdashboard"
+            element={
+              <ProtectedRoute>
+                <SalesDashboard />
+              </ProtectedRoute>
+            }
+          />
+        </Route>
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
     </div>
   );
 }

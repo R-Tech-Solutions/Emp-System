@@ -781,24 +781,24 @@ function App() {
     };
 
     return (
-      <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-4 w-64">
+      <div className="bg-surface border border-border rounded-lg shadow-lg p-4 w-64">
         {viewMode === "months" ? (
           <>
             <div className="flex justify-between items-center mb-4">
               <button
-                className="text-gray-400 hover:text-white"
+                className="text-text-secondary hover:text-text-primary"
                 onClick={() => setSelectedYear(selectedYear - 1)}
               >
                 &lt;
               </button>
               <button
-                className="text-white font-medium"
+                className="text-text-primary font-medium"
                 onClick={() => setViewMode("years")}
               >
                 {selectedYear}
               </button>
               <button
-                className="text-gray-400 hover:text-white"
+                className="text-text-secondary hover:text-text-primary"
                 onClick={() => setSelectedYear(selectedYear + 1)}
               >
                 &gt;
@@ -808,7 +808,7 @@ function App() {
               {months.map((month, index) => (
                 <button
                   key={month}
-                  className="py-2 px-1 text-sm rounded hover:bg-gray-700 text-white"
+                  className="py-2 px-1 text-sm rounded hover:bg-surface/50 text-text-primary"
                   onClick={() => handleMonthClick(index)}
                 >
                   {month.substring(0, 3)}
@@ -820,7 +820,7 @@ function App() {
           <>
             <div className="text-center mb-4">
               <button
-                className="text-white font-medium"
+                className="text-text-primary font-medium"
                 onClick={() => setViewMode("months")}
               >
                 Select Year
@@ -830,10 +830,10 @@ function App() {
               {years.map((year) => (
                 <button
                   key={year}
-                  className={`py-2 px-1 text-sm rounded hover:bg-gray-700 ${
+                  className={`py-2 px-1 text-sm rounded hover:bg-surface/50 ${
                     year === selectedYear
-                      ? "bg-blue-600 text-white"
-                      : "text-white"
+                      ? "bg-primary text-text-primary"
+                      : "text-text-primary"
                   }`}
                   onClick={() => handleYearClick(year)}
                 >
@@ -872,21 +872,21 @@ function App() {
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-gray-800 rounded-lg border border-gray-700 p-6 w-full max-w-md">
-          <h2 className="text-xl font-bold text-white mb-4">
+        <div className="bg-surface rounded-lg border border-border p-6 w-full max-w-md">
+          <h2 className="text-xl font-bold text-text-primary mb-4">
             Set Total Work Hours
           </h2>
-          <p className="text-gray-300 mb-4">
+          <p className="text-text-secondary mb-4">
             Set the total work hours for {month} {year}. This will be used to
             calculate overtime and regular hours.
           </p>
 
           <form onSubmit={handleSubmit}>
             <div className="mb-4">
-              <label className="block text-gray-300 mb-2">Total Hours</label>
+              <label className="block text-text-secondary mb-2">Total Hours</label>
               <input
                 type="number"
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 bg-background border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
                 value={hours}
                 onChange={(e) => {
                   setHours(Number(e.target.value));
@@ -894,8 +894,8 @@ function App() {
                 }}
                 min="1"
               />
-              {error && <p className="text-red-400 text-sm mt-1">{error}</p>}
-              <p className="text-gray-400 text-sm mt-1">
+              {error && <p className="text-accent text-sm mt-1">{error}</p>}
+              <p className="text-text-muted text-sm mt-1">
                 Set the total work hours for this month based on working days.
               </p>
             </div>
@@ -903,14 +903,14 @@ function App() {
             <div className="flex justify-end gap-3">
               <button
                 type="button"
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg"
+                className="px-4 py-2 bg-surface hover:bg-surface/50 text-text-primary rounded-lg"
                 onClick={onCancel}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+                className="px-4 py-2 bg-primary hover:bg-primary-dark text-text-primary rounded-lg"
               >
                 Save
               </button>
@@ -923,7 +923,7 @@ function App() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-900">
+      <div className="flex justify-center items-center min-h-screen bg-background">
         <div className="text-center">
           <DotSpinner />
         </div>
@@ -957,16 +957,16 @@ function App() {
             body {
               font-family: Arial, sans-serif;
               margin: 20px;
-              color: #333;
+              color: #1a1a1a; /* text-text-primary */
             }
             .payroll-container {
-              border: 1px solid #ccc;
+              border: 1px solid #e5e7eb; /* border-border */
               padding: 20px;
               border-radius: 10px;
-              background-color: #f9f9f9;
+              background-color: #18181b; /* bg-background */
             }
             h2 {
-              color: #007bff;
+              color: #2563eb; /* primary */
             }
           </style>
         </head>

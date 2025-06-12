@@ -1,6 +1,9 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { useDispatch } from "react-redux"
+// import { setUser } from "../redux/authSlice"
 import { backEndURL } from "../Backendurl";
+import DotSpinner from "../loaders/Loader";
 
 export default function AdvancedLogin() {
   const VALID_EMAIL ="info@rtechsl.lk"
@@ -18,6 +21,7 @@ export default function AdvancedLogin() {
   const [success, setSuccess] = useState(false)
 
   const navigate = useNavigate()
+  const dispatch = useDispatch()
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -109,17 +113,17 @@ export default function AdvancedLogin() {
     setErrors({})
   }
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute left-[10%] top-[20%] w-72 h-72 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob1"></div>
-        <div className="absolute right-[20%] top-[30%] w-72 h-72 bg-indigo-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob1 animation-delay-2000"></div>
-        <div className="absolute left-[30%] bottom-[20%] w-72 h-72 bg-pink-600 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob1 animation-delay-4000"></div>
+        <div className="absolute left-[10%] top-[20%] w-72 h-72 bg-primary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob1"></div>
+        <div className="absolute right-[20%] top-[30%] w-72 h-72 bg-secondary/20 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob1 animation-delay-2000"></div>
+        <div className="absolute left-[30%] bottom-[20%] w-72 h-72 bg-accent/20 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob1 animation-delay-4000"></div>
       </div>
 
       <div className={`max-w-md w-full space-y-8 relative ${shake ? "animate-shake" : ""}`}>
-        <div className="bg-gray-900/80 backdrop-blur-sm p-8 rounded-2xl shadow-2xl border border-gray-800/50 transition-all duration-500">
+        <div className="bg-surface p-8 rounded-2xl shadow-2xl border border-border transition-all duration-500">
           <div className="text-center">
-            <div className="mx-auto h-14 w-14 flex items-center justify-center rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 shadow-lg">
+            <div className="mx-auto h-14 w-14 flex items-center justify-center rounded-full bg-primary shadow-lg">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-8 w-8 text-white"
@@ -138,9 +142,9 @@ export default function AdvancedLogin() {
           </div>
           {success ? (
             <div className="mt-8 text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-primary-light">
                 <svg
-                  className="h-6 w-6 text-green-600"
+                  className="h-6 w-6 text-primary"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -149,21 +153,21 @@ export default function AdvancedLogin() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="mt-3 text-xl font-medium text-white">Login successful!</h3>
-              <p className="mt-2 text-gray-400">Redirecting you to your dashboard...</p>
+              <h3 className="mt-3 text-xl font-medium text-text-primary">Login successful!</h3>
+              <p className="mt-2 text-text-secondary">Redirecting you to your dashboard...</p>
               <div className="mt-4 flex justify-center">
-                <div className="w-8 h-8 border-t-2 border-b-2 border-purple-500 rounded-full animate-spin"></div>
+                <DotSpinner />
               </div>
             </div>
           ) : (
             <>
-              <div className="mt-8 flex border-b border-gray-700">
+              <div className="mt-8 flex border-b border-border">
                 <button
                   onClick={() => handleTabChange("email")}
                   className={`flex-1 py-2 text-sm font-medium text-center transition-colors ${
                     activeTab === "email"
-                      ? "text-purple-500 border-b-2 border-purple-500"
-                      : "text-gray-400 hover:text-gray-300"
+                      ? "text-primary border-b-2 border-primary"
+                      : "text-text-secondary hover:text-text-primary"
                   }`}
                 >
                   Email
@@ -171,20 +175,20 @@ export default function AdvancedLogin() {
               </div>
               <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
                 {errors.form && (
-                  <div className="p-3 bg-red-900/50 border border-red-800 rounded-md">
-                    <p className="text-sm text-red-400">{errors.form}</p>
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                    <p className="text-sm text-red-600">{errors.form}</p>
                   </div>
                 )}
 
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
+                    <label htmlFor="email" className="block text-sm font-medium text-text-secondary mb-1">
                       Email address
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <svg
-                          className="h-5 w-5 text-gray-500"
+                          className="h-5 w-5 text-text-muted"
                           xmlns="http://www.w3.org/2000/svg"
                           viewBox="0 0 20 20"
                           fill="currentColor"
@@ -201,21 +205,21 @@ export default function AdvancedLogin() {
                         value={formData.email}
                         onChange={handleChange}
                         className={`appearance-none block w-full pl-10 pr-3 py-3 border ${
-                          errors.email ? "border-red-500" : "border-gray-700"
-                        } rounded-md shadow-sm placeholder-gray-500 bg-gray-800/50 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors`}
+                          errors.email ? "border-red-500" : "border-border"
+                        } rounded-md shadow-sm placeholder-text-muted bg-surface text-text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors`}
                         placeholder="you@example.com"
                       />
                     </div>
-                    {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email}</p>}
+                    {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
                   </div>
                   <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
+                    <label htmlFor="password" className="block text-sm font-medium text-text-secondary mb-1">
                       Password
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <svg
-                          className="h-5 w-5 text-gray-500"
+                          className="h-5 w-5 text-text-muted"
                           xmlns="http://www.w3.org/2000/svg"
                           viewBox="0 0 20 20"
                           fill="currentColor"
@@ -235,8 +239,8 @@ export default function AdvancedLogin() {
                         value={formData.password}
                         onChange={handleChange}
                         className={`appearance-none block w-full pl-10 pr-10 py-3 border ${
-                          errors.password ? "border-red-500" : "border-gray-700"
-                        } rounded-md shadow-sm placeholder-gray-500 bg-gray-800/50 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors`}
+                          errors.password ? "border-red-500" : "border-border"
+                        } rounded-md shadow-sm placeholder-text-muted bg-surface text-text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-colors`}
                         placeholder="••••••••"
                       />
                       <button
@@ -246,7 +250,7 @@ export default function AdvancedLogin() {
                       >
                         {showPassword ? (
                           <svg
-                            className="h-5 w-5 text-gray-400 hover:text-gray-300"
+                            className="h-5 w-5 text-text-muted hover:text-text-secondary"
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 20 20"
                             fill="currentColor"
@@ -260,7 +264,7 @@ export default function AdvancedLogin() {
                           </svg>
                         ) : (
                           <svg
-                            className="h-5 w-5 text-gray-400 hover:text-gray-300"
+                            className="h-5 w-5 text-text-muted hover:text-text-secondary"
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 20 20"
                             fill="currentColor"
@@ -275,44 +279,25 @@ export default function AdvancedLogin() {
                         )}
                       </button>
                     </div>
-                    {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password}</p>}
+                    {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
                   </div>
                 </div>
                 <div>
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-150 transform hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+                    className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-150 transform hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
                   >
                     {isLoading ? (
                       <div className="flex items-center">
-                        <svg
-                          className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        Processing...
+                        <DotSpinner />
+                        <span className="ml-3">Processing...</span>
                       </div>
                     ) : (
                       <>
                         <span className="absolute left-0 inset-y-0 flex items-center pl-3">
                           <svg
-                            className="h-5 w-5 text-purple-300 group-hover:text-purple-200"
+                            className="h-5 w-5 text-primary-light group-hover:text-white"
                             xmlns="http://www.w3.org/2000/svg"
                             viewBox="0 0 20 20"
                             fill="currentColor"

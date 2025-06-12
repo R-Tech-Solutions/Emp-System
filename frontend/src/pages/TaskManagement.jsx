@@ -423,13 +423,13 @@ function App() {
   }, [selectedPosition, employees]);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
+    <div className="min-h-screen bg-background text-text-primary p-6">
       <ToastContainer />
       <div className="max-w-7xl mx-auto">
         {loading ? (
           <div className="flex items-center justify-center h-20">
             <DotSpinner />
-            <span className="ml-3 text-gray-400">Loading tasks...</span>
+            <span className="ml-3 text-text-secondary">Loading tasks...</span>
           </div>
         ) : (
           <>
@@ -437,7 +437,7 @@ function App() {
               <h1 className="text-3xl font-bold">Task Management</h1>
               <button
                 onClick={handleAddNewTask}
-                className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-transform transform hover:scale-105"
+                className="bg-primary hover:bg-primary-dark px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-transform transform hover:scale-105"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path
@@ -453,55 +453,54 @@ function App() {
             {showTaskForm && (
               <div
                 ref={formRef}
-                className="bg-gray-800 rounded-lg p-6 mb-8 shadow-lg transition-all duration-300 ease-in-out"
+                className="bg-surface rounded-lg p-6 mb-8 shadow-lg transition-all duration-300 ease-in-out border border-border"
               >
                 <h2 className="text-xl font-semibold mb-4">{isEditMode ? "Edit Task" : "Add New Task"}</h2>
                 <form onSubmit={handleSubmit}>
-                  {/* Show spinner while adding/editing task */}
                   {loading && <DotSpinner />}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block mb-2">Task Name</label>
+                      <label className="block mb-2 text-text-secondary">Task Name</label>
                       <input
                         type="text"
                         name="name"
                         value={newTask.name}
                         onChange={handleInputChange}
-                        className="w-full bg-gray-700 rounded p-2 text-white"
+                        className="w-full bg-background border border-border rounded p-2 text-text-primary"
                         required
                       />
                     </div>
 
                     <div>
-                      <label className="block mb-2">Due Date</label>
+                      <label className="block mb-2 text-text-secondary">Due Date</label>
                       <input
                         type="date"
                         name="dueDate"
                         value={newTask.dueDate}
                         onChange={handleInputChange}
-                        className="w-full bg-gray-700 rounded p-2 text-white"
+                        className="w-full bg-background border border-border rounded p-2 text-text-primary"
                         required
                       />
                     </div>
 
                     <div>
-                      <label className="block mb-2">Total Hours</label>
+                      <label className="block mb-2 text-text-secondary">Total Hours</label>
                       <input
                         type="number"
                         name="totalHours"
                         value={newTask.totalHours}
                         onChange={handleInputChange}
-                        className="w-full bg-gray-700 rounded p-2 text-white"
+                        className="w-full bg-background border border-border rounded p-2 text-text-primary"
                       />
                     </div>
 
                     <div>
-                      <label className="block mb-2">Department</label>
+                      <label className="block mb-2 text-text-secondary">Department</label>
                       <select
                         name="department"
                         value={newTask.department}
                         onChange={handleInputChange}
-                        className="w-full bg-gray-700 rounded p-2 text-white"
+                        className="w-full bg-background border border-border rounded p-2 text-text-primary"
                         required
                       >
                         <option value="">Select Department</option>
@@ -514,15 +513,16 @@ function App() {
                     </div>
                     <div className="md:col-span-2">
                       <div className="flex justify-between items-center mb-2">
-                        <label>Assign to Employee</label>
+                        <label className="text-text-secondary">Assign to Employee</label>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                         {filteredEmployees.map((employee) => (
                           <div
-                            key={employee.id} // Ensure unique key
-                            className={`flex items-center p-2 rounded cursor-pointer ${newTask.assignedTo === employee.id ? "bg-purple-700" : "bg-gray-700"
-                              }`}
+                            key={employee.id}
+                            className={`flex items-center p-2 rounded cursor-pointer border border-border ${
+                              newTask.assignedTo === employee.id ? "bg-primary-light" : "bg-background"
+                            }`}
                             onClick={() => handleEmployeeSelect(employee.id)}
                           >
                             <img
@@ -531,15 +531,16 @@ function App() {
                               className="w-10 h-10 rounded-full mr-3"
                             />
                             <div>
-                              <span>{employee.name}</span>
-                              <span className="block text-xs text-gray-400">{employee.department}</span>
+                              <span className="text-text-primary">{employee.name}</span>
+                              <span className="block text-xs text-text-muted">{employee.department}</span>
                             </div>
                             <div className="ml-auto">
                               <div
-                                className={`w-5 h-5 rounded-full border-2 border-white flex items-center justify-center ${newTask.assignedTo === employee.id ? "bg-purple-500" : "bg-transparent"
-                                  }`}
+                                className={`w-5 h-5 rounded-full border-2 border-primary flex items-center justify-center ${
+                                  newTask.assignedTo === employee.id ? "bg-primary" : "bg-transparent"
+                                }`}
                               >
-                                {newTask.assignedTo === employee.id && <span className="text-xs">✓</span>}
+                                {newTask.assignedTo === employee.id && <span className="text-xs text-white">✓</span>}
                               </div>
                             </div>
                           </div>
@@ -618,14 +619,15 @@ function App() {
                     </div>
 
                     <div className="md:col-span-2">
-                      <label className="block mb-2">Tags</label>
+                      <label className="block mb-2 text-text-secondary">Tags</label>
                       <div className="flex flex-wrap gap-2">
                         {availableTags.map((tag) => (
                           <div
-                            key={tag.id} // Ensure unique key
+                            key={tag.id}
                             onClick={() => handleTagToggle(tag.name)}
-                            className={`px-3 py-1 rounded-full text-sm cursor-pointer ${newTask.tags.includes(tag.name) ? tag.color + " text-white" : "bg-gray-700 text-gray-300"
-                              }`}
+                            className={`px-3 py-1 rounded-full text-sm cursor-pointer border border-border ${
+                              newTask.tags.includes(tag.name) ? "bg-primary text-white" : "bg-background text-text-secondary"
+                            }`}
                           >
                             {tag.name}
                           </div>
@@ -676,12 +678,14 @@ function App() {
                   <div className="mt-6 flex gap-3">
                     <button
                       type="submit"
-                      className={`bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded font-semibold flex items-center justify-center gap-2 ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
-                      disabled={isSubmitting} // Disable button during submission
+                      className={`bg-primary hover:bg-primary-dark px-6 py-2 rounded font-semibold flex items-center justify-center gap-2 text-white ${
+                        isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                      disabled={isSubmitting}
                     >
                       {isSubmitting ? (
                         <>
-                          <DotSpinner /> {/* Show loader */}
+                          <DotSpinner />
                           <span>Adding...</span>
                         </>
                       ) : (
@@ -704,13 +708,13 @@ function App() {
                           department: "",
                           status: "not-started",
                           tags: [],
-                          supervisor: "", // Reset supervisor field
-                          email: "", // Reset email field
-                          supervisorEmail: "", // Reset supervisorEmail
+                          supervisor: "",
+                          email: "",
+                          supervisorEmail: "",
                         });
                         setShowTaskForm(false);
                       }}
-                      className="bg-gray-600 hover:bg-gray-700 px-6 py-2 rounded font-semibold"
+                      className="bg-secondary hover:bg-secondary/80 px-6 py-2 rounded font-semibold text-text-primary"
                     >
                       Cancel
                     </button>
@@ -751,12 +755,12 @@ function App() {
                     return (
                       <div
                         key={task.id}
-                        className="bg-gray-800 rounded-lg overflow-hidden shadow-lg transition-transform transform hover:scale-105"
+                        className="bg-surface rounded-lg overflow-hidden shadow-lg transition-transform transform hover:scale-105 border border-border"
                       >
                         <div className={`${statusInfo.color} h-2`}></div>
                         <div className="p-5">
                           <div className="flex justify-between items-start mb-3">
-                            <h3 className="text-lg font-semibold">{task.name}</h3>
+                            <h3 className="text-lg font-semibold text-text-primary">{task.name}</h3>
                             <span
                               className={`${statusInfo.color} text-xs px-2 py-1 rounded-full text-white`}
                               title={`Status: ${statusInfo.label}`}
@@ -764,7 +768,7 @@ function App() {
                               {statusInfo.label}
                             </span>
                           </div>
-                          <div className="text-gray-400 text-sm mb-2">Task ID: {task.taskId}</div>
+                          <div className="text-text-muted text-sm mb-2">Task ID: {task.taskId}</div>
 
                           {task.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mb-3">
@@ -842,11 +846,11 @@ function App() {
                             </div>
                           </div>
 
-                          <div className="flex justify-between mt-4 border-t border-gray-700 pt-3">
+                          <div className="flex justify-between mt-4 border-t border-border pt-3">
                             <div className="flex gap-2">
                               <button
                                 onClick={() => handleMarkAsDone(task.id)}
-                                className="p-2 bg-green-600 hover:bg-green-700 rounded-full transition-transform transform hover:scale-110"
+                                className="p-2 bg-primary hover:bg-primary-dark rounded-full transition-transform transform hover:scale-110 text-white"
                                 title="Mark as Done"
                               >
                                 <svg
@@ -864,7 +868,7 @@ function App() {
                               </button>
                               <button
                                 onClick={() => handleMarkAsOvertime(task.id)}
-                                className="p-2 bg-red-600 hover:bg-red-700 rounded-full transition-transform transform hover:scale-110"
+                                className="p-2 bg-accent hover:bg-accent/80 rounded-full transition-transform transform hover:scale-110 text-text-primary"
                                 title="Mark as Overtime"
                               >
                                 <svg
@@ -884,7 +888,7 @@ function App() {
                             <div className="flex gap-2">
                               <button
                                 onClick={() => handleEditTask(task.id)}
-                                className="p-2 bg-yellow-600 hover:bg-yellow-700 rounded-full transition-transform transform hover:scale-110"
+                                className="p-2 bg-secondary hover:bg-secondary/80 rounded-full transition-transform transform hover:scale-110 text-text-primary"
                                 title="Edit Task"
                               >
                                 <svg
@@ -898,7 +902,7 @@ function App() {
                               </button>
                               <button
                                 onClick={() => handleDeleteTask(task.id)}
-                                className="p-2 bg-gray-600 hover:bg-gray-700 rounded-full transition-transform transform hover:scale-110"
+                                className="p-2 bg-text-muted hover:bg-text-muted/80 rounded-full transition-transform transform hover:scale-110 text-white"
                                 title="Delete Task"
                               >
                                 <svg

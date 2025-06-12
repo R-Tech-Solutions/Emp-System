@@ -427,14 +427,14 @@ export default function AdminDashboard() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 p-4 md:p-6">
+    <div className="min-h-screen bg-background text-text-primary p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Dashboard Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
           <div className="mt-4 md:mt-0 flex items-center">
-            <div className="bg-gray-800 rounded-lg px-3 py-2 text-sm flex items-center">
-              <Calendar className="h-4 w-4 mr-2" />
-              <span>
+            <div className="bg-surface rounded-lg px-3 py-2 text-sm flex items-center">
+              <Calendar className="h-4 w-4 mr-2 text-primary" />
+              <span className="text-text-secondary">
                 {new Date().toLocaleDateString("en-US", {
                   weekday: "long",
                   year: "numeric",
@@ -450,7 +450,7 @@ export default function AdminDashboard() {
           {/* Add Employee */}
           <Link
             to="/employees"
-            className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-blue-700 transition"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition"
           >
             <UserPlus className="h-5 w-5" />
             <span>Add Employee</span>
@@ -459,7 +459,7 @@ export default function AdminDashboard() {
           {/* Add User */}
           <Link
             to="/user"
-            className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-indigo-700 transition"
+            className="flex items-center gap-2 px-4 py-2 bg-secondary text-text-primary rounded-lg hover:bg-primary-light transition"
           >
             <PlusCircle className="h-5 w-5" />
             <span>Add User</span>
@@ -468,7 +468,7 @@ export default function AdminDashboard() {
           {/* Add Task */}
           <Link
             to="/tasks"
-            className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-yellow-700 transition"
+            className="flex items-center gap-2 px-4 py-2 bg-accent text-text-primary rounded-lg hover:bg-primary-light transition"
           >
             <ClipboardPlus className="h-5 w-5" />
             <span>Add Task</span>
@@ -477,7 +477,7 @@ export default function AdminDashboard() {
           {/* Leave Request */}
           <Link
             to="/leave-requests "
-            className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-red-700 transition"
+            className="flex items-center gap-2 px-4 py-2 bg-primary-light text-text-primary rounded-lg hover:bg-primary transition"
           >
             <Mail className="h-5 w-5" />
             <span>Leave Request</span>
@@ -486,7 +486,7 @@ export default function AdminDashboard() {
           {/* Send Announcement */}
           <Link
             to="/messages"
-            className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-purple-700 transition"
+            className="flex items-center gap-2 px-4 py-2 bg-secondary text-text-primary rounded-lg hover:bg-primary-light transition"
           >
             <Megaphone className="h-5 w-5" />
             <span>Send Announcement</span>
@@ -495,7 +495,7 @@ export default function AdminDashboard() {
           {/* Profile */}
           <Link
             to="/my"
-            className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition"
+            className="flex items-center gap-2 px-4 py-2 bg-surface text-text-primary rounded-lg hover:bg-primary-light transition"
           >
             <UserCircle2 className="h-5 w-5" />
             <span>Profile</span>
@@ -510,83 +510,83 @@ export default function AdminDashboard() {
             {
               title: "Total Employees",
               count: totalEmployees,
-              icon: <Users className="h-6 w-6 text-blue-500" />,
-              border: "border-blue-500",
-              bg: "bg-blue-500",
+              icon: <Users className="h-6 w-6 text-primary" />,
+              border: "border-primary",
+              bg: "bg-primary-light",
             },
             {
               title: "Working Today",
               count: workingToday,
-              icon: <UserCheck className="h-6 w-6 text-green-500" />,
-              border: "border-green-500",
-              bg: "bg-green-500",
+              icon: <UserCheck className="h-6 w-6 text-primary" />,
+              border: "border-primary",
+              bg: "bg-primary-light",
             },
             {
               title: "On Leave Today",
               count: onLeaveTodayDetails.length,
-              icon: <UserX className="h-6 w-6 text-yellow-500" />,
-              border: "border-yellow-500",
-              bg: "bg-yellow-500",
+              icon: <UserX className="h-6 w-6 text-primary" />,
+              border: "border-primary",
+              bg: "bg-primary-light",
               details: onLeaveTodayDetails,
             },
             {
               title: "Future Leaves",
               count: futureLeaveDetails.length,
-              icon: <Calendar className="h-6 w-6 text-blue-500" />,
-              border: "border-blue-500",
-              bg: "bg-blue-500",
+              icon: <Calendar className="h-6 w-6 text-primary" />,
+              border: "border-primary",
+              bg: "bg-primary-light",
               details: futureLeaveDetails,
             },
             {
               title: "Pending Leave Requests",
               count: pendingLeaveDetails.length,
-              icon: <AlignJustifyIcon className="h-6 w-6 text-red-500" />,
-              border: "border-red-500",
-              bg: "bg-red-500",
+              icon: <AlignJustifyIcon className="h-6 w-6 text-primary" />,
+              border: "border-primary",
+              bg: "bg-primary-light",
               details: pendingLeaveDetails,
             },
             {
               title: "Not Started Tasks",
               count: notStartedTasks,
-              icon: <ListChecks className="h-5 w-5 text-white" />,
-              border: "border-blue-800",
-              bg: "bg-blue-800",
+              icon: <ListChecks className="h-5 w-5 text-primary" />,
+              border: "border-primary",
+              bg: "bg-primary-light",
             },
             {
               title: "Started Tasks",
               count: startedTasks,
-              icon: <ListChecks className="h-5 w-5 text-white" />,
-              border: "border-blue-800",
-              bg: "bg-blue-800",
+              icon: <ListChecks className="h-5 w-5 text-primary" />,
+              border: "border-primary",
+              bg: "bg-primary-light",
             },
             {
               title: "Complete Tasks",
               count: completedTasks,
-              icon: <ListChecks className="h-5 w-5 text-white" />,
-              border: "border-green-800",
-              bg: "bg-green-800",
+              icon: <ListChecks className="h-5 w-5 text-primary" />,
+              border: "border-primary",
+              bg: "bg-primary-light",
             },
             {
               title: "Overtime Tasks",
               count: overtimeTasks,
-              icon: <ListChecks className="h-5 w-5 text-white" />,
-              border: "border-red-800",
-              bg: "bg-red-800",
+              icon: <ListChecks className="h-5 w-5 text-primary" />,
+              border: "border-primary",
+              bg: "bg-primary-light",
             },
           ].map((item, index) => (
             <div
               key={index}
-              className={`relative overflow-hidden rounded-xl p-5 shadow-lg  bg-opacity-60 border-l-4 ${item.border} transition-transform transform`}
+              className={`relative overflow-hidden rounded-xl p-5 shadow-lg bg-surface border-l-4 ${item.border} transition-transform transform`}
             >
               <div className="flex items-center">
-                <div className={`p-3 rounded-full ${item.bg} bg-opacity-20`}>
+                <div className={`p-3 rounded-full ${item.bg}`}>
                   {item.icon}
                 </div>
                 <div className="ml-4">
-                  <h2 className="text-sm font-semibold text-gray-300">
+                  <h2 className="text-sm font-semibold text-text-secondary">
                     {item.title}
                   </h2>
-                  <p className="text-2xl font-extrabold text-white">
+                  <p className="text-2xl font-extrabold text-text-primary">
                     {item.count}
                   </p>
                 </div>
@@ -594,18 +594,18 @@ export default function AdminDashboard() {
               {item.details && (
                 <div className="mt-4 max-h-32 overflow-y-auto pr-2">
                   {item.details.length === 0 ? (
-                    <p className="text-sm text-gray-400"></p>
+                    <p className="text-sm text-text-muted"></p>
                   ) : (
-                    <ul className="space-y-2 text-sm text-gray-200">
+                    <ul className="space-y-2 text-sm text-text-secondary">
                       {item.details.map((leave, idx) => (
                         <li
                           key={leave.id + "-" + (leave.leaveDate ? leave.leaveDate.toISOString() : idx)}
-                          className="border-b border-gray-700 pb-1"
+                          className="border-b border-border pb-1"
                         >
                           <strong>{leave.employeeId}</strong>{" "}
                           {leave.employeeName || leave.name}
                           <br />
-                          <span className="text-xs text-gray-400">
+                          <span className="text-xs text-text-muted">
                             ({leave.leaveDate
                               ? new Date(leave.leaveDate).toLocaleDateString()
                               : ""}
@@ -620,8 +620,8 @@ export default function AdminDashboard() {
             </div>
           ))}
         </div>
-        <div className="rounded-2xl shadow-lg  mt-6 px-6 py-5">
-          <h3 className="text-white text-lg font-semibold mb-4">
+        <div className="rounded-2xl shadow-lg mt-6 px-6 py-5 bg-surface">
+          <h3 className="text-text-primary text-lg font-semibold mb-4">
             Contract Days Left Overview
           </h3>
           <ResponsiveContainer
@@ -633,38 +633,39 @@ export default function AdminDashboard() {
               data={calculateContractDetails}
               margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis type="number" stroke="#D1D5DB" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#D9C9D6" />
+              <XAxis type="number" stroke="#5A5A5A" />
               <YAxis
                 dataKey={(employee) =>
                   `${employee.firstName} ${employee.lastName}`
                 }
                 type="category"
-                stroke="#D1D5DB"
+                stroke="#5A5A5A"
                 width={150}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#1F2937",
-                  borderColor: "#374151",
+                  backgroundColor: "#FAF8FA",
+                  borderColor: "#D9C9D6",
+                  color: "#2D2D2D",
                 }}
-                labelStyle={{ color: "#fff" }}
-                cursor={{ fill: "rgba(3, 3, 3, 0.05)" }}
+                labelStyle={{ color: "#2D2D2D" }}
+                cursor={{ fill: "rgba(203, 168, 198, 0.1)" }}
               />
               <Bar
                 dataKey="daysLeft"
                 radius={[0, 5, 5, 0]}
-                label={{ fill: "#ffffff", position: "Right" }}
+                label={{ fill: "#2D2D2D", position: "Right" }}
               >
                 {calculateContractDetails.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
                     fill={
                       entry.status === "Expired"
-                        ? "#DC2626"
+                        ? "#875A7B"
                         : entry.status === "Nearing Expiry"
-                          ? "#F59E0B"
-                          : "#10B981"
+                          ? "#CBA8C6"
+                          : "#D8BFD8"
                     }
                   />
                 ))}
@@ -676,13 +677,13 @@ export default function AdminDashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* Department Distribution - Bar Chart */}
-          <div className="rounded-2xl shadow-2xl p-6 ">
+          <div className="rounded-2xl shadow-2xl p-6 bg-surface">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-white flex items-center">
-                <Building className="h-6 w-6 mr-2 text-blue-500 drop-shadow-md" />
+              <h2 className="text-2xl font-bold text-text-primary flex items-center">
+                <Building className="h-6 w-6 mr-2 text-primary drop-shadow-md" />
                 Department Distribution
               </h2>
-              <span className="text-sm px-3 py-1 bg-blue-700 text-white rounded-full shadow-inner">
+              <span className="text-sm px-3 py-1 bg-primary text-white rounded-full shadow-inner">
                 {departmentStats.length} Departments
               </span>
             </div>
@@ -690,31 +691,31 @@ export default function AdminDashboard() {
               <BarChart data={departmentStats}>
                 <XAxis
                   dataKey="name"
-                  stroke="#94a3b8"
-                  tick={{ fill: "#cbd5e1" }}
+                  stroke="#5A5A5A"
+                  tick={{ fill: "#2D2D2D" }}
                 />
-                <YAxis stroke="#94a3b8" tick={{ fill: "#cbd5e1" }} />
+                <YAxis stroke="#5A5A5A" tick={{ fill: "#2D2D2D" }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#1e293b",
-                    borderColor: "#475569",
-                    color: "#e2e8f0",
+                    backgroundColor: "#FAF8FA",
+                    borderColor: "#D9C9D6",
+                    color: "#2D2D2D",
                   }}
-                  labelStyle={{ color: "#e2e8f0" }}
+                  labelStyle={{ color: "#2D2D2D" }}
                 />
-                <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" fill="#875A7B" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
           {/* Position Distribution - Pie Chart */}
-          <div className=" rounded-2xl shadow-2xl p-6">
+          <div className="rounded-2xl shadow-2xl p-6 bg-surface">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-white flex items-center">
-                <Briefcase className="h-6 w-6 mr-2 text-green-400 drop-shadow-md" />
+              <h2 className="text-2xl font-bold text-text-primary flex items-center">
+                <Briefcase className="h-6 w-6 mr-2 text-primary drop-shadow-md" />
                 Position Distribution
               </h2>
-              <span className="text-sm text-gray-400">
+              <span className="text-sm text-text-secondary">
                 Percentage Distribution
               </span>
             </div>
@@ -734,36 +735,42 @@ export default function AdminDashboard() {
                   {positionStats.map((_, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={pieColors[index % pieColors.length]}
+                      fill={[
+                        "#875A7B", // Primary
+                        "#F5EDF2", // Primary Light
+                        "#6C4462", // Primary Dark
+                        "#CBA8C6", // Secondary
+                        "#D8BFD8", // Accent
+                      ][index % 5]}
                     />
                   ))}
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#1e293b",
-                    borderColor: "#475569",
-                    color: "#e2e8f0",
+                    backgroundColor: "#FAF8FA",
+                    borderColor: "#D9C9D6",
+                    color: "#2D2D2D",
                   }}
-                  labelStyle={{ color: "#e2e8f0" }}
+                  labelStyle={{ color: "#2D2D2D" }}
                 />
                 <Legend
                   layout="horizontal"
                   align="center"
                   verticalAlign="bottom"
-                  wrapperStyle={{ color: "#e2e8f0" }}
+                  wrapperStyle={{ color: "#2D2D2D" }}
                 />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
-        <div className="bg-gray-800 rounded-2xl shadow-lg overflow-hidden mb-6">
-          <div className="px-5 py-4 border-b border-gray-700 flex flex-col md:flex-row justify-between md:items-center">
+        <div className="bg-surface rounded-2xl shadow-lg overflow-hidden mb-6">
+          <div className="px-5 py-4 border-b border-border flex flex-col md:flex-row justify-between md:items-center">
             <div>
-              <h2 className="text-xl font-bold text-white flex items-center">
-                <UserCheck className="h-5 w-5 mr-2 text-blue-400" />
+              <h2 className="text-xl font-bold text-text-primary flex items-center">
+                <UserCheck className="h-5 w-5 mr-2 text-primary" />
                 Today's Employee Status
               </h2>
-              <p className="text-sm text-gray-400 mt-1">
+              <p className="text-sm text-text-secondary mt-1">
                 Live attendance and working status overview
               </p>
             </div>
@@ -772,11 +779,11 @@ export default function AdminDashboard() {
               {/* Search Input */}
               <div className="relative w-full sm:w-60">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-4 w-4 text-gray-400" />
+                  <Search className="h-4 w-4 text-text-muted" />
                 </div>
                 <input
                   type="text"
-                  className="bg-gray-700 text-white text-sm rounded-lg block w-full pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
+                  className="bg-surface text-text-primary text-sm rounded-lg block w-full pl-10 p-2.5 focus:ring-primary focus:border-primary placeholder-text-muted border border-border"
                   placeholder="Search employees..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -785,7 +792,7 @@ export default function AdminDashboard() {
 
               {/* Filter Dropdown */}
               <select
-                className="bg-gray-700 text-white text-sm rounded-lg block p-2.5 focus:ring-blue-500 focus:border-blue-500"
+                className="bg-surface text-text-primary text-sm rounded-lg block p-2.5 focus:ring-primary focus:border-primary border border-border"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
@@ -798,12 +805,12 @@ export default function AdminDashboard() {
 
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left table-auto">
-              <thead className="text-xs uppercase bg-gray-700 sticky top-0 z-10">
+              <thead className="text-xs uppercase bg-primary-light sticky top-0 z-10">
                 <tr>
-                  <th className="px-6 py-3">Employee</th>
-                  <th className="px-6 py-3">Department</th>
-                  <th className="px-6 py-3">Position</th>
-                  <th className="px-6 py-3">Status</th>
+                  <th className="px-6 py-3 text-text-primary">Employee</th>
+                  <th className="px-6 py-3 text-text-primary">Department</th>
+                  <th className="px-6 py-3 text-text-primary">Position</th>
+                  <th className="px-6 py-3 text-text-primary">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -811,39 +818,39 @@ export default function AdminDashboard() {
                   attendanceData.map((employee, index) => (
                     <tr
                       key={index}
-                      className={`border-b border-gray-700 ${index % 2 === 0 ? "bg-gray-800" : "bg-gray-750"
-                        } hover:bg-gray-700 transition-colors`}
+                      className={`border-b border-border ${index % 2 === 0 ? "bg-surface" : "bg-primary-light"} hover:bg-secondary/20 transition-colors`}
                     >
                       <td className="px-6 py-4 flex items-center whitespace-nowrap">
-                        <span className="font-medium text-white">
+                        <span className="font-medium text-text-primary">
                           {employee.firstName} {employee.lastName}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-gray-300">{employee.department}</td>
-                      <td className="px-6 py-4 text-gray-300">{employee.position}</td>
+                      <td className="px-6 py-4 text-text-secondary">{employee.department}</td>
+                      <td className="px-6 py-4 text-text-secondary">{employee.position}</td>
                       <td className="px-6 py-4">
                         <span
                           title={employee.status}
-                          className={`flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium w-max ${employee.status === "Present"
-                              ? "bg-green-900 text-green-300"
-                              : "bg-yellow-900 text-yellow-300"
-                            }`}
+                          className={`flex items-center gap-2 px-2 py-1 rounded-full text-xs font-medium w-max ${
+                            employee.status === "Present"
+                              ? "bg-primary-light text-primary"
+                              : "bg-accent text-primary"
+                          }`}
                         >
                           <span
-                            className={`w-2 h-2 rounded-full ${employee.status === "Present"
-                                ? "bg-green-400"
-                                : "bg-yellow-400"
-                              }`}
+                            className={`w-2 h-2 rounded-full ${
+                              employee.status === "Present"
+                                ? "bg-primary"
+                                : "bg-primary"
+                            }`}
                           ></span>
                           {employee.status}
                         </span>
                       </td>
-                      {/* <td className="px-6 py-4 text-gray-300">{employee.checkIn}</td> */}
                     </tr>
                   ))
                 ) : (
                   <tr className="text-center">
-                    <td colSpan="6" className="px-6 py-6 text-gray-500">
+                    <td colSpan="6" className="px-6 py-6 text-text-muted">
                       No attendance records found for today.
                     </td>
                   </tr>
@@ -852,17 +859,15 @@ export default function AdminDashboard() {
             </table>
           </div>
 
-          <div className="px-5 py-4 bg-gray-800 border-t border-gray-700 flex flex-col sm:flex-row justify-between items-center">
+          <div className="px-5 py-4 bg-surface border-t border-border flex flex-col sm:flex-row justify-between items-center">
             <div className="flex items-center space-x-2">
               <button
-                className="px-3 py-1 bg-gray-700 rounded-md text-sm hover:bg-gray-600 disabled:opacity-50"
-              // disabled={currentPage === 1}
+                className="px-3 py-1 bg-primary-light text-text-primary rounded-md text-sm hover:bg-primary hover:text-white disabled:opacity-50"
               >
                 Previous
               </button>
               <button
-                className="px-3 py-1 bg-blue-600 rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
-              // disabled={currentPage * pageSize >= filteredEmployees.length}
+                className="px-3 py-1 bg-primary text-white rounded-md text-sm hover:bg-primary-dark disabled:opacity-50"
               >
                 Next
               </button>
@@ -870,14 +875,14 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="bg-gray-800 rounded-2xl shadow-lg overflow-hidden mb-6">
-          <div className="px-5 py-4 border-b border-gray-700 flex flex-col md:flex-row justify-between md:items-center gap-4">
+        <div className="bg-surface rounded-2xl shadow-lg overflow-hidden mb-6">
+          <div className="px-5 py-4 border-b border-border flex flex-col md:flex-row justify-between md:items-center gap-4">
             <div>
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Users className="h-5 w-5 text-blue-400" />
+              <h2 className="text-xl font-bold text-text-primary flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
                 Employee Directory
               </h2>
-              <p className="text-sm text-gray-400 mt-1">
+              <p className="text-sm text-text-secondary mt-1">
                 Manage and view all employee records
               </p>
             </div>
@@ -886,11 +891,11 @@ export default function AdminDashboard() {
               {/* Search Input */}
               <div className="relative w-full sm:w-60">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-4 w-4 text-gray-400" />
+                  <Search className="h-4 w-4 text-text-muted" />
                 </div>
                 <input
                   type="text"
-                  className="bg-gray-700 text-white text-sm rounded-lg block w-full pl-10 p-2.5 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
+                  className="bg-surface text-text-primary text-sm rounded-lg block w-full pl-10 p-2.5 focus:ring-primary focus:border-primary placeholder-text-muted border border-border"
                   placeholder="Search employees..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -900,7 +905,7 @@ export default function AdminDashboard() {
               {/* Advanced Filters Toggle */}
               <button
                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                className="flex items-center gap-2 px-3 py-2.5 bg-gray-700 rounded-lg hover:bg-gray-600 transition text-sm"
+                className="flex items-center gap-2 px-3 py-2.5 bg-primary-light text-text-primary rounded-lg hover:bg-primary hover:text-white transition text-sm"
               >
                 <Filter className="h-4 w-4" />
                 <span>Filters</span>
@@ -915,14 +920,14 @@ export default function AdminDashboard() {
 
           {/* Advanced Filters Panel */}
           {showAdvancedFilters && (
-            <div className="px-5 py-4 border-b border-gray-700 bg-gray-750">
+            <div className="px-5 py-4 border-b border-border bg-primary-light/30">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-text-primary mb-1">
                     Department
                   </label>
                   <select
-                    className="bg-gray-700 text-white text-sm rounded-lg block w-full p-2.5"
+                    className="bg-surface text-text-primary text-sm rounded-lg block w-full p-2.5 border border-border"
                     value={advancedFilters.department}
                     onChange={(e) =>
                       setAdvancedFilters({
@@ -940,11 +945,11 @@ export default function AdminDashboard() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-text-primary mb-1">
                     Position
                   </label>
                   <select
-                    className="bg-gray-700 text-white text-sm rounded-lg block w-full p-2.5"
+                    className="bg-surface text-text-primary text-sm rounded-lg block w-full p-2.5 border border-border"
                     value={advancedFilters.position}
                     onChange={(e) =>
                       setAdvancedFilters({
@@ -972,7 +977,7 @@ export default function AdminDashboard() {
                       contractStatus: "",
                     })
                   }
-                  className="text-sm text-red-400 hover:text-red-300"
+                  className="text-sm text-primary hover:text-primary-dark"
                 >
                   Clear All Filters
                 </button>
@@ -982,11 +987,11 @@ export default function AdminDashboard() {
 
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left table-auto">
-              <thead className="text-xs uppercase bg-gray-700 sticky top-0 z-10">
+              <thead className="text-xs uppercase bg-primary-light sticky top-0 z-10">
                 <tr>
-                  <th className="px-6 py-3">Employee</th>
-                  <th className="px-6 py-3">Department</th>
-                  <th className="px-6 py-3">Position</th>
+                  <th className="px-6 py-3 text-text-primary">Employee</th>
+                  <th className="px-6 py-3 text-text-primary">Department</th>
+                  <th className="px-6 py-3 text-text-primary">Position</th>
                 </tr>
               </thead>
               <tbody>
@@ -998,28 +1003,29 @@ export default function AdminDashboard() {
                     return (
                       <tr
                         key={employee.id}
-                        className={`border-b border-gray-700 ${index % 2 === 0 ? "bg-gray-800" : "bg-gray-750"
-                          } hover:bg-gray-700 transition-colors`}
+                        className={`border-b border-border ${
+                          index % 2 === 0 ? "bg-surface" : "bg-primary-light"
+                        } hover:bg-secondary/20 transition-colors`}
                       >
                         <td className="px-6 py-4 flex items-center whitespace-nowrap">
                           <img
-                            className="w-8 h-8 rounded-full mr-3 object-cover"
+                            className="w-8 h-8 rounded-full mr-3 object-cover border-2 border-primary-light"
                             src={employee.profileImage || "/placeholder.svg"}
                             alt={employee.name}
                           />
                           <div>
-                            <span className="font-medium text-white block">
+                            <span className="font-medium text-text-primary block">
                               {employee.firstName} {employee.lastName}
                             </span>
-                            <span className="text-xs text-gray-400">
+                            <span className="text-xs text-text-muted">
                               ID: {employee.employeeId}
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-gray-300">
+                        <td className="px-6 py-4 text-text-secondary">
                           {employee.department}
                         </td>
-                        <td className="px-6 py-4 text-gray-300">
+                        <td className="px-6 py-4 text-text-secondary">
                           {employee.position}
                         </td>
                       </tr>
@@ -1027,7 +1033,7 @@ export default function AdminDashboard() {
                   })
                 ) : (
                   <tr className="text-center">
-                    <td colSpan="6" className="px-6 py-6 text-gray-500">
+                    <td colSpan="6" className="px-6 py-6 text-text-muted">
                       No matching employees found.
                     </td>
                   </tr>
@@ -1036,17 +1042,15 @@ export default function AdminDashboard() {
             </table>
           </div>
 
-          <div className="px-5 py-4 bg-gray-800 border-t border-gray-700 flex flex-col sm:flex-row justify-between items-center">
+          <div className="px-5 py-4 bg-surface border-t border-border flex flex-col sm:flex-row justify-between items-center">
             <div className="flex items-center space-x-2">
               <button
-                className="px-3 py-1 bg-gray-700 rounded-md text-sm hover:bg-gray-600 disabled:opacity-50"
-                disabled={true} // Implement pagination logic
+                className="px-3 py-1 bg-primary-light text-text-primary rounded-md text-sm hover:bg-primary hover:text-white disabled:opacity-50"
               >
                 Previous
               </button>
               <button
-                className="px-3 py-1 bg-blue-600 rounded-md text-sm hover:bg-blue-700 disabled:opacity-50"
-                disabled={true} // Implement pagination logic
+                className="px-3 py-1 bg-primary text-white rounded-md text-sm hover:bg-primary-dark disabled:opacity-50"
               >
                 Next
               </button>
@@ -1054,44 +1058,43 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-xl p-6 transition-transform hover:scale-[1.01]">
-            <h4 className="text-lg font-semibold text-white mb-5 flex items-center gap-2">
+          <div className="bg-surface rounded-2xl shadow-xl p-6 transition-transform hover:scale-[1.01]">
+            <h4 className="text-lg font-semibold text-text-primary mb-5 flex items-center gap-2">
               🎂 Upcoming Birthdays
             </h4>
-            <div className="space-y-4 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-pink-500 scrollbar-track-gray-800 pr-2">
+            <div className="space-y-4 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-primary scrollbar-track-surface pr-2">
               {upcomingBirthdays.length === 0 ? (
-                <div className="text-gray-400 text-sm text-center py-6">
+                <div className="text-text-muted text-sm text-center py-6">
                   No upcoming birthdays
                 </div>
               ) : (
                 upcomingBirthdays.map((birthday) => (
                   <div
                     key={birthday.employeeId}
-                    className="flex items-start p-4 rounded-xl bg-gray-700/60 hover:bg-gray-600 transition-all shadow-inner"
+                    className="flex items-start p-4 rounded-xl bg-primary-light/30 hover:bg-primary-light/50 transition-all shadow-inner"
                   >
                     <div className="relative w-12 h-12 mr-4">
                       <img
-                        className="w-12 h-12 rounded-full object-cover border-2 border-pink-500 shadow-md"
+                        className="w-12 h-12 rounded-full object-cover border-2 border-primary shadow-md"
                         src={birthday.profilePhoto || "/default-avatar.png"}
                         alt={birthday.firstName}
                         onError={(e) => {
                           e.target.src = "/default-avatar.png";
                         }}
                       />
-                      <span className="absolute bottom-0 right-0 bg-pink-600 text-white text-[10px] px-1.5 py-0.5 rounded-full shadow-lg">
+                      <span className="absolute bottom-0 right-0 bg-primary text-white text-[10px] px-1.5 py-0.5 rounded-full shadow-lg">
                         {birthday.ageTurning}
                       </span>
                     </div>
                     <div className="flex-1">
-                      <p className="text-white font-medium text-sm leading-snug">
+                      <p className="text-text-primary font-medium text-sm leading-snug">
                         {birthday.name}
-                        <span className="text-xs text-gray-400 ml-1">
+                        <span className="text-xs text-text-muted ml-1">
                           (ID: {birthday.employeeId})
                         </span>
                       </p>
-                      <p className="text-xs text-gray-300 mt-1 leading-relaxed">
+                      <p className="text-xs text-text-secondary mt-1 leading-relaxed">
                         📅{" "}
                         {new Date(birthday.dateOfBirth).toLocaleDateString(
                           "en-US",
@@ -1103,7 +1106,7 @@ export default function AdminDashboard() {
                         )}
                         <br />
                         🎈 In{" "}
-                        <span className="font-semibold text-pink-400">
+                        <span className="font-semibold text-primary">
                           {birthday.daysUntilBirthday}
                         </span>{" "}
                         day(s)
@@ -1115,35 +1118,35 @@ export default function AdminDashboard() {
             </div>
           </div>
           {activeWidgets.assets && (
-            <div className="bg-gray-800 rounded-2xl shadow-lg p-6">
+            <div className="bg-surface rounded-2xl shadow-lg p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-                  <Briefcase className="h-5 w-5 text-blue-400" />
+                <h2 className="text-xl font-semibold text-text-primary flex items-center gap-2">
+                  <Briefcase className="h-5 w-5 text-primary" />
                   Asset Allocation
                 </h2>
-                <span className="text-xs px-2 py-1 bg-blue-600 text-white rounded-full">
+                <span className="text-xs px-2 py-1 bg-primary text-white rounded-full">
                   {assets.length} Assets
                 </span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="text-xs bg-gray-700">
+                  <thead className="text-xs bg-primary-light">
                     <tr>
-                      <th className="p-3 text-left">Asset</th>
-                      <th className="p-3 text-left">Type</th>
-                      <th className="p-3 text-left">Assigned To</th>
-                      <th className="p-3 text-left">Status</th>
+                      <th className="p-3 text-left text-text-primary">Asset</th>
+                      <th className="p-3 text-left text-text-primary">Type</th>
+                      <th className="p-3 text-left text-text-primary">Assigned To</th>
+                      <th className="p-3 text-left text-text-primary">Status</th>
                     </tr>
                   </thead>
                   <tbody>
                     {assets.slice(0, 5).map((asset) => (
                       <tr
                         key={asset.id}
-                        className="border-b border-gray-700 hover:bg-gray-700"
+                        className="border-b border-border hover:bg-primary-light/30"
                       >
-                        <td className="p-3">{asset.name}</td>
-                        <td className="p-3 capitalize">{asset.type}</td>
-                        <td className="p-3">
+                        <td className="p-3 text-text-primary">{asset.name}</td>
+                        <td className="p-3 text-text-secondary capitalize">{asset.type}</td>
+                        <td className="p-3 text-text-secondary">
                           {asset.assignedTo ? (
                             <div className="flex items-center gap-2">
                               <span>{asset.assignedTo}</span>
@@ -1154,12 +1157,13 @@ export default function AdminDashboard() {
                         </td>
                         <td className="p-3">
                           <span
-                            className={`px-2 py-1 rounded-full text-xs ${asset.status === "Active"
-                              ? "bg-green-900 text-green-300"
-                              : asset.status === "Maintenance"
-                                ? "bg-yellow-900 text-yellow-300"
-                                : "bg-red-900 text-red-300"
-                              }`}
+                            className={`px-2 py-1 rounded-full text-xs ${
+                              asset.status === "Active"
+                                ? "bg-primary-light text-primary"
+                                : asset.status === "Maintenance"
+                                ? "bg-accent text-primary"
+                                : "bg-primary-light text-primary"
+                            }`}
                           >
                             {asset.status}
                           </span>
@@ -1170,13 +1174,13 @@ export default function AdminDashboard() {
                 </table>
               </div>
               {assets.length === 0 && (
-                <p className="text-center text-gray-400 py-4">
+                <p className="text-center text-text-muted py-4">
                   No asset data available
                 </p>
               )}
               {assets.length > 5 && (
                 <div className="mt-4 text-right">
-                  <button className="text-sm text-blue-400 hover:text-blue-300">
+                  <button className="text-sm text-primary hover:text-primary-dark">
                     View All Assets →
                   </button>
                 </div>

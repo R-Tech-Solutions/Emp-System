@@ -441,11 +441,11 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-background text-text-primary">
       <div className="container mx-auto py-8 px-4">
-        {reduxIsLoading || localIsLoading ? ( // Use `reduxIsLoading` instead of `isLoading`
+        {reduxIsLoading || localIsLoading ? (
           <div className="flex justify-center items-center h-screen">
-            <DotSpinner /> {/* Show spinner while loading */}
+            <DotSpinner />
           </div>
         ) : (
           <>
@@ -453,14 +453,14 @@ export default function AdminDashboard() {
             <div className="flex flex-wrap gap-4 mb-8 justify-start">
               <button
                 onClick={() => setAddGroupDialogOpen(true)}
-                className="flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-md"
+                className="flex items-center px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-md"
               >
                 <Plus className="mr-2 h-4 w-4" /> Add Groups
               </button>
 
               <button
                 onClick={() => setSendAnnouncementDialogOpen(true)}
-                className="flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-md"
+                className="flex items-center px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-md"
               >
                 <Plus className="mr-2 h-4 w-4" /> Send Announcement
               </button>
@@ -468,18 +468,16 @@ export default function AdminDashboard() {
 
             {/* Tabs for Groups and Announcements */}
             <div className="mb-6">
-              <div className="flex border-b border-gray-700">
+              <div className="flex border-b border-border">
                 <button
                   onClick={() => setActiveTab("groups")}
-                  className={`px-4 py-2 ${activeTab === "groups" ? "border-b-2 border-white font-medium" : "text-gray-400 hover:text-white"
-                    }`}
+                  className={`px-4 py-2 ${activeTab === "groups" ? "border-b-2 border-primary font-medium" : "text-text-secondary hover:text-text-primary"}`}
                 >
                   Groups
                 </button>
                 <button
                   onClick={() => setActiveTab("announcements")}
-                  className={`px-4 py-2 ${activeTab === "announcements" ? "border-b-2 border-white font-medium" : "text-gray-400 hover:text-white"
-                    }`}
+                  className={`px-4 py-2 ${activeTab === "announcements" ? "border-b-2 border-primary font-medium" : "text-text-secondary hover:text-text-primary"}`}
                 >
                   Announcements
                 </button>
@@ -491,46 +489,32 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {groups && groups.length > 0 ? (
                   groups.map((group) => (
-                    <div key={group.id} className="bg-gray-800 rounded-lg overflow-hidden shadow-lg">
+                    <div key={group.id} className="bg-surface rounded-lg overflow-hidden shadow-lg border border-border">
                       <div className="p-4">
-                        <h3 className="text-lg font-semibold">{group.title}</h3>
-                        <p className="text-gray-400 text-sm mt-1">{group.description}</p>
+                        <h3 className="text-lg font-semibold text-text-primary">{group.title}</h3>
+                        <p className="text-text-secondary text-sm mt-1">{group.description}</p>
                       </div>
                       <div className="px-4 pb-2">
-                        <p className="text-sm text-gray-400">{group.members?.length || 0} members</p>
-                        {/* <div className="flex flex-wrap gap-2 mt-2">
-                          {group.members?.slice(0, 3).map((member) => (
-                            <div key={member.employeeId} className="w-8 h-8 rounded-full overflow-hidden bg-gray-600">
-                              <img
-                                src={`data:image/png;base64,${member.profileImage}`}
-                                alt={member.firstname}
-                                className="w-full h-full object-cover"
-                              />
+                        <p className="text-sm text-text-secondary">{group.members?.length || 0} members</p>
                             </div>
-                          ))}
-                          {group.members?.length > 3 && (
-                            <span className="text-xs text-gray-400">+{group.members.length - 3} more</span>
-                          )}
-                        </div> */}
-                      </div>
-                      <div className="px-4 py-3 bg-gray-700 flex justify-end gap-2">
+                      <div className="px-4 py-3 bg-primary-light flex justify-end gap-2">
                         <button
                           onClick={() => handleViewGroup(group)}
-                          className="p-1 rounded-md hover:bg-gray-600"
+                          className="p-1 rounded-md hover:bg-primary/10 text-primary"
                           title="View"
                         >
                           <Eye className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleEditGroup(group)}
-                          className="p-1 rounded-md hover:bg-gray-600"
+                          className="p-1 rounded-md hover:bg-primary/10 text-primary"
                           title="Edit"
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteGroup(group.id)}
-                          className="p-1 rounded-md hover:bg-gray-600"
+                          className="p-1 rounded-md hover:bg-accent/10 text-accent"
                           title="Delete"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -540,12 +524,12 @@ export default function AdminDashboard() {
                   ))
                 ) : (
                   <div className="col-span-full">
-                    <table className="w-full bg-gray-800 rounded-lg overflow-hidden shadow-lg">
+                    <table className="w-full bg-surface rounded-lg overflow-hidden shadow-lg border border-border">
                       <thead>
                         <tr>
-                          <th className="text-left p-4 text-gray-400 flex items-center">
+                          <th className="text-left p-4 text-text-secondary flex items-center">
                             No Groups Available
-                            {reduxIsLoading && ( // Use reduxIsLoading instead of isLoading
+                            {reduxIsLoading && (
                               <div className="ml-2 flex items-center justify-center w-[50px] h-[50px]">
                               </div>
                             )}
@@ -554,36 +538,73 @@ export default function AdminDashboard() {
                       </thead>
                     </table>
                   </div>
-
                 )}
               </div>
             )}
 
             {/* Announcements Tab */}
             {activeTab === "announcements" && (
-              <div className="bg-gray-800 rounded-lg overflow-hidden shadow-lg">
+              <div className="bg-surface rounded-lg overflow-hidden shadow-lg border border-border">
                 <table className="w-full">
-                  <thead><tr className="border-b border-gray-700"><th className="text-left p-4">Title</th><th className="text-left p-4">Date</th><th className="text-left p-4">Employees</th><th className="text-right p-4">Actions</th></tr></thead>
-                  <tbody>{announcements && announcements.length > 0 ? (announcements.map((announcement) => (<tr key={announcement.id} className="border-b border-gray-700 hover:bg-gray-700"><td className="p-4 font-medium">{announcement.title}</td><td className="p-4">{new Date(announcement.date || announcement.createdAt).toLocaleDateString()}</td><td className="p-4"><div className="flex flex-wrap gap-1">{announcement.members && announcement.members.length > 0 ? (<span className="text-xs text-gray-400">{announcement.members.filter((member) => member.isSelected).length}</span>) : (<span className="text-xs text-gray-400">No employees</span>)}</div></td><td className="p-4 text-right"><button onClick={() => handleViewAnnouncement(announcement)} className="p-1 rounded-md hover:bg-gray-600" title="View"><Eye className="h-4 w-4" /></button></td></tr>))) : (<tr><td colSpan="4" className="p-4 text-center text-gray-400">No announcements available.</td></tr>)}</tbody>
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left p-4 bg-primary-light text-text-primary">Title</th>
+                      <th className="text-left p-4 bg-primary-light text-text-primary">Date</th>
+                      <th className="text-left p-4 bg-primary-light text-text-primary">Employees</th>
+                      <th className="text-right p-4 bg-primary-light text-text-primary">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {announcements && announcements.length > 0 ? (
+                      announcements.map((announcement) => (
+                        <tr key={announcement.id} className="border-b border-border hover:bg-surface/50">
+                          <td className="p-4 font-medium text-text-primary">{announcement.title}</td>
+                          <td className="p-4 text-text-secondary">{new Date(announcement.date || announcement.createdAt).toLocaleDateString()}</td>
+                          <td className="p-4">
+                            <div className="flex flex-wrap gap-1">
+                              {announcement.members && announcement.members.length > 0 ? (
+                                <span className="text-xs text-text-secondary">{announcement.members.filter((member) => member.isSelected).length}</span>
+                              ) : (
+                                <span className="text-xs text-text-secondary">No employees</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-4 text-right">
+                            <button
+                              onClick={() => handleViewAnnouncement(announcement)}
+                              className="p-1 rounded-md hover:bg-primary/10 text-primary"
+                              title="View"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="4" className="p-4 text-center text-text-secondary">No announcements available.</td>
+                      </tr>
+                    )}
+                  </tbody>
                 </table>
               </div>
             )}
 
             {/* Add Group Dialog */}
             {addGroupDialogOpen && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                <div className="bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                <div className="bg-surface rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-border">
                   <div className="p-6">
                     <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-bold">Add New Group</h2>
-                      <button onClick={() => setAddGroupDialogOpen(false)} className="p-1 rounded-md hover:bg-gray-700">
+                      <h2 className="text-xl font-bold text-text-primary">Add New Group</h2>
+                      <button onClick={() => setAddGroupDialogOpen(false)} className="p-1 rounded-md hover:bg-primary/10 text-primary">
                         <X className="h-5 w-5" />
                       </button>
                     </div>
 
                     <div className="space-y-4">
                       <div>
-                        <label htmlFor="group-title" className="block text-sm font-medium mb-1">
+                        <label htmlFor="group-title" className="block text-sm font-medium text-text-secondary mb-1">
                           Group Title
                         </label>
                         <input
@@ -592,12 +613,12 @@ export default function AdminDashboard() {
                           value={newGroup.title}
                           onChange={(e) => setNewGroup({ ...newGroup, title: e.target.value })}
                           placeholder="Enter group title"
-                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                          className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-primary"
                         />
                       </div>
 
                       <div>
-                        <label htmlFor="group-description" className="block text-sm font-medium mb-1">
+                        <label htmlFor="group-description" className="block text-sm font-medium text-text-secondary mb-1">
                           Description
                         </label>
                         <textarea
@@ -605,32 +626,32 @@ export default function AdminDashboard() {
                           value={newGroup.description}
                           onChange={(e) => setNewGroup({ ...newGroup, description: e.target.value })}
                           placeholder="Enter group description"
-                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                          className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-primary"
                           rows={3}
                         ></textarea>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="relative" ref={positionDropdownRef}>
-                          <label className="block text-sm font-medium mb-1">Position</label>
+                          <label className="block text-sm font-medium text-text-secondary mb-1">Position</label>
                           <button
                             type="button"
                             onClick={() => setPositionDropdownOpen(!positionDropdownOpen)}
-                            className="w-full flex items-center justify-between px-3 py-2 bg-gray-700 border border-gray-600 rounded-md"
+                            className="w-full flex items-center justify-between px-3 py-2 bg-background border border-border rounded-md text-text-primary"
                           >
                             <span>{newGroup.selectedPosition}</span>
                             <ChevronDown className="h-4 w-4" />
                           </button>
                           {positionDropdownOpen && (
-                            <div className="absolute z-10 mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">
+                            <div className="absolute z-10 mt-1 w-full bg-surface border border-border rounded-md shadow-lg max-h-60 overflow-auto">
                               {positions.map((position) => (
                                 <div
-                                  key={position} // Add unique key
-                                  className="px-3 py-2 hover:bg-gray-600 cursor-pointer flex items-center"
+                                  key={position}
+                                  className="px-3 py-2 hover:bg-primary-light cursor-pointer flex items-center text-text-primary"
                                   onClick={() => handlePositionSelect(position)}
                                 >
                                   {position === newGroup.selectedPosition && (
-                                    <Check className="h-4 w-4 mr-2 text-green-500" />
+                                    <Check className="h-4 w-4 mr-2 text-primary" />
                                   )}
                                   <span className={position === newGroup.selectedPosition ? "ml-2" : "ml-6"}>
                                     {position}
@@ -642,25 +663,25 @@ export default function AdminDashboard() {
                         </div>
 
                         <div className="relative" ref={departmentDropdownRef}>
-                          <label className="block text-sm font-medium mb-1">Department</label>
+                          <label className="block text-sm font-medium text-text-secondary mb-1">Department</label>
                           <button
                             type="button"
                             onClick={() => setDepartmentDropdownOpen(!departmentDropdownOpen)}
-                            className="w-full flex items-center justify-between px-3 py-2 bg-gray-700 border border-gray-600 rounded-md"
+                            className="w-full flex items-center justify-between px-3 py-2 bg-background border border-border rounded-md text-text-primary"
                           >
                             <span>{newGroup.selectedDepartment}</span>
                             <ChevronDown className="h-4 w-4" />
                           </button>
                           {departmentDropdownOpen && (
-                            <div className="absolute z-10 mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">
+                            <div className="absolute z-10 mt-1 w-full bg-surface border border-border rounded-md shadow-lg max-h-60 overflow-auto">
                               {departments.map((department) => (
                                 <div
-                                  key={department} // Add unique key
-                                  className="px-3 py-2 hover:bg-gray-600 cursor-pointer flex items-center"
+                                  key={department}
+                                  className="px-3 py-2 hover:bg-primary-light cursor-pointer flex items-center text-text-primary"
                                   onClick={() => handleDepartmentSelect(department)}
                                 >
                                   {department === newGroup.selectedDepartment && (
-                                    <Check className="h-4 w-4 mr-2 text-green-500" />
+                                    <Check className="h-4 w-4 mr-2 text-primary" />
                                   )}
                                   <span className={department === newGroup.selectedDepartment ? "ml-2" : "ml-6"}>
                                     {department}
@@ -674,55 +695,56 @@ export default function AdminDashboard() {
 
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="block text-sm font-medium">Employees</label>
+                          <label className="block text-sm font-medium text-text-secondary">Employees</label>
                           <input
                             type="text"
                             placeholder="Search employees..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="px-3 py-1 bg-gray-700 border border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 w-[200px]"
+                            className="px-3 py-1 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-primary w-[200px]"
                           />
                         </div>
 
-                        <div className="border border-gray-600 rounded-md h-[200px] overflow-y-auto">
+                        <div className="border border-border rounded-md h-[200px] overflow-y-auto">
                           {filteredEmployees.length > 0 ? (
                             filteredEmployees.map((employee) => {
                               const isAdded = newGroup.members.some((mem) => mem.employeeId === employee.employeeId);
                               return (
                                 <div
-                                  key={employee.employeeId} // Add unique key
-                                  className={`flex items-center justify-between p-2 hover:bg-gray-700 border-b border-gray-600 last:border-b-0 cursor-pointer ${isAdded ? "bg-gray-700" : ""
+                                  key={employee.employeeId}
+                                  className={`flex items-center justify-between p-2 hover:bg-primary-light border-b border-border last:border-b-0 cursor-pointer ${
+                                    isAdded ? "bg-primary-light" : ""
                                     }`}
                                   onClick={() => toggleEmployeeSelection(employee)}
                                 >
                                   <div className="flex items-center gap-2">
                                     <div>
-                                      <p className="text-sm font-medium">{employee.firstName}{employee.lastName}</p>
-                                      <p className="text-xs text-gray-400">
+                                      <p className="text-sm font-medium text-text-primary">{employee.firstName}{employee.lastName}</p>
+                                      <p className="text-xs text-text-secondary">
                                         {employee.employeeId} - {employee.position} ({employee.department})
                                       </p>
-                                      <p className="text-xs text-gray-400">{employee.email}</p>
+                                      <p className="text-xs text-text-secondary">{employee.email}</p>
                                     </div>
                                   </div>
                                   <button
-                                    className={`p-1 rounded-md ${isAdded ? "bg-green-600" : "bg-red-600 hover:bg-red-700"}`}
+                                    className={`p-1 rounded-md ${isAdded ? "bg-primary text-white" : "bg-accent text-white hover:bg-accent/80"}`}
                                     onClick={(e) => {
-                                      e.stopPropagation(); // Prevent triggering the row click
+                                      e.stopPropagation();
                                       toggleEmployeeSelection(employee);
                                     }}
                                     disabled={isAdded}
                                   >
                                     {isAdded ? (
-                                      <Check className="h-4 w-4 text-white" title="Added" />
+                                      <Check className="h-4 w-4" title="Added" />
                                     ) : (
-                                      <X className="h-4 w-4 text-white" title="Remove" />
+                                      <X className="h-4 w-4" title="Remove" />
                                     )}
                                   </button>
                                 </div>
                               );
                             })
                           ) : (
-                            <p className="text-center text-gray-400 p-4">
+                            <p className="text-center text-text-secondary p-4">
                               {newGroup.selectedPosition !== "All Positions" ||
                                 newGroup.selectedDepartment !== "All Departments"
                                 ? "No employees match the selected criteria"
@@ -734,33 +756,26 @@ export default function AdminDashboard() {
 
                       {newGroup.members.length > 0 && (
                         <div>
-                          <label className="block text-sm font-medium mb-1">Selected Employees</label>
-                          <div className="border border-gray-600 rounded-md h-[200px] overflow-y-auto">
+                          <label className="block text-sm font-medium text-text-secondary mb-1">Selected Employees</label>
+                          <div className="border border-border rounded-md h-[200px] overflow-y-auto">
                             {newGroup.members.map((member) => (
                               <div
                                 key={member.employeeId}
-                                className="flex items-center justify-between p-2 hover:bg-gray-700 border-b border-gray-600 last:border-b-0"
+                                className="flex items-center justify-between p-2 hover:bg-primary-light border-b border-border last:border-b-0"
                               >
                                 <div className="flex items-center gap-2">
-                                  {/* <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-600">
-                                    <img
-                                      src={`data:image/png;base64,${member.profileImage}`}
-                                      alt={member.firstName}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div> */}
                                   <div>
-                                    <p className="text-sm font-medium">{member.firstName}{member.lastName}</p>
-                                    <p className="text-xs text-gray-400">
-                                      {member.employeeId} - {member.position} ({member.department})
-                                    </p>
-                                    <p className="text-xs text-gray-400">
+                                    <p className="text-sm font-medium text-text-primary">{member.firstName}{member.lastName}</p>
+                                    <p className="text-xs text-text-secondary">
                                       {member.email}
+                                    </p>
+                                    <p className="text-xs text-text-secondary">
+                                      {member.employeeId} - {member.position} ({member.department})
                                     </p>
                                   </div>
                                 </div>
                                 <button
-                                  className="p-1 rounded-md bg-red-600 hover:bg-red-700"
+                                  className="p-1 rounded-md bg-accent text-white hover:bg-accent/80"
                                   onClick={() => removeEmployeeFromGroup(member.employeeId)}
                                 >
                                   <X className="h-4 w-4" />
@@ -775,11 +790,14 @@ export default function AdminDashboard() {
                     <div className="flex justify-end gap-2 mt-6">
                       <button
                         onClick={() => setAddGroupDialogOpen(false)}
-                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md"
+                        className="px-4 py-2 bg-background hover:bg-surface text-text-primary font-medium rounded-md border border-border"
                       >
                         Cancel
                       </button>
-                      <button onClick={handleCreateGroup} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md">
+                      <button
+                        onClick={handleCreateGroup}
+                        className="px-4 py-2 bg-primary hover:bg-primary-dark text-white font-medium rounded-md"
+                      >
                         Create Group
                       </button>
                     </div>
@@ -790,14 +808,14 @@ export default function AdminDashboard() {
 
             {/* Send Announcement Dialog */}
             {sendAnnouncementDialogOpen && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                <div className="bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                <div className="bg-surface rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-border">
                   <div className="p-6">
                     <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-bold">Send Announcement</h2>
+                      <h2 className="text-xl font-bold text-text-primary">Send Announcement</h2>
                       <button
                         onClick={() => setSendAnnouncementDialogOpen(false)}
-                        className="p-1 rounded-md hover:bg-gray-700"
+                        className="p-1 rounded-md hover:bg-primary/10 text-primary"
                       >
                         <X className="h-5 w-5" />
                       </button>
@@ -805,7 +823,7 @@ export default function AdminDashboard() {
 
                     <div className="space-y-4">
                       <div>
-                        <label htmlFor="announcement-title" className="block text-sm font-medium mb-1">
+                        <label htmlFor="announcement-title" className="block text-sm font-medium text-text-secondary mb-1">
                           Announcement Title
                         </label>
                         <input
@@ -814,12 +832,12 @@ export default function AdminDashboard() {
                           value={newAnnouncement.title}
                           onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
                           placeholder="Enter announcement title"
-                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                          className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-primary"
                         />
                       </div>
 
                       <div>
-                        <label htmlFor="announcement-content" className="block text-sm font-medium mb-1">
+                        <label htmlFor="announcement-content" className="block text-sm font-medium text-text-secondary mb-1">
                           Announcement Content
                         </label>
                         <textarea
@@ -827,26 +845,26 @@ export default function AdminDashboard() {
                           value={newAnnouncement.content}
                           onChange={(e) => setNewAnnouncement({ ...newAnnouncement, content: e.target.value })}
                           placeholder="Enter announcement content"
-                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                          className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-primary"
                           rows={5}
                         ></textarea>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-1">Select Groups</label>
-                        <div className="border border-gray-600 rounded-md h-[200px] overflow-y-auto">
+                        <label className="block text-sm font-medium text-text-secondary mb-1">Select Groups</label>
+                        <div className="border border-border rounded-md h-[200px] overflow-y-auto">
                           {groups.map((group) => (
                             <div
                               key={group.id}
-                              className="flex items-center space-x-2 p-2 hover:bg-gray-700 border-b border-gray-600 last:border-b-0"
+                              className="flex items-center space-x-2 p-2 hover:bg-primary-light border-b border-border last:border-b-0"
                             >
                               <input
                                 type="checkbox"
                                 checked={selectedGroups.some((g) => g.id === group.id)}
                                 onChange={() => toggleGroupSelection(group)}
-                                className="rounded bg-gray-700 border-gray-500 text-blue-600 focus:ring-blue-600"
+                                className="rounded bg-background border-border text-primary focus:ring-primary/20"
                               />
-                              <label className="cursor-pointer">{group.title} ({group.members.length} members)</label>
+                              <label className="cursor-pointer text-text-primary">{group.title} ({group.members.length} members)</label>
                             </div>
                           ))}
                         </div>
@@ -854,29 +872,29 @@ export default function AdminDashboard() {
 
                       {selectedGroupMembers.length > 0 && (
                         <div>
-                          <label className="block text-sm font-medium mb-1">Group Members</label>
-                          <div className="border border-gray-600 rounded-md h-[200px] overflow-y-auto">
-                            <div className="flex items-center space-x-2 p-2 border-b border-gray-600">
+                          <label className="block text-sm font-medium text-text-secondary mb-1">Group Members</label>
+                          <div className="border border-border rounded-md h-[200px] overflow-y-auto">
+                            <div className="flex items-center space-x-2 p-2 border-b border-border">
                               <input
                                 type="checkbox"
                                 checked={selectAllMembers}
                                 onChange={toggleSelectAllMembers}
-                                className="rounded bg-gray-700 border-gray-500 text-blue-600 focus:ring-blue-600"
+                                className="rounded bg-background border-border text-primary focus:ring-primary/20"
                               />
-                              <label className="cursor-pointer">Select All</label>
+                              <label className="cursor-pointer text-text-primary">Select All</label>
                             </div>
                             {selectedGroupMembers.map((member, index) => (
                               <div
-                                key={member.employeeId || index} // Add unique key
-                                className="flex items-center space-x-2 p-2 hover:bg-gray-700 border-b border-gray-600 last:border-b-0"
+                                key={member.employeeId || index}
+                                className="flex items-center space-x-2 p-2 hover:bg-primary-light border-b border-border last:border-b-0"
                               >
                                 <input
                                   type="checkbox"
                                   checked={member.isSelected}
                                   onChange={() => toggleMemberSelection(index)}
-                                  className="rounded bg-gray-700 border-gray-500 text-blue-600 focus:ring-blue-600"
+                                  className="rounded bg-background border-border text-primary focus:ring-primary/20"
                                 />
-                                <label className="cursor-pointer">
+                                <label className="cursor-pointer text-text-primary">
                                   {member.name} ({member.email})
                                 </label>
                               </div>
@@ -886,7 +904,7 @@ export default function AdminDashboard() {
                       )}
 
                       <div>
-                        <label className="block text-sm font-medium mb-1">Inform via Email</label>
+                        <label className="block text-sm font-medium text-text-secondary mb-1">Inform via Email</label>
                         <div className="flex items-center space-x-2">
                           <input
                             type="checkbox"
@@ -894,9 +912,9 @@ export default function AdminDashboard() {
                             onChange={(e) =>
                               setNewAnnouncement({ ...newAnnouncement, informByEmail: e.target.checked })
                             }
-                            className="rounded bg-gray-700 border-gray-500 text-blue-600 focus:ring-blue-600"
+                            className="rounded bg-background border-border text-primary focus:ring-primary/20"
                           />
-                          <label className="cursor-pointer">Send this announcement via email</label>
+                          <label className="cursor-pointer text-text-primary">Send this announcement via email</label>
                         </div>
                       </div>
                     </div>
@@ -904,18 +922,17 @@ export default function AdminDashboard() {
                     <div className="flex justify-end gap-2 mt-6">
                       <button
                         onClick={() => setSendAnnouncementDialogOpen(false)}
-                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md"
+                        className="px-4 py-2 bg-background hover:bg-surface text-text-primary font-medium rounded-md border border-border"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={handleSendAnnouncement}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md flex items-center justify-center min-w-[180px]"
+                        className="px-4 py-2 bg-primary hover:bg-primary-dark text-white font-medium rounded-md flex items-center justify-center min-w-[180px]"
                         disabled={isSending}
                       >
                         {isSending ? <DotSpinner /> : "Send Announcement"}
                       </button>
-
                     </div>
                   </div>
                 </div>
@@ -924,43 +941,35 @@ export default function AdminDashboard() {
 
             {/* View Group Dialog */}
             {viewGroupDialogOpen && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                <div className="bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                <div className="bg-surface rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-border">
                   <div className="p-6">
                     <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-bold">{currentGroup?.title}</h2>
-                      <button onClick={() => setViewGroupDialogOpen(false)} className="p-1 rounded-md hover:bg-gray-700">
+                      <h2 className="text-xl font-bold text-text-primary">{currentGroup?.title}</h2>
+                      <button onClick={() => setViewGroupDialogOpen(false)} className="p-1 rounded-md hover:bg-primary/10 text-primary">
                         <X className="h-5 w-5" />
                       </button>
                     </div>
 
-                    <p className="text-gray-400 mb-4">{currentGroup?.description}</p>
+                    <p className="text-text-secondary mb-4">{currentGroup?.description}</p>
 
                     <div>
-                      <h3 className="text-lg font-medium mb-2">Group Members</h3>
-                      <div className="border border-gray-600 rounded-md h-[300px] overflow-y-auto">
+                      <h3 className="text-lg font-medium text-text-primary mb-2">Group Members</h3>
+                      <div className="border border-border rounded-md h-[300px] overflow-y-auto">
                         {currentGroup?.members.map((member) => (
                           <div
                             key={member.id}
-                            className="flex items-center p-2 hover:bg-gray-700 border-b border-gray-600 last:border-b-0"
+                            className="flex items-center p-2 hover:bg-primary-light border-b border-border last:border-b-0"
                           >
                             <div className="flex items-center gap-2">
-                              {/* <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-600">
-                                <img
-                                  src={`data:image/png;base64,${member.profileImage}`}
-                                  alt={member.Firstname}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div> */}
                               <div>
-                                <p className="text-sm font-medium">{member.firstName}{member.lastName}</p>
-                                <p className="text-xs text-gray-400">
+                                <p className="text-sm font-medium text-text-primary">{member.firstName}{member.lastName}</p>
+                                <p className="text-xs text-text-secondary">
                                   {member.email}
                                 </p>
-                                <p className="text-xs text-gray-400">
+                                <p className="text-xs text-text-secondary">
                                   {member.employeeId} - {member.position} ({member.department})
                                 </p>
-
                               </div>
                             </div>
                           </div>
@@ -971,7 +980,7 @@ export default function AdminDashboard() {
                     <div className="flex justify-end mt-6">
                       <button
                         onClick={() => setViewGroupDialogOpen(false)}
-                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md"
+                        className="px-4 py-2 bg-background hover:bg-surface text-text-primary font-medium rounded-md border border-border"
                       >
                         Close
                       </button>
@@ -983,19 +992,19 @@ export default function AdminDashboard() {
 
             {/* Edit Group Dialog */}
             {editGroupDialogOpen && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                <div className="bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                <div className="bg-surface rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-border">
                   <div className="p-6">
                     <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-bold">Edit Group</h2>
-                      <button onClick={() => setEditGroupDialogOpen(false)} className="p-1 rounded-md hover:bg-gray-700">
+                      <h2 className="text-xl font-bold text-text-primary">Edit Group</h2>
+                      <button onClick={() => setEditGroupDialogOpen(false)} className="p-1 rounded-md hover:bg-primary/10 text-primary">
                         <X className="h-5 w-5" />
                       </button>
                     </div>
 
                     <div className="space-y-4">
                       <div>
-                        <label htmlFor="edit-group-title" className="block text-sm font-medium mb-1">
+                        <label htmlFor="edit-group-title" className="block text-sm font-medium text-text-secondary mb-1">
                           Group Title
                         </label>
                         <input
@@ -1003,40 +1012,40 @@ export default function AdminDashboard() {
                           type="text"
                           value={newGroup.title}
                           onChange={(e) => setNewGroup({ ...newGroup, title: e.target.value })}
-                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                          className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-primary"
                         />
                       </div>
 
                       <div>
-                        <label htmlFor="edit-group-description" className="block text-sm font-medium mb-1">
+                        <label htmlFor="edit-group-description" className="block text-sm font-medium text-text-secondary mb-1">
                           Description
                         </label>
                         <textarea
                           id="edit-group-description"
                           value={newGroup.description}
                           onChange={(e) => setNewGroup({ ...newGroup, description: e.target.value })}
-                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                          className="w-full px-3 py-2 bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-primary"
                           rows={3}
                         ></textarea>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="relative" ref={positionDropdownRef}>
-                          <label className="block text-sm font-medium mb-1">Position</label>
+                          <label className="block text-sm font-medium text-text-secondary mb-1">Position</label>
                           <button
                             type="button"
                             onClick={() => setPositionDropdownOpen(!positionDropdownOpen)}
-                            className="w-full flex items-center justify-between px-3 py-2 bg-gray-700 border border-gray-600 rounded-md"
+                            className="w-full flex items-center justify-between px-3 py-2 bg-background border border-border rounded-md text-text-primary"
                           >
                             <span>{newGroup.selectedPosition}</span>
                             <ChevronDown className="h-4 w-4" />
                           </button>
                           {positionDropdownOpen && (
-                            <div className="absolute z-10 mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">
+                            <div className="absolute z-10 mt-1 w-full bg-surface border border-border rounded-md shadow-lg max-h-60 overflow-auto">
                               {positions.map((position) => (
                                 <div
-                                  key={position} // Add unique key
-                                  className="px-3 py-2 hover:bg-gray-600 cursor-pointer"
+                                  key={position}
+                                  className="px-3 py-2 hover:bg-primary-light cursor-pointer text-text-primary"
                                   onClick={() => handlePositionSelect(position)}
                                 >
                                   {position}
@@ -1047,21 +1056,21 @@ export default function AdminDashboard() {
                         </div>
 
                         <div className="relative" ref={departmentDropdownRef}>
-                          <label className="block text-sm font-medium mb-1">Department</label>
+                          <label className="block text-sm font-medium text-text-secondary mb-1">Department</label>
                           <button
                             type="button"
                             onClick={() => setDepartmentDropdownOpen(!departmentDropdownOpen)}
-                            className="w-full flex items-center justify-between px-3 py-2 bg-gray-700 border border-gray-600 rounded-md"
+                            className="w-full flex items-center justify-between px-3 py-2 bg-background border border-border rounded-md text-text-primary"
                           >
                             <span>{newGroup.selectedDepartment}</span>
                             <ChevronDown className="h-4 w-4" />
                           </button>
                           {departmentDropdownOpen && (
-                            <div className="absolute z-10 mt-1 w-full bg-gray-700 border border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">
+                            <div className="absolute z-10 mt-1 w-full bg-surface border border-border rounded-md shadow-lg max-h-60 overflow-auto">
                               {departments.map((department) => (
                                 <div
-                                  key={department} // Add unique key
-                                  className="px-3 py-2 hover:bg-gray-600 cursor-pointer"
+                                  key={department}
+                                  className="px-3 py-2 hover:bg-primary-light cursor-pointer text-text-primary"
                                   onClick={() => handleDepartmentSelect(department)}
                                 >
                                   {department}
@@ -1074,61 +1083,55 @@ export default function AdminDashboard() {
 
                       <div>
                         <div className="flex items-center justify-between mb-1">
-                          <label className="block text-sm font-medium">Employees</label>
+                          <label className="block text-sm font-medium text-text-secondary">Employees</label>
                           <input
                             type="text"
                             placeholder="Search employees..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="px-3 py-1 bg-gray-700 border border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 w-[200px]"
+                            className="px-3 py-1 bg-background border border-border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-primary w-[200px]"
                           />
                         </div>
-                        <div className="border border-gray-600 rounded-md h-[200px] overflow-y-auto">
+                        <div className="border border-border rounded-md h-[200px] overflow-y-auto">
                           {filteredEmployees.length > 0 ? (
                             filteredEmployees.map((employee) => {
                               const isAdded = newGroup.members.some((mem) => mem.employeeId === employee.employeeId);
                               return (
                                 <div
-                                  key={employee.employeeId} // Add unique key
-                                  className={`flex items-center justify-between p-2 hover:bg-gray-700 border-b border-gray-600 last:border-b-0 cursor-pointer ${isAdded ? "bg-gray-700" : ""
+                                  key={employee.employeeId}
+                                  className={`flex items-center justify-between p-2 hover:bg-primary-light border-b border-border last:border-b-0 cursor-pointer ${
+                                    isAdded ? "bg-primary-light" : ""
                                     }`}
                                   onClick={() => toggleEmployeeSelection(employee)}
                                 >
                                   <div className="flex items-center gap-2">
-                                    {/* <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-600">
-                                      <img
-                                        src={`data:image/png;base64,${employee.profileImage}`} // Use Base64 string to display the image
-                                        alt={employee.name}
-                                        className="w-full h-full object-cover"
-                                      />
-                                    </div> */}
                                     <div>
-                                      <p className="text-sm font-medium">{employee.name}</p>
-                                      <p className="text-xs text-gray-400">
+                                      <p className="text-sm font-medium text-text-primary">{employee.name}</p>
+                                      <p className="text-xs text-text-secondary">
                                         {employee.employeeId} - {employee.position}
                                       </p>
-                                      <p className="text-xs text-gray-400">{employee.email}</p>
+                                      <p className="text-xs text-text-secondary">{employee.email}</p>
                                     </div>
                                   </div>
                                   <button
-                                    className={`p-1 rounded-md  ${isAdded ? "bg-green-600" : "bg-red-600 hover:bg-red-700"}`}
+                                    className={`p-1 rounded-md ${isAdded ? "bg-primary text-white" : "bg-accent text-white hover:bg-accent/80"}`}
                                     onClick={(e) => {
-                                      e.stopPropagation(); // Prevent triggering the row click
+                                      e.stopPropagation();
                                       toggleEmployeeSelection(employee);
                                     }}
                                     disabled={isAdded}
                                   >
                                     {isAdded ? (
-                                      <Check className="h-4 w-4 text-white" title="Added" />
+                                      <Check className="h-4 w-4" title="Added" />
                                     ) : (
-                                      <X className="h-4 w-4 text-white" title="Remove" />
+                                      <X className="h-4 w-4" title="Remove" />
                                     )}
                                   </button>
                                 </div>
                               );
                             })
                           ) : (
-                            <p className="text-center text-gray-400 p-4">
+                            <p className="text-center text-text-secondary p-4">
                               {newGroup.selectedPosition !== "All Positions" ||
                                 newGroup.selectedDepartment !== "All Departments"
                                 ? "No employees match the selected criteria"
@@ -1139,33 +1142,26 @@ export default function AdminDashboard() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-1">Current Members</label>
-                        <div className="border border-gray-600 rounded-md h-[200px] overflow-y-auto">
+                        <label className="block text-sm font-medium text-text-secondary mb-1">Current Members</label>
+                        <div className="border border-border rounded-md h-[200px] overflow-y-auto">
                           {newGroup.members.map((member) => (
                             <div
                               key={member.employeeId}
-                              className="flex items-center justify-between p-2 hover:bg-gray-700 border-b border-gray-600 last:border-b-0"
+                              className="flex items-center justify-between p-2 hover:bg-primary-light border-b border-border last:border-b-0"
                             >
                               <div className="flex items-center gap-2">
-                                {/* <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-600">
-                                  <img
-                                    src={`data:image/png;base64,${member.profileImage}`} // Use Base64 string to display the image
-                                    alt={member.firstname}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div> */}
                                 <div>
-                                  <p className="text-sm font-medium">{member.firstname}{member.lastname}</p>
-                                  <p className="text-xs text-gray-400">
+                                  <p className="text-sm font-medium text-text-primary">{member.firstname}{member.lastname}</p>
+                                  <p className="text-xs text-text-secondary">
                                     {member.email}
                                   </p>
-                                  <p className="text-xs text-gray-400">
+                                  <p className="text-xs text-text-secondary">
                                     {member.employeeId} - {member.position} ({member.department})
                                   </p>
                                 </div>
                               </div>
                               <button
-                                className="p-1 rounded-md hover:bg-gray-600"
+                                className="p-1 rounded-md bg-accent text-white hover:bg-accent/80"
                                 onClick={() => removeEmployeeFromGroup(member.employeeId)}
                               >
                                 <X className="h-4 w-4" />
@@ -1179,11 +1175,14 @@ export default function AdminDashboard() {
                     <div className="flex justify-end gap-2 mt-6">
                       <button
                         onClick={() => setEditGroupDialogOpen(false)}
-                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md"
+                        className="px-4 py-2 bg-background hover:bg-surface text-text-primary font-medium rounded-md border border-border"
                       >
                         Cancel
                       </button>
-                      <button onClick={handleUpdateGroup} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md">
+                      <button
+                        onClick={handleUpdateGroup}
+                        className="px-4 py-2 bg-primary hover:bg-primary-dark text-white font-medium rounded-md"
+                      >
                         Update Group
                       </button>
                     </div>
@@ -1194,60 +1193,60 @@ export default function AdminDashboard() {
 
             {/* View Announcement Dialog */}
             {viewAnnouncementDialogOpen && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                <div className="bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                <div className="bg-surface rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-border">
                   <div className="p-6">
                     <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-bold">{currentAnnouncement?.title}</h2>
+                      <h2 className="text-xl font-bold text-text-primary">{currentAnnouncement?.title}</h2>
                       <button
                         onClick={() => setViewAnnouncementDialogOpen(false)}
-                        className="p-1 rounded-md hover:bg-gray-700"
+                        className="p-1 rounded-md hover:bg-primary/10 text-primary"
                       >
                         <X className="h-5 w-5" />
                       </button>
                     </div>
 
-                    <p className="text-gray-400 mb-4">
+                    <p className="text-text-secondary mb-4">
                       Sent on {new Date(currentAnnouncement?.createdAt).toLocaleDateString()}
                     </p>
 
                     <div className="mb-4">
-                      <h3 className="text-sm font-medium mb-1">Content</h3>
-                      <p className="text-sm bg-gray-700 p-3 rounded-md">{currentAnnouncement?.content}</p>
+                      <h3 className="text-sm font-medium text-text-secondary mb-1">Content</h3>
+                      <p className="text-sm bg-background p-3 rounded-md text-text-primary">{currentAnnouncement?.content}</p>
                     </div>
 
                     <div className="mb-4">
-                      <h3 className="text-sm font-medium mb-1">Sent to Groups</h3>
+                      <h3 className="text-sm font-medium text-text-secondary mb-1">Sent to Groups</h3>
                       <div className="flex flex-wrap gap-1">
                         {currentAnnouncement?.groups && currentAnnouncement.groups.length > 0 ? (
                           currentAnnouncement.groups.map((group) => (
-                            <span key={group.id || group} className="inline-block px-2 py-1 text-xs bg-gray-700 rounded-full">
+                            <span key={group.id || group} className="inline-block px-2 py-1 text-xs bg-primary-light text-primary rounded-full">
                               {group.title || group}
                             </span>
                           ))
                         ) : (
-                          <span className="text-xs text-gray-400">No groups</span>
+                          <span className="text-xs text-text-secondary">No groups</span>
                         )}
                       </div>
                     </div>
 
                     <div>
-                      <h3 className="text-sm font-medium mb-1">Selected Employees</h3>
-                      <div className="border border-gray-600 rounded-md h-[300px] overflow-y-auto">
+                      <h3 className="text-sm font-medium text-text-secondary mb-1">Selected Employees</h3>
+                      <div className="border border-border rounded-md h-[300px] overflow-y-auto">
                         {currentAnnouncement?.selectedEmployees && currentAnnouncement.selectedEmployees.length > 0 ? (
                           currentAnnouncement.selectedEmployees.map((employee) => (
                             <div
                               key={employee.email}
-                              className="flex items-center justify-between p-2 hover:bg-gray-700 border-b border-gray-600 last:border-b-0"
+                              className="flex items-center justify-between p-2 hover:bg-primary-light border-b border-border last:border-b-0"
                             >
                               <div>
-                                <p className="text-sm font-medium">{employee.name}</p>
-                                <p className="text-xs text-gray-400">{employee.email}</p>
+                                <p className="text-sm font-medium text-text-primary">{employee.name}</p>
+                                <p className="text-xs text-text-secondary">{employee.email}</p>
                               </div>
                             </div>
                           ))
                         ) : (
-                          <p className="text-center text-gray-400 p-4">No employees selected</p>
+                          <p className="text-center text-text-secondary p-4">No employees selected</p>
                         )}
                       </div>
                     </div>
@@ -1255,7 +1254,7 @@ export default function AdminDashboard() {
                     <div className="flex justify-end mt-6">
                       <button
                         onClick={() => setViewAnnouncementDialogOpen(false)}
-                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md"
+                        className="px-4 py-2 bg-background hover:bg-surface text-text-primary font-medium rounded-md border border-border"
                       >
                         Close
                       </button>
@@ -1267,6 +1266,6 @@ export default function AdminDashboard() {
           </>
         )}
       </div>
-    </div >
+    </div>
   )
 }

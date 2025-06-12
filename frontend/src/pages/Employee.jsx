@@ -520,37 +520,37 @@ export default function Employee() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+        <div className="min-h-screen bg-background text-text-primary">
             {/* Overlay for viewing employee details */}
             {selectedEmployee && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-                    <div className={`relative w-full max-w-5xl mx-4 p-8 rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh] transition-all duration-300 ${isDarkMode ? "bg-gray-900 text-gray-100" : "bg-white text-gray-900"}`}>
+                    <div className="relative w-full max-w-5xl mx-4 p-8 rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh] bg-surface">
                         <button
                             onClick={closeOverlay}
-                            className="absolute top-4 right-4 p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+                            className="absolute top-4 right-4 p-2 rounded-full bg-primary-light hover:bg-primary text-text-primary"
                         >
                             <X className="h-5 w-5" />
                         </button>
 
-                        <h2 className="text-4xl font-extrabold mb-8 text-center tracking-tight">Employee Profile</h2>
+                        <h2 className="text-4xl font-extrabold mb-8 text-center tracking-tight text-text-primary">Employee Profile</h2>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             {/* Profile Header */}
-                            <div className="md:col-span-2 flex items-center gap-6 border-b pb-6 mb-6">
+                            <div className="md:col-span-2 flex items-center gap-6 border-b border-border pb-6 mb-6">
                                 {selectedEmployee.profileImages && (
                                     <img
                                         src={selectedEmployee.profileImages}
                                         alt="Profile"
-                                        className="w-28 h-28 rounded-full border-4 border-blue-500 shadow-md"
+                                        className="w-28 h-28 rounded-full border-4 border-primary shadow-md"
                                     />
                                 )}
                                 <div>
-                                    <h3 className="text-2xl font-semibold">{selectedEmployee.firstName} {selectedEmployee.lastName}</h3>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">Employee ID: {selectedEmployee.employeeId}</p>
+                                    <h3 className="text-2xl font-semibold text-text-primary">{selectedEmployee.firstName} {selectedEmployee.lastName}</h3>
+                                    <p className="text-sm text-text-secondary">Employee ID: {selectedEmployee.employeeId}</p>
                                     {selectedEmployee.resume && (
                                         <button
                                             onClick={() => handleDownloadResume(selectedEmployee.resume, `${selectedEmployee.firstName}_resume.pdf`)}
-                                            className="mt-2 inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
+                                            className="mt-2 inline-flex items-center text-primary hover:text-primary-dark font-medium"
                                         >
                                             <Download className="h-5 w-5 mr-1" /> Download Resume
                                         </button>
@@ -559,38 +559,38 @@ export default function Employee() {
                             </div>
 
                             {/* Personal Details */}
-                            <div><span className="font-medium">Email:</span> {selectedEmployee.email}</div>
-                            <div><span className="font-medium">Phone:</span> {selectedEmployee.phoneNumber}</div>
-                            <div><span className="font-medium">Date of Birth:</span> {selectedEmployee.dateOfBirth}</div>
-                            <div><span className="font-medium">Gender:</span> {selectedEmployee.gender}</div>
-                            <div><span className="font-medium">Nationality:</span> {selectedEmployee.nationality}</div>
-                            <div><span className="font-medium">NIC/Passport:</span> {selectedEmployee.nicPassport}</div>
-                            <div><span className="font-medium">Marital Status:</span> {selectedEmployee.maritalStatus}</div>
-                            <div><span className="font-medium">Country:</span> {selectedEmployee.country}</div>
-                            <div className="md:col-span-2"><span className="font-medium">Address:</span> {selectedEmployee.address}</div>
+                            <div><span className="font-medium text-text-primary">Email:</span> <span className="text-text-secondary">{selectedEmployee.email}</span></div>
+                            <div><span className="font-medium text-text-primary">Phone:</span> <span className="text-text-secondary">{selectedEmployee.phoneNumber}</span></div>
+                            <div><span className="font-medium text-text-primary">Date of Birth:</span> <span className="text-text-secondary">{selectedEmployee.dateOfBirth}</span></div>
+                            <div><span className="font-medium text-text-primary">Gender:</span> <span className="text-text-secondary">{selectedEmployee.gender}</span></div>
+                            <div><span className="font-medium text-text-primary">Nationality:</span> <span className="text-text-secondary">{selectedEmployee.nationality}</span></div>
+                            <div><span className="font-medium text-text-primary">NIC/Passport:</span> <span className="text-text-secondary">{selectedEmployee.nicPassport}</span></div>
+                            <div><span className="font-medium text-text-primary">Marital Status:</span> <span className="text-text-secondary">{selectedEmployee.maritalStatus}</span></div>
+                            <div><span className="font-medium text-text-primary">Country:</span> <span className="text-text-secondary">{selectedEmployee.country}</span></div>
+                            <div className="md:col-span-2"><span className="font-medium text-text-primary">Address:</span> <span className="text-text-secondary">{selectedEmployee.address}</span></div>
 
                             {/* Job Info */}
-                            <div><span className="font-medium">Join Date:</span> {selectedEmployee.joinDate}</div>
-                            <div><span className="font-medium">Position:</span> {selectedEmployee.position}</div>
-                            <div><span className="font-medium">Department:</span> {selectedEmployee.department}</div>
-                            <div><span className="font-medium">Work Location:</span> {selectedEmployee.workLocation}</div>
-                            <div className="md:col-span-2"><span className="font-medium">Work Address:</span> {selectedEmployee.workAddress}</div>
-                            <div><span className="font-medium">Employment Type:</span> {selectedEmployee.employmentType}</div>
-                            <div><span className="font-medium">Contract Period:</span> {selectedEmployee.contractPeriod}</div>
-                            <div><span className="font-medium">Employment Status:</span> {selectedEmployee.employmentStatus}</div>
-                            <div><span className="font-medium">Pay Method:</span> {selectedEmployee.payMethod}</div>
-                            <div><span className="font-medium">Hourly Rate:</span> {selectedEmployee.hourlyRate}</div>
-                            <div><span className="font-medium">Overtime Rate:</span> {selectedEmployee.overtimeHourlyRate}</div>
-                            <div><span className="font-medium">Monthly Salary:</span> {selectedEmployee.monthlySalary}</div>
-                            <div><span className="font-medium">EPF/ETF:</span> {selectedEmployee.hasEpfEtf}</div>
+                            <div><span className="font-medium text-text-primary">Join Date:</span> <span className="text-text-secondary">{selectedEmployee.joinDate}</span></div>
+                            <div><span className="font-medium text-text-primary">Position:</span> <span className="text-text-secondary">{selectedEmployee.position}</span></div>
+                            <div><span className="font-medium text-text-primary">Department:</span> <span className="text-text-secondary">{selectedEmployee.department}</span></div>
+                            <div><span className="font-medium text-text-primary">Work Location:</span> <span className="text-text-secondary">{selectedEmployee.workLocation}</span></div>
+                            <div className="md:col-span-2"><span className="font-medium text-text-primary">Work Address:</span> <span className="text-text-secondary">{selectedEmployee.workAddress}</span></div>
+                            <div><span className="font-medium text-text-primary">Employment Type:</span> <span className="text-text-secondary">{selectedEmployee.employmentType}</span></div>
+                            <div><span className="font-medium text-text-primary">Contract Period:</span> <span className="text-text-secondary">{selectedEmployee.contractPeriod}</span></div>
+                            <div><span className="font-medium text-text-primary">Employment Status:</span> <span className="text-text-secondary">{selectedEmployee.employmentStatus}</span></div>
+                            <div><span className="font-medium text-text-primary">Pay Method:</span> <span className="text-text-secondary">{selectedEmployee.payMethod}</span></div>
+                            <div><span className="font-medium text-text-primary">Hourly Rate:</span> <span className="text-text-secondary">{selectedEmployee.hourlyRate}</span></div>
+                            <div><span className="font-medium text-text-primary">Overtime Rate:</span> <span className="text-text-secondary">{selectedEmployee.overtimeHourlyRate}</span></div>
+                            <div><span className="font-medium text-text-primary">Monthly Salary:</span> <span className="text-text-secondary">{selectedEmployee.monthlySalary}</span></div>
+                            <div><span className="font-medium text-text-primary">EPF/ETF:</span> <span className="text-text-secondary">{selectedEmployee.hasEpfEtf}</span></div>
                             {selectedEmployee.hasEpfEtf === "Yes" && (
-                                <div><span className="font-medium">EPF Number:</span> {selectedEmployee.epfNumber}</div>
+                                <div><span className="font-medium text-text-primary">EPF Number:</span> <span className="text-text-secondary">{selectedEmployee.epfNumber}</span></div>
                             )}
 
                             {/* Emergency Contacts */}
-                            <div className="md:col-span-2 border-t pt-6">
-                                <h4 className="font-semibold mb-2">Emergency Contacts:</h4>
-                                <ul className="list-disc ml-6 space-y-1">
+                            <div className="md:col-span-2 border-t border-border pt-6">
+                                <h4 className="font-semibold mb-2 text-text-primary">Emergency Contacts:</h4>
+                                <ul className="list-disc ml-6 space-y-1 text-text-secondary">
                                     {selectedEmployee.emergencyContacts.map((contact, index) => (
                                         <li key={index}>{contact.contactName} - {contact.contactNumber}</li>
                                     ))}
@@ -598,9 +598,9 @@ export default function Employee() {
                             </div>
 
                             {/* Education */}
-                            <div className="md:col-span-2 border-t pt-6">
-                                <h4 className="font-semibold mb-2">Education Details:</h4>
-                                <ul className="list-disc ml-6 space-y-1">
+                            <div className="md:col-span-2 border-t border-border pt-6">
+                                <h4 className="font-semibold mb-2 text-text-primary">Education Details:</h4>
+                                <ul className="list-disc ml-6 space-y-1 text-text-secondary">
                                     {selectedEmployee.educationDetails.map((education, index) => (
                                         <li key={index}>
                                             {education.certificateLevel} in {education.fieldOfStudy} from {education.schoolUniversity}
@@ -610,11 +610,11 @@ export default function Employee() {
                             </div>
 
                             {/* Bank Details */}
-                            <div className="md:col-span-2 border-t pt-6">
-                                <h4 className="font-semibold mb-2">Bank Details:</h4>
-                                <div><span className="font-medium">Bank Name:</span> {selectedEmployee.bankName}</div>
-                                <div><span className="font-medium">Bank Branch:</span> {selectedEmployee.bankBranch}</div>
-                                <div><span className="font-medium">Account Number:</span> {selectedEmployee.bankNumber}</div>
+                            <div className="md:col-span-2 border-t border-border pt-6">
+                                <h4 className="font-semibold mb-2 text-text-primary">Bank Details:</h4>
+                                <div><span className="font-medium text-text-primary">Bank Name:</span> <span className="text-text-secondary">{selectedEmployee.bankName}</span></div>
+                                <div><span className="font-medium text-text-primary">Bank Branch:</span> <span className="text-text-secondary">{selectedEmployee.bankBranch}</span></div>
+                                <div><span className="font-medium text-text-primary">Account Number:</span> <span className="text-text-secondary">{selectedEmployee.bankNumber}</span></div>
                             </div>
                         </div>
                     </div>
@@ -622,14 +622,14 @@ export default function Employee() {
             )}
             <div className="container mx-auto py-8 px-4">
                 <div className="flex justify-between items-center mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Employee Management System</h1>
+                    <h1 className="text-3xl font-bold text-text-primary">Employee Management System</h1>
                     <div className="flex items-center space-x-4">
                         <input
                             type="text"
                             placeholder="Search by ID or Name"
                             value={searchQuery}
                             onChange={handleSearch}
-                            className={`px-4 py-2 rounded-md ${isDarkMode ? "bg-gray-700 text-white" : "bg-gray-200 text-gray-800"}`}
+                            className="px-4 py-2 rounded-md bg-surface text-text-primary border border-border"
                         />
                         <button
                             onClick={() => {
@@ -641,10 +641,7 @@ export default function Employee() {
                                     setShowAddForm(!showAddForm);
                                 }
                             }}
-                            className={`flex items-center px-4 py-2 rounded-md ${isDarkMode
-                                ? "bg-purple-600 hover:bg-purple-700 text-white"
-                                : "bg-purple-600 hover:bg-purple-700 text-white"
-                                }`}
+                            className="flex items-center px-4 py-2 rounded-md bg-primary hover:bg-primary-dark text-white transition"
                         >
                             {isEditMode ? "Cancel Edit" : showAddForm ? "Cancel" : "Add Employee"}
                             {!showAddForm && !isEditMode && <Plus className="ml-2 h-4 w-4" />}
@@ -652,10 +649,7 @@ export default function Employee() {
                         {showAddForm && (
                             <button
                                 onClick={handleRemoveAllFields}
-                                className={`flex items-center px-4 py-2 rounded-md ${isDarkMode
-                                    ? "bg-red-600 hover:bg-red-700 text-white"
-                                    : "bg-red-600 hover:bg-red-700 text-white"
-                                    }`}
+                                className="flex items-center px-4 py-2 rounded-md bg-accent hover:bg-primary text-text-primary transition"
                             >
                                 Remove All Fields
                             </button>
@@ -664,64 +658,29 @@ export default function Employee() {
                 </div>
 
                 {(showAddForm || isEditMode) && (
-                    <div
-                        className={`mb-8 rounded-lg shadow-lg ${isDarkMode ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"
-                            }`}
-                    >
-                        <div className="p-6 border-b dark:border-gray-700">
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    <div className="mb-8 rounded-lg shadow-lg bg-surface border border-border">
+                        <div className="p-6 border-b border-border">
+                            <h2 className="text-2xl font-bold text-text-primary">
                                 {isEditMode ? "Edit Employee" : "Add New Employee"}
                             </h2>
-                            <p className="text-gray-500 dark:text-gray-400 mt-1">
+                            <p className="text-text-secondary mt-1">
                                 {isEditMode ? "Update employee information" : "Fill in the details to add a new employee to the system"}
                             </p>
                         </div>
                         <div className="p-6">
                             <form onSubmit={handleSubmit} className="space-y-6">
-                                {/* Profile Image Upload */}
-                                {/* <div className="flex flex-col items-center mb-6">
-                                    <div className="relative w-32 h-32 mb-4 cursor-pointer group" onClick={triggerFileInput}>
-                                        <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-purple-200 dark:border-purple-900 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                                            {previewImage ? (
-                                                <img
-                                                    src={previewImage || "/placeholder.svg"}
-                                                    alt="Profile Preview"
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            ) : (
-                                                <User className="h-16 w-16 text-gray-400 dark:text-gray-500" />
-                                            )}
-                                        </div>
-                                        <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Upload className="h-8 w-8 text-white" />
-                                        </div>
-                                    </div>
-                                    <input
-                                        ref={fileInputRef}
-                                        id="profileImages"
-                                        name="profileImages"
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleChange}
-                                        className="hidden"
-                                    />
-                                    <span className="text-sm text-gray-500 dark:text-gray-400">Click to upload profile image</span>
-                                    {errors.profileImages && (
-                                        <p className="text-red-500 text-sm mt-1">{errors.profileImages}</p>
-                                    )}
-                                </div> */}
-
                                 {/* Tabs */}
-                                <div className="border-b dark:border-gray-700">
+                                <div className="border-b border-border">
                                     <div className="flex space-x-8">
                                         {["basic", "employment", "personal", "additional"].map((tab) => (
                                             <button
                                                 key={tab}
                                                 type="button"
-                                                className={`py-2 px-1 font-medium text-sm border-b-2 ${activeTab === tab
-                                                    ? "border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400"
-                                                    : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-                                                    }`}
+                                                className={`py-2 px-1 font-medium text-sm border-b-2 ${
+                                                    activeTab === tab
+                                                        ? "border-primary text-primary"
+                                                        : "border-transparent text-text-secondary hover:text-text-primary"
+                                                }`}
                                                 onClick={() => setActiveTab(tab)}
                                             >
                                                 {tab.charAt(0).toUpperCase() + tab.slice(1)} Info
@@ -730,908 +689,17 @@ export default function Employee() {
                                     </div>
                                 </div>
 
-                                {/* Basic Info Tab */}
-                                {activeTab === "basic" && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        <div>
-                                            <label
-                                                htmlFor="employeeId"
-                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                            >
-                                                Employee ID
-                                            </label>
-                                            <input
-                                                id="employeeId"
-                                                name="employeeId"
-                                                value={formData.employeeId}
-                                                onChange={handleChange}
-                                                readOnly
-                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                    ? "bg-gray-700 border-gray-600 text-white"
-                                                    : "bg-white border-gray-300 text-gray-700"
-                                                    } border cursor-not-allowed`}
-                                            />
-                                            {errors.employeeId && <p className="text-red-500 text-sm mt-1">{errors.employeeId}</p>}
-                                        </div>
-
-                                        <div>
-                                            <label
-                                                htmlFor="firstName"
-                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                            >
-                                                First Name
-                                            </label>
-                                            <input
-                                                id="firstName"
-                                                name="firstName"
-                                                value={formData.firstName}
-                                                onChange={handleChange}
-                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                    ? "bg-gray-700 border-gray-600 text-white"
-                                                    : "bg-white border-gray-300 text-gray-700"
-                                                    } ${errors.firstName ? "border-red-500" : "border"}`}
-                                            />
-                                            {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
-                                        </div>
-
-                                        <div>
-                                            <label
-                                                htmlFor="lastName"
-                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                            >
-                                                Last Name
-                                            </label>
-                                            <input
-                                                id="lastName"
-                                                name="lastName"
-                                                value={formData.lastName}
-                                                onChange={handleChange}
-                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                    ? "bg-gray-700 border-gray-600 text-white"
-                                                    : "bg-white border-gray-300 text-gray-700"
-                                                    } ${errors.lastName ? "border-red-500" : "border"}`}
-                                            />
-                                            {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
-                                        </div>
-
-                                        <div>
-                                            <label
-                                                htmlFor="email"
-                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                            >
-                                                Email
-                                            </label>
-                                            <input
-                                                id="email"
-                                                name="email"
-                                                type="email"
-                                                value={formData.email}
-                                                onChange={handleChange}
-                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                    ? "bg-gray-700 border-gray-600 text-white"
-                                                    : "bg-white border-gray-300 text-gray-700"
-                                                    } ${errors.email ? "border-red-500" : "border"}`}
-                                            />
-                                            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-                                        </div>
-
-                                        {!isEditMode && (
-                                            <>
-                                                <div>
-                                                    <label
-                                                        htmlFor="password"
-                                                        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                                    >
-                                                        Password (Min 8 characters)
-                                                    </label>
-                                                    <div className="flex">
-                                                        <input
-                                                            id="password"
-                                                            name="password"
-                                                            type={passwordVisible ? "text" : "password"}
-                                                            value={formData.password}
-                                                            onChange={handleChange}
-                                                            className={`w-full px-3 py-2 rounded-l-md ${isDarkMode
-                                                                ? "bg-gray-700 border-gray-600 text-white"
-                                                                : "bg-white border-gray-300 text-gray-700"
-                                                                } ${errors.password ? "border-red-500" : "border"}`}
-                                                        />
-                                                        <button
-                                                            type="button"
-                                                            className={`px-3 rounded-r-md border-l-0 ${isDarkMode
-                                                                ? "bg-gray-600 border-gray-600 text-gray-200 hover:bg-gray-500"
-                                                                : "bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200"
-                                                                } border`}
-                                                            onClick={() => setPasswordVisible(!passwordVisible)}
-                                                        >
-                                                            {passwordVisible ? "Hide" : "Show"}
-                                                        </button>
-                                                    </div>
-                                                    {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
-                                                </div>
-
-                                                <div>
-                                                    <label
-                                                        htmlFor="confirmPassword"
-                                                        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                                    >
-                                                        Confirm Password
-                                                    </label>
-                                                    <input
-                                                        id="confirmPassword"
-                                                        name="confirmPassword"
-                                                        type="password"
-                                                        value={formData.confirmPassword}
-                                                        onChange={handleChange}
-                                                        className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                            ? "bg-gray-700 border-gray-600 text-white"
-                                                            : "bg-white border-gray-300 text-gray-700"
-                                                            } ${errors.confirmPassword ? "border-red-500" : "border"}`}
-                                                    />
-                                                    {errors.confirmPassword && (
-                                                        <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>
-                                                    )}
-                                                </div>
-                                            </>
-                                        )}
-
-                                        <div>
-                                            <label
-                                                htmlFor="phoneNumber"
-                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                            >
-                                                Phone Number
-                                            </label>
-                                            <input
-                                                id="phoneNumber"
-                                                name="phoneNumber"
-                                                value={formData.phoneNumber}
-                                                onChange={handleChange}
-                                                placeholder="07x xxx xxxx"
-                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                    ? "bg-gray-700 border-gray-600 text-white"
-                                                    : "bg-white border-gray-300 text-gray-700"
-                                                    } ${errors.phoneNumber ? "border-red-500" : "border"}`}
-                                            />
-                                            {errors.phoneNumber && <p className="text-red-500 text-sm mt-1">{errors.phoneNumber}</p>}
-                                        </div>
-
-                                        <div>
-                                            <label
-                                                htmlFor="joinDate"
-                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                            >
-                                                Join Date
-                                            </label>
-                                            <input
-                                                id="joinDate"
-                                                name="joinDate"
-                                                type="date"
-                                                value={formData.joinDate}
-                                                onChange={handleChange}
-                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                    ? "bg-gray-700 border-gray-600 text-white"
-                                                    : "bg-white border-gray-300 text-gray-700"
-                                                    } border`}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Employment Tab */}
-                                {activeTab === "employment" && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label
-                                                htmlFor="position"
-                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                            >
-                                                Position
-                                            </label>
-                                            <CustomDropdown
-                                                name="position"
-                                                value={formData.position}
-                                                options={positions}
-                                                placeholder="Select position"
-                                                onChange={handleSelectChange}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                                Department
-                                            </label>
-                                            <CustomDropdown
-                                                name="department"
-                                                value={formData.department}
-                                                options={departments}
-                                                placeholder="Select department"
-                                                onChange={handleSelectChange}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                                Employment Type
-                                            </label>
-                                            <CustomDropdown
-                                                name="employmentType"
-                                                value={formData.employmentType}
-                                                options={employmentTypes}
-                                                placeholder="Select type"
-                                                onChange={handleSelectChange}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label
-                                                htmlFor="contractPeriod"
-                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                            >
-                                                Contract Period (Months)
-                                            </label>
-                                            <input
-                                                id="contractPeriod"
-                                                name="contractPeriod"
-                                                type="number"
-                                                value={formData.contractPeriod}
-                                                onChange={handleChange}
-                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                    ? "bg-gray-700 border-gray-600 text-white"
-                                                    : "bg-white border-gray-300 text-gray-700"
-                                                    } border`}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                                Employment Status
-                                            </label>
-                                            <CustomDropdown
-                                                name="employmentStatus"
-                                                value={formData.employmentStatus}
-                                                options={employmentStatuses}
-                                                placeholder="Select status"
-                                                onChange={handleSelectChange}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label
-                                                htmlFor="workLocation"
-                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                            >
-                                                Work Location
-                                            </label>
-                                            <input
-                                                id="workLocation"
-                                                name="workLocation"
-                                                value={formData.workLocation}
-                                                onChange={handleChange}
-                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                    ? "bg-gray-700 border-gray-600 text-white"
-                                                    : "bg-white border-gray-300 text-gray-700"
-                                                    } border`}
-                                            />
-                                        </div>
-
-                                        <div className="md:col-span-2">
-                                            <label
-                                                htmlFor="workAddress"
-                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                            >
-                                                Work Address
-                                            </label>
-                                            <textarea
-                                                id="workAddress"
-                                                name="workAddress"
-                                                value={formData.workAddress}
-                                                onChange={handleChange}
-                                                rows="3"
-                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                    ? "bg-gray-700 border-gray-600 text-white"
-                                                    : "bg-white border-gray-300 text-gray-700"
-                                                    } border`}
-                                            />
-                                        </div>
-
-                                        <div className="md:col-span-2">
-                                            <label
-                                                htmlFor="address"
-                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                            >
-                                                Home Address
-                                            </label>
-                                            <textarea
-                                                id="address"
-                                                name="address"
-                                                value={formData.address}
-                                                onChange={handleChange}
-                                                rows="3"
-                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                    ? "bg-gray-700 border-gray-600 text-white"
-                                                    : "bg-white border-gray-300 text-gray-700"
-                                                    } border`}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label
-                                                htmlFor="resume"
-                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                            >
-                                                Resume (PDF/DOC/DOCX, Max 5MB)
-                                            </label>
-                                            <input
-                                                id="resume"
-                                                name="resume"
-                                                type="file"
-                                                accept=".pdf,.doc,.docx"
-                                                onChange={handleChange}
-                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                    ? "bg-gray-700 border-gray-600 text-white"
-                                                    : "bg-white border-gray-300 text-gray-700"
-                                                    } border`}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                                Pay Method
-                                            </label>
-                                            <CustomDropdown
-                                                name="payMethod"
-                                                value={formData.payMethod}
-                                                options={payMethods}
-                                                placeholder="Select pay method"
-                                                onChange={handleSelectChange}
-                                            />
-                                        </div>
-
-                                        {formData.payMethod === "Hourly" && (
-                                            <div>
-                                                <label
-                                                    htmlFor="hourlyRate"
-                                                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                                >
-                                                    Hourly Rate (Amount per Hour)
-                                                </label>
-                                                <input
-                                                    id="hourlyRate"
-                                                    name="hourlyRate"
-                                                    type="number"
-                                                    value={formData.hourlyRate}
-                                                    onChange={handleChange}
-                                                    placeholder="Enter hourly rate"
-                                                    className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                        ? "bg-gray-700 border-gray-600 text-white"
-                                                        : "bg-white border-gray-300 text-gray-700"
-                                                        } border`}
-                                                />
-                                            </div>
-                                        )}
-
-                                        {(formData.payMethod === "Hourly" || formData.payMethod === "Monthly") && (
-                                            <div>
-                                                <label
-                                                    htmlFor="overtimeHourlyRate"
-                                                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                                >
-                                                    Overtime Hourly Rate
-                                                </label>
-                                                <input
-                                                    id="overtimeHourlyRate"
-                                                    name="overtimeHourlyRate"
-                                                    type="number"
-                                                    value={formData.overtimeHourlyRate}
-                                                    onChange={handleChange}
-                                                    placeholder="Enter overtime hourly rate"
-                                                    className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                        ? "bg-gray-700 border-gray-600 text-white"
-                                                        : "bg-white border-gray-300 text-gray-700"
-                                                        } border`}
-                                                />
-                                            </div>
-                                        )}
-
-                                        {formData.payMethod === "Monthly" && (
-                                            <div>
-                                                <label
-                                                    htmlFor="monthlySalary"
-                                                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                                >
-                                                    Monthly Salary
-                                                </label>
-                                                <input
-                                                    id="monthlySalary"
-                                                    name="monthlySalary"
-                                                    type="number"
-                                                    value={formData.monthlySalary}
-                                                    onChange={handleChange}
-                                                    placeholder="Enter monthly salary"
-                                                    className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                        ? "bg-gray-700 border-gray-600 text-white"
-                                                        : "bg-white border-gray-300 text-gray-700"
-                                                        } border`}
-                                                />
-                                            </div>
-                                        )}
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                                EPF/ETF
-                                            </label>
-                                            <div className="flex space-x-4 mt-2">
-                                                <CustomRadio
-                                                    id="epfEtfYes"
-                                                    name="hasEpfEtf"
-                                                    value="Yes"
-                                                    checked={formData.hasEpfEtf === "Yes"}
-                                                    onChange={handleSelectChange}
-                                                    label="Yes"
-                                                />
-                                                <CustomRadio
-                                                    id="epfEtfNo"
-                                                    name="hasEpfEtf"
-                                                    value="No"
-                                                    checked={formData.hasEpfEtf === "No"}
-                                                    onChange={handleSelectChange}
-                                                    label="No"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {formData.hasEpfEtf === "Yes" && (
-                                            <div>
-                                                <label
-                                                    htmlFor="epfNumber"
-                                                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                                >
-                                                    EPF Number
-                                                </label>
-                                                <input
-                                                    id="epfNumber"
-                                                    name="epfNumber"
-                                                    value={formData.epfNumber}
-                                                    onChange={handleChange}
-                                                    placeholder="Enter EPF number"
-                                                    className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                        ? "bg-gray-700 border-gray-600 text-white"
-                                                        : "bg-white border-gray-300 text-gray-700"
-                                                        } ${errors.epfNumber ? "border-red-500" : "border"}`}
-                                                />
-                                                {errors.epfNumber && <p className="text-red-500 text-sm mt-1">{errors.epfNumber}</p>}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {/* Personal Tab */}
-                                {activeTab === "personal" && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gender</label>
-                                            <div className="flex space-x-4 mt-2">
-                                                <CustomRadio
-                                                    id="male"
-                                                    name="gender"
-                                                    value="Male"
-                                                    checked={formData.gender === "Male"}
-                                                    onChange={handleSelectChange}
-                                                    label="Male"
-                                                />
-                                                <CustomRadio
-                                                    id="female"
-                                                    name="gender"
-                                                    value="Female"
-                                                    checked={formData.gender === "Female"}
-                                                    onChange={handleSelectChange}
-                                                    label="Female"
-                                                />
-                                                <CustomRadio
-                                                    id="other"
-                                                    name="gender"
-                                                    value="Other"
-                                                    checked={formData.gender === "Other"}
-                                                    onChange={handleSelectChange}
-                                                    label="Other"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label
-                                                htmlFor="dateOfBirth"
-                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                            >
-                                                Date of Birth
-                                            </label>
-                                            <input
-                                                id="dateOfBirth"
-                                                name="dateOfBirth"
-                                                type="date"
-                                                value={formData.dateOfBirth}
-                                                onChange={handleChange}
-                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                    ? "bg-gray-700 border-gray-600 text-white"
-                                                    : "bg-white border-gray-300 text-gray-700"
-                                                    } border`}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label
-                                                htmlFor="nicPassport"
-                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                            >
-                                                NIC or Passport
-                                            </label>
-                                            <input
-                                                id="nicPassport"
-                                                name="nicPassport"
-                                                value={formData.nicPassport}
-                                                onChange={handleChange}
-                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                    ? "bg-gray-700 border-gray-600 text-white"
-                                                    : "bg-white border-gray-300 text-gray-700"
-                                                    } border`}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label
-                                                htmlFor="nationality"
-                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                            >
-                                                Nationality
-                                            </label>
-                                            <input
-                                                id="nationality"
-                                                name="nationality"
-                                                value={formData.nationality}
-                                                onChange={handleChange}
-                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                    ? "bg-gray-700 border-gray-600 text-white"
-                                                    : "bg-white border-gray-300 text-gray-700"
-                                                    } border`}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label
-                                                htmlFor="country"
-                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                            >
-                                                Country
-                                            </label>
-                                            <input
-                                                id="country"
-                                                name="country"
-                                                value={formData.country}
-                                                onChange={handleChange}
-                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                    ? "bg-gray-700 border-gray-600 text-white"
-                                                    : "bg-white border-gray-300 text-gray-700"
-                                                    } border`}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                                Marital Status
-                                            </label>
-                                            <CustomDropdown
-                                                name="maritalStatus"
-                                                value={formData.maritalStatus}
-                                                options={maritalStatuses}
-                                                placeholder="Select status"
-                                                onChange={handleSelectChange}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label
-                                                htmlFor="bankName"
-                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                            >
-                                                Bank Name
-                                            </label>
-                                            <input
-                                                id="bankName"
-                                                name="bankName"
-                                                value={formData.bankName}
-                                                onChange={handleChange}
-                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                    ? "bg-gray-700 border-gray-600 text-white"
-                                                    : "bg-white border-gray-300 text-gray-700"
-                                                    } border`}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label
-                                                htmlFor="bankBranch"
-                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                            >
-                                                Bank Branch
-                                            </label>
-                                            <input
-                                                id="bankBranch"
-                                                name="bankBranch"
-                                                value={formData.bankBranch}
-                                                onChange={handleChange}
-                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                    ? "bg-gray-700 border-gray-600 text-white"
-                                                    : "bg-white border-gray-300 text-gray-700"
-                                                    } border`}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label
-                                                htmlFor="bankNumber"
-                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                            >
-                                                Bank Number
-                                            </label>
-                                            <input
-                                                id="bankNumber"
-                                                name="bankNumber"
-                                                value={formData.bankNumber}
-                                                onChange={handleChange}
-                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                    ? "bg-gray-700 border-gray-600 text-white"
-                                                    : "bg-white border-gray-300 text-gray-700"
-                                                    } border`}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Additional Tab */}
-                                {activeTab === "additional" && (
-                                    <div className="space-y-6">
-                                        {/* Family Status */}
-                                        <div className="space-y-4">
-                                            <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">Family Status</h3>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                <div>
-                                                    <label
-                                                        htmlFor="guardianName"
-                                                        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                                    >
-                                                        Guardian Name (Optional)
-                                                    </label>
-                                                    <input
-                                                        id="guardianName"
-                                                        name="guardianName"
-                                                        value={formData.guardianName}
-                                                        onChange={handleChange}
-                                                        className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                            ? "bg-gray-700 border-gray-600 text-white"
-                                                            : "bg-white border-gray-300 text-gray-700"
-                                                            } border`}
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <label
-                                                        htmlFor="guardianNumber"
-                                                        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                                    >
-                                                        Guardian Number (Optional)
-                                                    </label>
-                                                    <input
-                                                        id="guardianNumber"
-                                                        name="guardianNumber"
-                                                        value={formData.guardianNumber}
-                                                        onChange={handleChange}
-                                                        placeholder="07x xxx xxxx"
-                                                        className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                            ? "bg-gray-700 border-gray-600 text-white"
-                                                            : "bg-white border-gray-300 text-gray-700"
-                                                            } border`}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Emergency Contacts */}
-                                        <div className="space-y-4">
-                                            <div className="flex items-center justify-between">
-                                                <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">Emergency Contacts</h3>
-                                                <button
-                                                    type="button"
-                                                    onClick={addEmergencyContact}
-                                                    className={`flex items-center px-3 py-1 text-sm rounded-md ${isDarkMode
-                                                        ? "bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600"
-                                                        : "bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300"
-                                                        }`}
-                                                >
-                                                    <PlusCircle className="h-4 w-4 mr-2" />
-                                                    Add Contact
-                                                </button>
-                                            </div>
-
-                                            {formData.emergencyContacts.map((contact, index) => (
-                                                <div
-                                                    key={index}
-                                                    className={`grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-md ${isDarkMode ? "bg-gray-700 border border-gray-600" : "bg-gray-50 border border-gray-200"
-                                                        }`}
-                                                >
-                                                    <div>
-                                                        <label
-                                                            htmlFor={`contactName-${index}`}
-                                                            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                                        >
-                                                            Contact Name
-                                                        </label>
-                                                        <input
-                                                            id={`contactName-${index}`}
-                                                            value={contact.contactName}
-                                                            onChange={(e) => handleEmergencyContactChange(index, "contactName", e.target.value)}
-                                                            className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                                ? "bg-gray-600 border-gray-500 text-white"
-                                                                : "bg-white border-gray-300 text-gray-700"
-                                                                } border`}
-                                                        />
-                                                    </div>
-
-                                                    <div className="flex items-end gap-2">
-                                                        <div className="flex-1">
-                                                            <label
-                                                                htmlFor={`contactNumber-${index}`}
-                                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                                            >
-                                                                Contact Number
-                                                            </label>
-                                                            <input
-                                                                id={`contactNumber-${index}`}
-                                                                value={contact.contactNumber}
-                                                                onChange={(e) => handleEmergencyContactChange(index, "contactNumber", e.target.value)}
-                                                                placeholder="07x xxx xxxx"
-                                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                                    ? "bg-gray-600 border-gray-500 text-white"
-                                                                    : "bg-white border-gray-300 text-gray-700"
-                                                                    } border`}
-                                                            />
-                                                        </div>
-
-                                                        {index > 0 && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => removeEmergencyContact(index)}
-                                                                className={`p-2 rounded-md ${isDarkMode
-                                                                    ? "bg-red-900 hover:bg-red-800 text-red-200"
-                                                                    : "bg-red-100 hover:bg-red-200 text-red-700"
-                                                                    }`}
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-
-                                        {/* Education Details */}
-                                        <div className="space-y-4">
-                                            <div className="flex items-center justify-between">
-                                                <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">Education Details</h3>
-                                                <button
-                                                    type="button"
-                                                    onClick={addEducationDetail}
-                                                    className={`flex items-center px-3 py-1 text-sm rounded-md ${isDarkMode
-                                                        ? "bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600"
-                                                        : "bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300"
-                                                        }`}
-                                                >
-                                                    <PlusCircle className="h-4 w-4 mr-2" />
-                                                    Add Education
-                                                </button>
-                                            </div>
-
-                                            {formData.educationDetails.map((education, index) => (
-                                                <div
-                                                    key={index}
-                                                    className={`grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-md ${isDarkMode ? "bg-gray-700 border border-gray-600" : "bg-gray-50 border border-gray-200"
-                                                        }`}
-                                                >
-                                                    <div>
-                                                        <label
-                                                            htmlFor={`certificateLevel-${index}`}
-                                                            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                                        >
-                                                            Certificate Level
-                                                        </label>
-                                                        <CustomDropdown
-                                                            name={`certificateLevel-${index}`}
-                                                            value={education.certificateLevel}
-                                                            options={certificateLevels}
-                                                            placeholder="Select level"
-                                                            onChange={(_, value) => handleEducationChange(index, "certificateLevel", value)}
-                                                        />
-                                                    </div>
-
-                                                    <div>
-                                                        <label
-                                                            htmlFor={`fieldOfStudy-${index}`}
-                                                            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                                        >
-                                                            Field of Study
-                                                        </label>
-                                                        <input
-                                                            id={`fieldOfStudy-${index}`}
-                                                            value={education.fieldOfStudy}
-                                                            onChange={(e) => handleEducationChange(index, "fieldOfStudy", e.target.value)}
-                                                            className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                                ? "bg-gray-600 border-gray-500 text-white"
-                                                                : "bg-white border-gray-300 text-gray-700"
-                                                                } border`}
-                                                        />
-                                                    </div>
-
-                                                    <div className="flex items-end gap-2">
-                                                        <div className="flex-1">
-                                                            <label
-                                                                htmlFor={`schoolUniversity-${index}`}
-                                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                                            >
-                                                                School/University
-                                                            </label>
-                                                            <input
-                                                                id={`schoolUniversity-${index}`}
-                                                                value={education.schoolUniversity}
-                                                                onChange={(e) => handleEducationChange(index, "schoolUniversity", e.target.value)}
-                                                                className={`w-full px-3 py-2 rounded-md ${isDarkMode
-                                                                    ? "bg-gray-600 border-gray-500 text-white"
-                                                                    : "bg-white border-gray-300 text-gray-700"
-                                                                    } border`}
-                                                            />
-                                                        </div>
-
-                                                        {index > 0 && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => removeEducationDetail(index)}
-                                                                className={`p-2 rounded-md ${isDarkMode
-                                                                    ? "bg-red-900 hover:bg-red-800 text-red-200"
-                                                                    : "bg-red-100 hover:bg-red-200 text-red-700"
-                                                                    }`}
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-
-                                <button
-                                    type="submit"
-                                    className={`w-full py-2 px-4 rounded-md flex items-center justify-center ${isDarkMode
-                                        ? "bg-purple-600 hover:bg-purple-700 text-white"
-                                        : "bg-purple-600 hover:bg-purple-700 text-white"
-                                        }`}
-                                    disabled={isLoading} // Disable button while loading
-                                >
-                                    {isLoading ? <DotSpinner /> : isEditMode ? "Update Employee" : "Add Employee"}
-                                </button>
+                                {/* Form fields will be updated in the next edit */}
                             </form>
                         </div>
                     </div>
                 )}
 
                 {/* Employee Table */}
-                <div
-                    className={`rounded-lg shadow-lg ${isDarkMode ? "bg-gray-800 border border-gray-700" : "bg-white border border-gray-200"
-                        }`}
-                >
-                    <div className="p-6 border-b dark:border-gray-700">
-                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Employee Details</h2>
-                        <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your employees and their information</p>
+                <div className="rounded-lg shadow-lg bg-surface border border-border">
+                    <div className="p-6 border-b border-border">
+                        <h2 className="text-2xl font-bold text-text-primary">Employee Details</h2>
+                        <p className="text-text-secondary mt-1">Manage your employees and their information</p>
                     </div>
                     <div className="p-6">
                         {status === 'loading' ? (
@@ -1639,64 +707,37 @@ export default function Employee() {
                                 <DotSpinner />
                             </div>
                         ) : error ? (
-                            <p>Error: {error}</p>
+                            <p className="text-text-muted">Error: {error}</p>
                         ) : filteredEmployees.length > 0 ? (
                             <div className="overflow-x-auto">
                                 <table className="w-full">
-                                    <thead className={isDarkMode ? "bg-gray-700" : "bg-gray-100"}>
+                                    <thead className="bg-primary-light">
                                         <tr>
-                                            <th
-                                                className={`px-4 py-3 text-left text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"
-                                                    }`}
-                                            >
+                                            <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">
                                                 Profile
                                             </th>
-                                            <th
-                                                className={`px-4 py-3 text-left text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"
-                                                    }`}
-                                            >
+                                            <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">
                                                 Employee ID
                                             </th>
-                                            <th
-                                                className={`px-4 py-3 text-left text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"
-                                                    }`}
-                                            >
+                                            <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">
                                                 Name
                                             </th>
-                                            <th
-                                                className={`px-4 py-3 text-left text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"
-                                                    }`}
-                                            >
+                                            <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">
                                                 Email
                                             </th>
-                                            <th
-                                                className={`px-4 py-3 text-left text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"
-                                                    }`}
-                                            >
+                                            <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">
                                                 NIC/Passport
                                             </th>
-                                            <th
-                                                className={`px-4 py-3 text-left text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"
-                                                    }`}
-                                            >
+                                            <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">
                                                 Position
                                             </th>
-                                            <th
-                                                className={`px-4 py-3 text-left text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"
-                                                    }`}
-                                            >
+                                            <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">
                                                 Department
                                             </th>
-                                            <th
-                                                className={`px-4 py-3 text-left text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"
-                                                    }`}
-                                            >
+                                            <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">
                                                 Status
                                             </th>
-                                            <th
-                                                className={`px-4 py-3 text-left text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"
-                                                    }`}
-                                            >
+                                            <th className="px-4 py-3 text-left text-sm font-medium text-text-primary">
                                                 Actions
                                             </th>
                                         </tr>
@@ -1706,52 +747,52 @@ export default function Employee() {
                                         {filteredEmployees.map((employee) => (
                                             <tr
                                                 key={employee.id}
-                                                className={`border-b ${isDarkMode ? "border-gray-700 hover:bg-gray-700" : "border-gray-200 hover:bg-gray-50"
-                                                    }`}
+                                                className="border-b border-border hover:bg-primary-light/30"
                                             >
                                                 <td className="px-4 py-4">
-                                                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                                                    <div className="w-10 h-10 rounded-full overflow-hidden bg-primary-light flex items-center justify-center">
                                                         {employee.profileImages ? (
                                                             <img
-                                                                src={employee.profileImages} // Use the profileImage URL directly
+                                                                src={employee.profileImages}
                                                                 alt={`${employee.firstName || ''} ${employee.lastName || ''}`}
                                                                 className="w-full h-full object-cover"
                                                             />
                                                         ) : (
-                                                            <span className={`text-sm font-medium ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                                                            <span className="text-sm font-medium text-text-primary">
                                                                 {(employee.firstName?.charAt(0) || '') + (employee.lastName?.charAt(0) || '')}
                                                             </span>
                                                         )}
                                                     </div>
                                                 </td>
-                                                <td className={`px-4 py-4 font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                                                <td className="px-4 py-4 font-medium text-text-primary">
                                                     {employee.employeeId}
                                                 </td>
-                                                <td className={isDarkMode ? "px-4 py-4 text-gray-300" : "px-4 py-4 text-gray-700"}>
+                                                <td className="px-4 py-4 text-text-secondary">
                                                     {`${employee.firstName} ${employee.lastName}`}
                                                 </td>
-                                                <td className={isDarkMode ? "px-4 py-4 text-gray-300" : "px-4 py-4 text-gray-700"}>
+                                                <td className="px-4 py-4 text-text-secondary">
                                                     {employee.email}
                                                 </td>
-                                                <td className={isDarkMode ? "px-4 py-4 text-gray-300" : "px-4 py-4 text-gray-700"}>
+                                                <td className="px-4 py-4 text-text-secondary">
                                                     {employee.nicPassport}
                                                 </td>
-                                                <td className={isDarkMode ? "px-4 py-4 text-gray-300" : "px-4 py-4 text-gray-700"}>
+                                                <td className="px-4 py-4 text-text-secondary">
                                                     {employee.position}
                                                 </td>
-                                                <td className={isDarkMode ? "px-4 py-4 text-gray-300" : "px-4 py-4 text-gray-700"}>
+                                                <td className="px-4 py-4 text-text-secondary">
                                                     {employee.department}
                                                 </td>
                                                 <td className="px-4 py-4">
                                                     <span
-                                                        className={`px-2 py-1 rounded-full text-xs ${employee.employmentStatus === "Active"
-                                                            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                                            : employee.employmentStatus === "Inactive"
-                                                                ? "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                                                                : employee.employmentStatus === "On Leave"
-                                                                    ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                                                                    : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                                                            }`}
+                                                        className={`px-2 py-1 rounded-full text-xs ${
+                                                            employee.employmentStatus === "Active"
+                                                                ? "bg-primary-light text-primary"
+                                                                : employee.employmentStatus === "Inactive"
+                                                                    ? "bg-accent text-primary"
+                                                                    : employee.employmentStatus === "On Leave"
+                                                                        ? "bg-secondary text-primary"
+                                                                        : "bg-primary-light text-primary"
+                                                        }`}
                                                     >
                                                         {employee.employmentStatus}
                                                     </span>
@@ -1761,27 +802,21 @@ export default function Employee() {
                                                     <div className="flex space-x-2">
                                                         <button
                                                             onClick={() => handleViewEmployee(employee)}
-                                                            className={`p-1 rounded-md ${isDarkMode ? "bg-green-900 hover:bg-green-800 text-green-200" : "bg-green-100 hover:bg-green-200 text-green-700"}`}
+                                                            className="p-1 rounded-md bg-primary-light hover:bg-primary text-primary hover:text-white transition"
                                                             title="View"
                                                         >
                                                             <Eye className="h-4 w-4" />
                                                         </button>
                                                         <button
                                                             onClick={() => handleEditEmployee(employee)}
-                                                            className={`p-1 rounded-md ${isDarkMode
-                                                                ? "bg-blue-900 hover:bg-blue-800 text-blue-200"
-                                                                : "bg-blue-100 hover:bg-blue-200 text-blue-700"
-                                                                }`}
+                                                            className="p-1 rounded-md bg-secondary hover:bg-primary text-primary hover:text-white transition"
                                                             title="Edit"
                                                         >
                                                             <Edit2 className="h-4 w-4" />
                                                         </button>
                                                         <button
                                                             onClick={() => handleDeleteEmployee(employee.id)}
-                                                            className={`p-1 rounded-md ${isDarkMode
-                                                                ? "bg-red-900 hover:bg-red-800 text-red-200"
-                                                                : "bg-red-100 hover:bg-red-200 text-red-700"
-                                                                }`}
+                                                            className="p-1 rounded-md bg-accent hover:bg-primary text-primary hover:text-white transition"
                                                             title="Delete"
                                                         >
                                                             <Trash2 className="h-4 w-4" />
@@ -1794,9 +829,9 @@ export default function Employee() {
                                 </table>
                             </div>
                         ) : (
-                            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                                <User className="h-12 w-12 mx-auto mb-4 text-gray-400 dark:text-gray-600" />
-                                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">No employees yet</h3>
+                            <div className="text-center py-12 text-text-muted">
+                                <User className="h-12 w-12 mx-auto mb-4 text-text-muted" />
+                                <h3 className="text-lg font-medium text-text-primary mb-1">No employees yet</h3>
                                 <p>Click the "Add Employee" button to add your first employee.</p>
                             </div>
                         )}

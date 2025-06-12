@@ -231,29 +231,28 @@ function LeaveRequestSystem() {
     filter === "All" ? leaveRequests : leaveRequests.filter((request) => request.status === filter)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-background text-text-primary">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Leave Request System</h1>
+        <h1 className="text-2xl font-bold text-text-primary">Leave Request System</h1>
         <div className="flex space-x-2">
           <button
             onClick={() => openModal()}
-            className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="flex items-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/20"
           >
             <PlusIcon className="w-5 h-5 mr-2" />
             New Leave Request
           </button>
-          
         </div>
       </div>
 
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-2">
-          <FilterIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-          <span className="text-sm font-medium">Filter:</span>
+          <FilterIcon className="w-5 h-5 text-text-secondary" />
+          <span className="text-sm font-medium text-text-primary">Filter:</span>
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white text-sm"
+            className="rounded-md border border-border shadow-sm focus:border-primary focus:ring-primary/20 bg-background text-text-primary text-sm"
           >
             {filterOptions.map((option) => (
               <option key={option} value={option}>
@@ -262,125 +261,93 @@ function LeaveRequestSystem() {
             ))}
           </select>
         </div>
-        <div className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="text-sm text-text-secondary">
           Showing {filteredLeaveRequests.length} of {leaveRequests.length} leave requests
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 shadow overflow-hidden rounded-lg">
+      <div className="bg-surface shadow overflow-hidden rounded-lg border border-border">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700">
+          <table className="min-w-full divide-y divide-border">
+            <thead className="bg-primary-light">
               <tr>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                >
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-primary uppercase tracking-wider">
                   Employee
                 </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                >
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-primary uppercase tracking-wider">
                   Email
                 </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                >
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-primary uppercase tracking-wider">
                   Leave Type
                 </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                >
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-primary uppercase tracking-wider">
                   Period
                 </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                >
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-primary uppercase tracking-wider">
                   Days
                 </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                >
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-primary uppercase tracking-wider">
                   Reason
                 </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                >
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text-primary uppercase tracking-wider">
                   Status
                 </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                >
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-text-primary uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-background divide-y divide-border">
               {filteredLeaveRequests.map((request) => (
-                <tr key={request.id}>
+                <tr key={request.id} className="hover:bg-surface/50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium">{request.employeeId}-{request.name}</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">{request.department}</div>
+                    <div className="text-sm font-medium text-text-primary">{request.employeeId}-{request.name}</div>
+                    <div className="text-sm text-text-secondary">{request.department}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500 dark:text-gray-400">{request.email}</div> {/* Display email */}
+                    <div className="text-sm text-text-secondary">{request.email}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getLeaveTypeColor(request.leaveType)}`}
-                    >
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getLeaveTypeColor(request.leaveType)}`}>
                       {request.leaveType}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm">
+                    <div className="text-sm text-text-secondary">
                       {request.startstartDate}
                     </div>
-                    <div className="text-sm">
-                  to 
+                    <div className="text-sm text-text-secondary">
+                      to 
                     </div>
-                    <div className="text-sm">
-                    {request.endstartDate}
+                    <div className="text-sm text-text-secondary">
+                      {request.endstartDate}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm">{request.days}</div>
+                    <div className="text-sm text-text-secondary">{request.days}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm">{request.reason}</div>
+                    <div className="text-sm text-text-secondary">{request.reason}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(request.status)}`}
-                    >
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(request.status)}`}>
                       {getStatusIcon(request.status)}
                       <span className="ml-1">{request.status}</span>
                     </span>
-                    {request.status !== "Pending" && (
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      </div>
-                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     {request.status === "Pending" && (
                       <div className="flex justify-end space-x-2">
                         <button
                           onClick={() => handleApproveReject(request.id, "Approved")}
-                          className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300"
+                          className="text-primary hover:text-primary-dark"
                         >
                           <CheckCircleIcon className="w-5 h-5" />
                           <span className="sr-only">Approve</span>
                         </button>
                         <button
                           onClick={() => openRejectModal(request.id)}
-                          className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
+                          className="text-accent hover:text-accent/80"
                         >
                           <ExclamationCircleIcon className="w-5 h-5" />
                           <span className="sr-only">Reject</span>
@@ -390,7 +357,7 @@ function LeaveRequestSystem() {
                     {request.status !== "Pending" && (
                       <button
                         onClick={() => openModal(request)}
-                        className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300"
+                        className="text-primary hover:text-primary-dark"
                       >
                         <span className="sr-only">View</span>
                       </button>
@@ -411,25 +378,22 @@ function LeaveRequestSystem() {
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 dark:bg-gray-900 opacity-75"></div>
+              <div className="absolute inset-0 bg-black/50"></div>
             </div>
 
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
               &#8203;
             </span>
 
-            <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div className="inline-block align-bottom bg-surface rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-border">
               <form onSubmit={handleSubmit}>
-                <div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                  <h3 className="text-lg leading-6 font-medium">
+                <div className="px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <h3 className="text-lg leading-6 font-medium text-text-primary">
                     {isEditing ? "Edit Leave Request" : "New Leave Request"}
                   </h3>
                   <div className="mt-4 space-y-4">
                     <div>
-                      <label
-                        htmlFor="employeeName"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-                      >
+                      <label htmlFor="employeeName" className="block text-sm font-medium text-text-secondary">
                         Employee Name
                       </label>
                       <input
@@ -439,13 +403,13 @@ function LeaveRequestSystem() {
                         value={currentLeaveRequest.employeeName}
                         onChange={handleInputChange}
                         required
-                        className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="mt-1 block w-full border border-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary sm:text-sm bg-background text-text-primary"
                       />
                     </div>
                     <div>
                       <label
                         htmlFor="email"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        className="block text-sm font-medium text-text-secondary"
                       >
                         Email
                       </label>
@@ -456,13 +420,13 @@ function LeaveRequestSystem() {
                         value={currentLeaveRequest.email}
                         onChange={handleInputChange}
                         required
-                        className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="mt-1 block w-full border border-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary sm:text-sm bg-background text-text-primary"
                       />
                     </div>
                     <div>
                       <label
                         htmlFor="department"
-                        className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                        className="block text-sm font-medium text-text-secondary"
                       >
                         Department
                       </label>
@@ -473,11 +437,11 @@ function LeaveRequestSystem() {
                         value={currentLeaveRequest.department}
                         onChange={handleInputChange}
                         required
-                        className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="mt-1 block w-full border border-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary sm:text-sm bg-background text-text-primary"
                       />
                     </div>
                     <div>
-                      <label htmlFor="leaveType" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <label htmlFor="leaveType" className="block text-sm font-medium text-text-secondary">
                         Leave Type
                       </label>
                       <select
@@ -486,7 +450,7 @@ function LeaveRequestSystem() {
                         value={currentLeaveRequest.leaveType}
                         onChange={handleInputChange}
                         required
-                        className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="mt-1 block w-full border border-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary sm:text-sm bg-background text-text-primary"
                       >
                         <option value="">Select Leave Type</option>
                         {leaveTypes.map((type) => (
@@ -500,7 +464,7 @@ function LeaveRequestSystem() {
                       <div>
                         <label
                           htmlFor="startDate"
-                          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                          className="block text-sm font-medium text-text-secondary"
                         >
                           Start Date
                         </label>
@@ -514,11 +478,11 @@ function LeaveRequestSystem() {
                             setTimeout(calculateDays, 100)
                           }}
                           required
-                          className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          className="mt-1 block w-full border border-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary sm:text-sm bg-background text-text-primary"
                         />
                       </div>
                       <div>
-                        <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        <label htmlFor="endDate" className="block text-sm font-medium text-text-secondary">
                           End Date
                         </label>
                         <input
@@ -531,12 +495,12 @@ function LeaveRequestSystem() {
                             setTimeout(calculateDays, 100)
                           }}
                           required
-                          className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          className="mt-1 block w-full border border-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary sm:text-sm bg-background text-text-primary"
                         />
                       </div>
                     </div>
                     <div>
-                      <label htmlFor="days" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <label htmlFor="days" className="block text-sm font-medium text-text-secondary">
                         Total Days
                       </label>
                       <input
@@ -547,11 +511,11 @@ function LeaveRequestSystem() {
                         onChange={handleInputChange}
                         required
                         readOnly
-                        className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 bg-gray-100 dark:bg-gray-600 text-gray-900 dark:text-white sm:text-sm"
+                        className="mt-1 block w-full border border-border rounded-md shadow-sm py-2 px-3 bg-background text-text-primary sm:text-sm"
                       />
                     </div>
                     <div>
-                      <label htmlFor="reason" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      <label htmlFor="reason" className="block text-sm font-medium text-text-secondary">
                         Reason
                       </label>
                       <textarea
@@ -561,12 +525,12 @@ function LeaveRequestSystem() {
                         value={currentLeaveRequest.reason}
                         onChange={handleInputChange}
                         required
-                        className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="mt-1 block w-full border border-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary sm:text-sm bg-background text-text-primary"
                       ></textarea>
                     </div>
                     {isEditing && (
                       <div>
-                        <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        <label htmlFor="status" className="block text-sm font-medium text-text-secondary">
                           Status
                         </label>
                         <select

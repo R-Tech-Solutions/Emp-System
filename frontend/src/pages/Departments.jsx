@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { FaEdit, FaTrash, FaSearch, FaSpinner } from "react-icons/fa";
+import { FaEdit, FaTrash, FaSearch } from "react-icons/fa";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { backEndURL } from "../Backendurl";
-import DotSpinner from "../loaders/Loader"; // Import the loader
+import DotSpinner from "../loaders/Loader";
 
 export default function HRMSystem() {
   const [departments, setDepartments] = useState([]);
@@ -63,16 +63,16 @@ export default function HRMSystem() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-        <FaSpinner className="animate-spin text-4xl" />
+      <div className="min-h-screen bg-background text-text-primary flex items-center justify-center">
+        <DotSpinner />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-gray-900 p-6 rounded-2xl shadow-2xl max-w-full overflow-hidden">
+      <div className="bg-background p-6 rounded-2xl shadow-2xl max-w-full overflow-hidden">
         <div
           className="flex gap-2 sm:gap-4 overflow-x-auto no-scrollbar"
           role="tablist"
@@ -82,10 +82,10 @@ export default function HRMSystem() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`relative px-5 py-2 sm:px-6 sm:py-2.5 text-sm sm:text-base rounded-xl font-medium transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+              className={`relative px-5 py-2 sm:px-6 sm:py-2.5 text-sm sm:text-base rounded-xl font-medium transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                 activeTab === tab
-                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
-                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  ? "bg-primary text-white shadow-md"
+                  : "bg-surface text-text-secondary hover:bg-primary-light"
               }`}
               role="tab"
               aria-selected={activeTab === tab}
@@ -94,7 +94,7 @@ export default function HRMSystem() {
               {activeTab === tab && (
                 <motion.div
                   layoutId="tabHighlight"
-                  className="absolute inset-0 rounded-xl bg-blue-700/20 z-[-1]"
+                  className="absolute inset-0 rounded-xl bg-primary/20 z-[-1]"
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 />
               )}
@@ -238,23 +238,23 @@ function Section({ title, data, setData, keys, fetchData }) {
   );
 
   return (
-    <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+    <div className="bg-surface p-6 rounded-lg shadow-lg border border-border">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-white">{title}</h2>
+        <h2 className="text-2xl font-bold text-text-primary">{title}</h2>
         <div className="flex space-x-4">
           <div className="relative">
-            <FaSearch className="absolute left-3 top-3 text-gray-400" />
+            <FaSearch className="absolute left-3 top-3 text-text-muted" />
             <input
               type="text"
               placeholder="Search..."
-              className="pl-10 pr-4 py-2 rounded-lg bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="pl-10 pr-4 py-2 rounded-lg bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-primary border border-border"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <button
             onClick={handleAdd}
-            className="bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="bg-primary px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors text-white"
           >
             Add {title}
           </button>
@@ -266,24 +266,24 @@ function Section({ title, data, setData, keys, fetchData }) {
           <thead>
             <tr>
               {keys.map((key) => (
-                <th key={key} className="border-b py-2">
+                <th key={key} className="border-b border-border py-2 text-text-secondary">
                   {key.toUpperCase()}
                 </th>
               ))}
-              <th className="border-b py-2">Actions</th>
+              <th className="border-b border-border py-2 text-text-secondary">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredData.map((item) => (
-              <tr key={item.id} className="border-b">
+              <tr key={item.id} className="border-b border-border">
                 {keys.map((key) => (
-                  <td key={key} className="py-2">
+                  <td key={key} className="py-2 text-text-primary">
                     {item[key]}
                   </td>
                 ))}
                 <td className="py-2 flex space-x-2">
                   <button
-                    className="text-blue-500 hover:text-blue-700"
+                    className="text-primary hover:text-primary-dark"
                     onClick={() => handleEdit(item)}
                   >
                     <FaEdit />
@@ -303,8 +303,8 @@ function Section({ title, data, setData, keys, fetchData }) {
       {/* Modal Form */}
       {isFormOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-xl font-bold mb-4">
+          <div className="bg-surface rounded-lg p-6 w-full max-w-md border border-border">
+            <h3 className="text-xl font-bold mb-4 text-text-primary">
               {formData.id ? "Edit" : "Add"} {title}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -312,13 +312,13 @@ function Section({ title, data, setData, keys, fetchData }) {
                 .filter((key) => key !== "employeeCount")
                 .map((key) => (
                   <div key={key}>
-                    <label className="block text-sm font-medium mb-1">
+                    <label className="block text-sm font-medium mb-1 text-text-secondary">
                       {key}
                     </label>
                     <input
                       type="text"
                       placeholder={key}
-                      className="w-full p-2 bg-gray-700 rounded-lg border border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      className="w-full p-2 bg-background rounded-lg border border-border focus:border-primary focus:ring-1 focus:ring-primary text-text-primary"
                       onChange={(e) =>
                         setFormData({ ...formData, [key]: e.target.value })
                       }
@@ -330,15 +330,15 @@ function Section({ title, data, setData, keys, fetchData }) {
                 <button
                   type="button"
                   onClick={() => setIsFormOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600"
+                  className="px-4 py-2 rounded-lg bg-surface hover:bg-primary-light text-text-primary border border-border"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700"
+                  className="px-4 py-2 rounded-lg bg-primary hover:bg-primary-dark text-white"
                 >
-                  {loading ? <FaSpinner className="animate-spin" /> : "Save"}
+                  {loading ? <DotSpinner /> : "Save"}
                 </button>
               </div>
             </form>
@@ -348,19 +348,19 @@ function Section({ title, data, setData, keys, fetchData }) {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-xl font-bold mb-4">Confirm Delete</h3>
-            <p>Are you sure you want to delete this item?</p>
+          <div className="bg-surface rounded-lg p-6 w-full max-w-md border border-border">
+            <h3 className="text-xl font-bold mb-4 text-text-primary">Confirm Delete</h3>
+            <p className="text-text-secondary">Are you sure you want to delete this item?</p>
             <div className="flex justify-end space-x-3 mt-6">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600"
+                className="px-4 py-2 rounded-lg bg-surface hover:bg-primary-light text-text-primary border border-border"
               >
                 Cancel
               </button>
               <button
                 onClick={executeDelete}
-                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700"
+                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white"
               >
                 Delete
               </button>
@@ -368,8 +368,7 @@ function Section({ title, data, setData, keys, fetchData }) {
           </div>
         </div>
       )}
-      {loading && <div className="text-yellow-500">Processing...</div>}{" "}
-      {/* Show loading indicator */}
+      {loading && <div className="text-primary">Processing...</div>}
     </div>
   );
 }
@@ -474,12 +473,12 @@ function MonthlyWorkHoursSection({ data, setData }) {
   };
 
   return (
-    <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+    <div className="bg-surface p-6 rounded-lg shadow-lg border border-border">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-white">Monthly Work Hours</h2>
+        <h2 className="text-2xl font-bold text-text-primary">Monthly Work Hours</h2>
         <button
           onClick={handleAdd}
-          className="bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          className="bg-primary px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors text-white"
         >
           Add Month
         </button>
@@ -489,27 +488,27 @@ function MonthlyWorkHoursSection({ data, setData }) {
         <table className="w-full text-left">
           <thead>
             <tr>
-              <th className="border-b py-2">MONTH</th>
-              <th className="border-b py-2">WORK HOURS</th>
-              <th className="border-b py-2">ACTIONS</th>
+              <th className="border-b border-border py-2 text-text-secondary">MONTH</th>
+              <th className="border-b border-border py-2 text-text-secondary">WORK HOURS</th>
+              <th className="border-b border-border py-2 text-text-secondary">ACTIONS</th>
             </tr>
           </thead>
           <tbody>
             {fetching ? (
               <tr>
                 <td colSpan="3" className="text-center py-4">
-                  <DotSpinner /> {/* Show loader while fetching */}
+                  <DotSpinner />
                 </td>
               </tr>
             ) : (
               Array.isArray(data) &&
               data.map((item) => (
-                <tr key={item.id} className="border-b">
-                  <td className="py-2">{item.month}</td>
-                  <td className="py-2">{item.workHours}</td>
+                <tr key={item.id} className="border-b border-border">
+                  <td className="py-2 text-text-primary">{item.month}</td>
+                  <td className="py-2 text-text-primary">{item.workHours}</td>
                   <td className="py-2 flex space-x-2">
                     <button
-                      className="text-blue-500 hover:text-blue-700"
+                      className="text-primary hover:text-primary-dark"
                       onClick={() => handleEdit(item)}
                     >
                       <FaEdit />
@@ -531,17 +530,17 @@ function MonthlyWorkHoursSection({ data, setData }) {
       {/* Modal Form */}
       {isFormOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-xl font-bold mb-4">
+          <div className="bg-surface rounded-lg p-6 w-full max-w-md border border-border">
+            <h3 className="text-xl font-bold mb-4 text-text-primary">
               {formData.id ? "Edit" : "Add"} Month
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Month</label>
+                <label className="block text-sm font-medium mb-1 text-text-secondary">Month</label>
                 <input
                   type="text"
                   placeholder="Month"
-                  className="w-full p-2 bg-gray-700 rounded-lg border border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full p-2 bg-background rounded-lg border border-border focus:border-primary focus:ring-1 focus:ring-primary text-text-primary"
                   onChange={(e) =>
                     setFormData({ ...formData, month: e.target.value })
                   }
@@ -549,13 +548,13 @@ function MonthlyWorkHoursSection({ data, setData }) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">
+                <label className="block text-sm font-medium mb-1 text-text-secondary">
                   Work Hours
                 </label>
                 <input
                   type="number"
                   placeholder="Work Hours"
-                  className="w-full p-2 bg-gray-700 rounded-lg border border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full p-2 bg-background rounded-lg border border-border focus:border-primary focus:ring-1 focus:ring-primary text-text-primary"
                   onChange={(e) =>
                     setFormData({ ...formData, workHours: e.target.value })
                   }
@@ -566,15 +565,15 @@ function MonthlyWorkHoursSection({ data, setData }) {
                 <button
                   type="button"
                   onClick={() => setIsFormOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600"
+                  className="px-4 py-2 rounded-lg bg-surface hover:bg-primary-light text-text-primary border border-border"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700"
+                  className="px-4 py-2 rounded-lg bg-primary hover:bg-primary-dark text-white"
                 >
-                  {loading ? <FaSpinner className="animate-spin" /> : "Save"}
+                  {loading ? <DotSpinner /> : "Save"}
                 </button>
               </div>
             </form>
@@ -585,19 +584,19 @@ function MonthlyWorkHoursSection({ data, setData }) {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-xl font-bold mb-4">Confirm Delete</h3>
-            <p>Are you sure you want to delete this item?</p>
+          <div className="bg-surface rounded-lg p-6 w-full max-w-md border border-border">
+            <h3 className="text-xl font-bold mb-4 text-text-primary">Confirm Delete</h3>
+            <p className="text-text-secondary">Are you sure you want to delete this item?</p>
             <div className="flex justify-end space-x-3 mt-6">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600"
+                className="px-4 py-2 rounded-lg bg-surface hover:bg-primary-light text-text-primary border border-border"
               >
                 Cancel
               </button>
               <button
                 onClick={executeDelete}
-                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700"
+                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white"
               >
                 Delete
               </button>
@@ -682,30 +681,30 @@ function NotesTermsSection() {
   };
 
   return (
-    <div className="bg-gray-800 p-6 rounded-lg shadow-lg max-w-2xl mx-auto">
-      <h2 className="text-2xl font-bold text-white mb-6">Notes & Terms</h2>
+    <div className="bg-surface p-6 rounded-lg shadow-lg max-w-2xl mx-auto border border-border">
+      <h2 className="text-2xl font-bold text-text-primary mb-6">Notes & Terms</h2>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium mb-1 text-white">
+          <label className="block text-sm font-medium mb-1 text-text-secondary">
             Notes
           </label>
           <textarea
-            className="w-full p-3 rounded-lg bg-gray-700 text-white border border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-h-[80px]"
+            className="w-full p-3 rounded-lg bg-background text-text-primary border border-border focus:border-primary focus:ring-1 focus:ring-primary min-h-[80px]"
             placeholder="Enter notes..."
             value={notes}
             onChange={handleNotesChange}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1 text-white">
+          <label className="block text-sm font-medium mb-1 text-text-secondary">
             Terms and Conditions
           </label>
           <div className="space-y-2">
             {terms.map((term, idx) => (
               <div key={idx} className="flex items-start gap-2">
-                <span className="mt-2 text-blue-400">•</span>
+                <span className="mt-2 text-primary">•</span>
                 <textarea
-                  className="flex-1 p-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-h-[40px]"
+                  className="flex-1 p-2 rounded-lg bg-background text-text-primary border border-border focus:border-primary focus:ring-1 focus:ring-primary min-h-[40px]"
                   placeholder="Enter term..."
                   value={term}
                   onChange={(e) => handleTermsChange(e, idx)}
@@ -719,11 +718,11 @@ function NotesTermsSection() {
         <div className="flex justify-end">
           <button
             type="submit"
-            className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md transition-colors"
+            className="px-6 py-2 rounded-lg bg-primary hover:bg-primary-dark text-white font-semibold shadow-md transition-colors"
             disabled={loading}
           >
             {loading ? (
-              <FaSpinner className="animate-spin inline" />
+              <DotSpinner />
             ) : isEditing ? (
               "Update Changes"
             ) : (
@@ -732,7 +731,7 @@ function NotesTermsSection() {
           </button>
         </div>
         {successMsg && (
-          <div className="text-green-400 text-center">{successMsg}</div>
+          <div className="text-green-600 text-center">{successMsg}</div>
         )}
       </form>
     </div>

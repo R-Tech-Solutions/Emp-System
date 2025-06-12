@@ -284,7 +284,7 @@ export default function AttendancePage() {
       const weekDays = Array.from({ length: 7 }, (_, i) => new Date(startOfWeek.getFullYear(), startOfWeek.getMonth(), startOfWeek.getDate() + i));
 
       return (
-        <div className="bg-gray-800 rounded-lg p-4">
+        <div className="bg-surface rounded-lg p-4">
           <h3 className="text-lg font-semibold mb-4">
             Weekly Attendance for {selectedEmployee.firstName} {selectedEmployee.lastName}
           </h3>
@@ -301,7 +301,7 @@ export default function AttendancePage() {
                 <div
                   key={i}
                   className={`p-2 rounded-lg ${
-                    isPresent ? "bg-green-500" : "bg-red-500"
+                    isPresent ? "bg-primary" : "bg-red-500"
                   }`}
                 >
                   {day.toLocaleDateString("en-US", { weekday: "short", day: "numeric" })}
@@ -310,7 +310,7 @@ export default function AttendancePage() {
             })}
           </div>
           <button
-            className="mt-4 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg"
+            className="mt-4 bg-background hover:bg-surface/50 px-4 py-2 rounded-lg"
             onClick={() => setShowCalendar(false)}
           >
             Close
@@ -323,7 +323,7 @@ export default function AttendancePage() {
       const daysInMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0).getDate();
 
       return (
-        <div className="bg-gray-800 rounded-lg p-4">
+        <div className="bg-surface rounded-lg p-4">
           <h3 className="text-lg font-semibold mb-4">
             Monthly Attendance for {selectedEmployee.firstName} {selectedEmployee.lastName}
           </h3>
@@ -341,7 +341,7 @@ export default function AttendancePage() {
                 <div
                   key={i}
                   className={`p-2 rounded-lg ${
-                    isPresent ? "bg-green-500" : "bg-red-500"
+                    isPresent ? "bg-primary" : "bg-red-500"
                   }`}
                 >
                   {day.getDate()}
@@ -350,7 +350,7 @@ export default function AttendancePage() {
             })}
           </div>
           <button
-            className="mt-4 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg"
+            className="mt-4 bg-background hover:bg-surface/50 px-4 py-2 rounded-lg"
             onClick={() => setShowCalendar(false)}
           >
             Close
@@ -361,39 +361,39 @@ export default function AttendancePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
+    <div className="min-h-screen bg-background text-text-primary">
       {/* Search bar */}
-      <div className="bg-gray-800 rounded-lg p-4 mb-6 flex justify-between items-center">
+      <div className="bg-surface rounded-lg p-4 mb-6 flex justify-between items-center border border-border">
         <input
           type="text"
           placeholder="Search by Employee ID"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full md:w-1/3 px-4 py-2 rounded-lg bg-gray-700 text-gray-100 focus:outline-none"
+          className="w-full md:w-1/3 px-4 py-2 rounded-lg bg-background text-text-primary border border-border focus:outline-none focus:ring-2 focus:ring-primary/20"
         />
       </div>
 
       {/* Date navigation */}
-      <div className="bg-gray-800 rounded-lg p-4 mb-6 flex flex-col md:flex-row justify-between items-center">
+      <div className="bg-surface rounded-lg p-4 mb-6 flex flex-col md:flex-row justify-between items-center border border-border">
         <div className="flex items-center gap-4 mb-4 md:mb-0">
           <button
-            className="bg-gray-700 hover:bg-gray-600 p-2 rounded-lg"
+            className="bg-background hover:bg-surface/50 p-2 rounded-lg border border-border"
             onClick={() => navigateDate(-1)}
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft className="h-5 w-5 text-text-primary" />
           </button>
 
-          <div className="text-xl font-semibold">{getDateRange()}</div>
+          <div className="text-xl font-semibold text-text-primary">{getDateRange()}</div>
 
           <button
-            className="bg-gray-700 hover:bg-gray-600 p-2 rounded-lg"
+            className="bg-background hover:bg-surface/50 p-2 rounded-lg border border-border"
             onClick={() => navigateDate(1)}
           >
-            <ChevronRight className="h-5 w-5" />
+            <ChevronRight className="h-5 w-5 text-text-primary" />
           </button>
 
           <button
-            className="bg-gray-700 hover:bg-gray-600 p-2 rounded-lg ml-2"
+            className="bg-background hover:bg-surface/50 p-2 rounded-lg ml-2 border border-border text-text-primary"
             onClick={() => setSelectedDate(new Date())}
           >
             Today
@@ -404,8 +404,8 @@ export default function AttendancePage() {
           <button
             className={`px-3 py-1 rounded-lg ${
               viewMode === "daily"
-                ? "bg-indigo-600"
-                : "bg-gray-700 hover:bg-gray-600"
+                ? "bg-primary text-white"
+                : "bg-background hover:bg-surface/50 text-text-primary border border-border"
             }`}
             onClick={() => setViewMode("daily")}
           >
@@ -414,8 +414,8 @@ export default function AttendancePage() {
           <button
             className={`px-3 py-1 rounded-lg ${
               viewMode === "weekly"
-                ? "bg-indigo-600"
-                : "bg-gray-700 hover:bg-gray-600"
+                ? "bg-primary text-white"
+                : "bg-background hover:bg-surface/50 text-text-primary border border-border"
             }`}
             onClick={() => setViewMode("weekly")}
           >
@@ -424,8 +424,8 @@ export default function AttendancePage() {
           <button
             className={`px-3 py-1 rounded-lg ${
               viewMode === "monthly"
-                ? "bg-indigo-600"
-                : "bg-gray-700 hover:bg-gray-600"
+                ? "bg-primary text-white"
+                : "bg-background hover:bg-surface/50 text-text-primary border border-border"
             }`}
             onClick={() => setViewMode("monthly")}
           >
@@ -437,13 +437,13 @@ export default function AttendancePage() {
       {showCalendar && selectedEmployee ? (
         renderCalendar()
       ) : (
-        <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+        <div className="bg-surface rounded-lg shadow-lg overflow-hidden border border-border">
           {loading ? (
             <div className="p-8 text-center">
-              <DotSpinner /> {/* Show loader while data is being fetched */}
+              <DotSpinner />
             </div>
           ) : filteredRecords.length === 0 ? (
-            <div className="p-8 text-center text-gray-400">
+            <div className="p-8 text-center text-text-muted">
               <p className="text-xl">No attendance records found</p>
               <p className="mt-2">
                 Try adjusting your search criteria or date range
@@ -453,13 +453,13 @@ export default function AttendancePage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-gray-700">
-                    <th className="px-4 py-3 text-left">Employee</th>
-                    <th className="px-4 py-3 text-left">Department</th>
-                    <th className="px-4 py-3 text-left">Position</th>
-                    <th className="px-4 py-3 text-left">Date</th>
-                    <th className="px-4 py-3 text-left">Work Hours</th>
-                    <th className="px-4 py-3 text-left">Actions</th>
+                  <tr className="bg-primary-light">
+                    <th className="px-4 py-3 text-left text-text-primary">Employee</th>
+                    <th className="px-4 py-3 text-left text-text-primary">Department</th>
+                    <th className="px-4 py-3 text-left text-text-primary">Position</th>
+                    <th className="px-4 py-3 text-left text-text-primary">Date</th>
+                    <th className="px-4 py-3 text-left text-text-primary">Work Hours</th>
+                    <th className="px-4 py-3 text-left text-text-primary">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -470,12 +470,12 @@ export default function AttendancePage() {
 
                     if (employeeRecords.length === 0) return null;
 
-                    const totalHoursInSeconds = calculateTotalHours(employeeRecords); // Total in seconds
+                    const totalHoursInSeconds = calculateTotalHours(employeeRecords);
 
                     return (
                       <React.Fragment key={employee.employeeId}>
                         <tr
-                          className="bg-gray-800 border-b border-gray-700 hover:bg-gray-750 cursor-pointer"
+                          className="bg-background border-b border-border hover:bg-surface/50 cursor-pointer"
                           onClick={() => handleEmployeeClick(employee)}
                         >
                           <td className="px-4 py-3">
@@ -488,30 +488,30 @@ export default function AttendancePage() {
                                 />
                               </div>
                               <div>
-                                <div className="font-medium">
+                                <div className="font-medium text-text-primary">
                                   {employee.firstName} {employee.lastName}
                                 </div>
-                                <div className="text-sm text-gray-400">
+                                <div className="text-sm text-text-secondary">
                                   {employee.employeeId}
                                 </div>
                               </div>
                             </div>
                           </td>
-                          <td className="px-4 py-3">{employee.department}</td>
-                          <td className="px-4 py-3">{employee.position}</td>
+                          <td className="px-4 py-3 text-text-secondary">{employee.department}</td>
+                          <td className="px-4 py-3 text-text-secondary">{employee.position}</td>
                           <td></td>
-                          <td className="px-4 py-3 font-bold">
-                            Total: {formatWorkHours(totalHoursInSeconds)} {/* Display in HH:MM:SS */}
+                          <td className="px-4 py-3 font-bold text-text-primary">
+                            Total: {formatWorkHours(totalHoursInSeconds)}
                           </td>
                           <td className="px-4 py-3">
                             <button
-                              className="bg-gray-700 hover:bg-gray-600 p-2 rounded-lg"
+                              className="bg-background hover:bg-surface/50 p-2 rounded-lg border border-border"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 toggleEmployeeRecords(employee.employeeId);
                               }}
                             >
-                              <ChevronDown className="h-5 w-5" />
+                              <ChevronDown className="h-5 w-5 text-text-primary" />
                             </button>
                           </td>
                         </tr>
@@ -519,14 +519,14 @@ export default function AttendancePage() {
                           employeeRecords.map((record) => (
                             <tr
                               key={`${record.employeeId}-${record.date}`}
-                              className="bg-gray-700 border-b border-gray-600"
+                              className="bg-surface/50 border-b border-border"
                             >
                               <td className="px-4 py-3"></td>
                               <td className="px-4 py-3"></td>
                               <td className="px-4 py-3"></td>
-                              <td className="px-4 py-3">{formatDate(record.date)}</td>
-                              <td className="px-4 py-3">
-                                {formatWorkHours(record.workHours[record.date])} {/* Display daily work hours */}
+                              <td className="px-4 py-3 text-text-secondary">{formatDate(record.date)}</td>
+                              <td className="px-4 py-3 text-text-secondary">
+                                {formatWorkHours(record.workHours[record.date])}
                               </td>
                             </tr>
                           ))}

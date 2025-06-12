@@ -217,16 +217,16 @@ export default function TimesheetPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-900 text-gray-100 flex items-center justify-center">
-        <p className="text-red-500">{error}</p>
+      <div className="min-h-screen bg-background text-text-primary flex items-center justify-center">
+        <p className="text-text-muted">{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
+    <div className="min-h-screen bg-background text-text-primary">
       {/* Header */}
-      <header className="bg-gray-800 p-4 shadow-md">
+      <header className="bg-surface p-4 shadow-md border-b border-border">
         <div className="container mx-auto flex flex-col md:flex-row justify-between items-center">
           <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
             {/* Search */}
@@ -234,16 +234,16 @@ export default function TimesheetPage() {
               <input
                 type="text"
                 placeholder="Search tasks..."
-                className="bg-gray-700 text-white px-4 py-2 pl-10 rounded-lg w-full md:w-64"
+                className="bg-background text-text-primary px-4 py-2 pl-10 rounded-lg w-full md:w-64 border border-border"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-text-muted" />
             </div>
 
             {/* Status filter */}
             <select
-              className="bg-gray-700 text-white px-4 py-2 rounded-lg"
+              className="bg-background text-text-primary px-4 py-2 rounded-lg border border-border"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -258,13 +258,13 @@ export default function TimesheetPage() {
 
       {/* Main content */}
       <main className="container mx-auto p-4">
-        <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-          {isLoading ? ( // Show loader while loading
+        <div className="bg-surface rounded-lg shadow-lg overflow-hidden border border-border">
+          {isLoading ? (
             <div className="flex justify-center items-center p-8">
               <DotSpinner />
             </div>
           ) : filteredTasks.length === 0 ? (
-            <div className="p-8 text-center text-gray-400">
+            <div className="p-8 text-center text-text-muted">
               <p className="text-xl">No tasks found</p>
               <p className="mt-2">Try adjusting your search criteria</p>
             </div>
@@ -272,13 +272,13 @@ export default function TimesheetPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-gray-700">
-                    <th className="px-4 py-3 text-left"></th>
-                    <th className="px-4 py-3 text-left">Project</th>
-                    <th className="px-4 py-3 text-left">Progress</th>
-                    <th className="px-4 py-3 text-left">Time Used</th>
-                    <th className="px-4 py-3 text-left">Remaining</th>
-                    <th className="px-4 py-3 text-left">Status</th>
+                  <tr className="bg-primary-light">
+                    <th className="px-4 py-3 text-left text-text-primary"></th>
+                    <th className="px-4 py-3 text-left text-text-primary">Project</th>
+                    <th className="px-4 py-3 text-left text-text-primary">Progress</th>
+                    <th className="px-4 py-3 text-left text-text-primary">Time Used</th>
+                    <th className="px-4 py-3 text-left text-text-primary">Remaining</th>
+                    <th className="px-4 py-3 text-left text-text-primary">Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -294,52 +294,51 @@ export default function TimesheetPage() {
                       <React.Fragment key={task.taskId}>
                         {/* Task row */}
                         <tr
-                          className="bg-gray-800 border-b border-gray-700 hover:bg-gray-750 cursor-pointer"
+                          className="bg-background border-b border-border hover:bg-surface/50 cursor-pointer"
                           onClick={() => toggleRowExpansion(task.taskId)}
                         >
                           <td className="px-4 py-3">
                             {isExpanded ? (
-                              <ChevronUp className="h-5 w-5 text-gray-400" />
+                              <ChevronUp className="h-5 w-5 text-text-muted" />
                             ) : (
-                              <ChevronDown className="h-5 w-5 text-gray-400" />
+                              <ChevronDown className="h-5 w-5 text-text-muted" />
                             )}
                           </td>
                           <td className="px-4 py-3">
-                            <div className="font-medium">{task.name}</div>
-                            <div className="text-sm text-gray-400">{task.taskId}</div>
+                            <div className="font-medium text-text-primary">{task.name}</div>
+                            <div className="text-sm text-text-muted">{task.taskId}</div>
                           </td>
                           <td className="px-4 py-3">
-                            <div className="w-full bg-gray-700 rounded-full h-2.5">
+                            <div className="w-full bg-surface rounded-full h-2.5">
                               <div
-                                className={`h-2.5 rounded-full ${isOvertime ? "bg-red-600" : "bg-indigo-600"}`}
+                                className={`h-2.5 rounded-full ${isOvertime ? "bg-primary" : "bg-secondary"}`}
                                 style={{ width: `${Math.min(100, (totalTimeUsed / (task.totalHours * 3600)) * 100)}%` }}
                               ></div>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-gray-300">
+                          <td className="px-4 py-3 text-text-secondary">
                             {formatTime(totalTimeUsed)} / {formatTime(task.totalHours * 3600)}
                           </td>
                           <td className="px-4 py-3">
                             {isOvertime ? (
-                              <span className="text-red-500 font-medium">-{formatTime(Math.abs(remainingTime))}</span>
+                              <span className="text-primary font-medium">-{formatTime(Math.abs(remainingTime))}</span>
                             ) : (
-                              <span className="text-green-400">{formatTime(remainingTime)}</span>
+                              <span className="text-secondary">{formatTime(remainingTime)}</span>
                             )}
                           </td>
                           <td className="px-4 py-3">
                             <span
                               className={`px-2 py-1 rounded-full text-xs ${
                                 task.status === "completed"
-                                  ? "bg-green-900 text-green-300"
+                                  ? "bg-secondary text-text-primary"
                                   : task.status === "overtime"
-                                  ? "bg-red-900 text-red-300"
-                                  : "bg-yellow-900 text-yellow-300"
+                                  ? "bg-primary text-white"
+                                  : "bg-accent text-text-primary"
                               }`}
                             >
                               {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
                             </span>
                           </td>
-                         
                         </tr>
 
                         {/* Shift rows */}
@@ -352,18 +351,18 @@ export default function TimesheetPage() {
                               const endDate = convertTimestampToDate(shift.endTime)
 
                               return (
-                                <tr key={shift.id} className="bg-gray-850 border-b border-gray-700 hover:bg-gray-750">
+                                <tr key={shift.id} className="bg-surface/50 border-b border-border hover:bg-surface">
                                   <td className="px-4 py-3"></td>
-                                  <td className="px-4 py-3 text-gray-400">{shift.employeeId}</td>
-                                  <td className="px-4 py-3">{/* Task name empty for now */}</td>
-                                  <td className="px-4 py-3">
+                                  <td className="px-4 py-3 text-text-muted">{shift.employeeId}</td>
+                                  <td className="px-4 py-3"></td>
+                                  <td className="px-4 py-3 text-text-secondary">
                                     {startDate ? `${startDate.toLocaleDateString()} ${startDate.toLocaleTimeString()}` : "Invalid Date"}
                                   </td>
-                                  <td className="px-4 py-3">
+                                  <td className="px-4 py-3 text-text-secondary">
                                     {endDate ? `${endDate.toLocaleDateString()} ${endDate.toLocaleTimeString()}` : "Invalid Date"}
                                   </td>
-                                  <td className="px-4 py-3">{formatTime(duration)}</td>
-                                  <td className="px-4 py-3">{shift.location}</td>
+                                  <td className="px-4 py-3 text-text-secondary">{formatTime(duration)}</td>
+                                  <td className="px-4 py-3 text-text-secondary">{shift.location}</td>
                                 </tr>
                               )
                             })}
