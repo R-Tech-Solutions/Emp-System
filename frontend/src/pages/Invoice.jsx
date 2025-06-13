@@ -173,6 +173,9 @@ const BillingPOSSystem = () => {
   const [selectedProductIndex, setSelectedProductIndex] = useState(-1);
   const [isProductGridFocused, setIsProductGridFocused] = useState(false);
 
+  // Add new state for keyboard shortcuts
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
+
   // Use useMemo to memoize filtered products
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
@@ -282,6 +285,10 @@ const BillingPOSSystem = () => {
         
         // Handle specific Ctrl combinations
         switch (e.key.toLowerCase()) {
+          case "l":
+            e.preventDefault();
+            setShowKeyboardShortcuts(true);
+            break;
           case "b":
             e.preventDefault();
             barcodeRef.current?.focus();
@@ -320,8 +327,7 @@ const BillingPOSSystem = () => {
             e.preventDefault();
             const currentTime = new Date().getTime();
             if (currentTime - lastKeyPress < DOUBLE_PRESS_DELAY) {
-              // Double press detected
-            setShowProductsModal(true);
+              setShowProductsModal(true);
             } else {
               // Single press - focus search
               const searchInput = document.querySelector('input[placeholder="Search products..."]');
@@ -341,7 +347,8 @@ const BillingPOSSystem = () => {
       if (e.key === "Escape") {
         e.preventDefault();
         // Close any open modal/popup in order of priority
-        if (showPayment) setShowPayment(false);
+        if (showKeyboardShortcuts) setShowKeyboardShortcuts(false);
+        else if (showPayment) setShowPayment(false);
         else if (showInvoice) setShowInvoice(false);
         else if (showProductsModal) setShowProductsModal(false);
         else if (showCustomerSearch) setShowCustomerSearch(false);
@@ -486,23 +493,9 @@ const BillingPOSSystem = () => {
       }
     };
 
-    window.addEventListener("keydown", handleKeyPress, true);
-    return () => window.removeEventListener("keydown", handleKeyPress, true);
-  }, [
-    cart.length,
-    showPayment,
-    showInvoice,
-    showProductsModal,
-    showCustomerSearch,
-    showInvoiceDetails,
-    isProductGridFocused,
-    selectedProductIndex,
-    searchTerm,
-    products,
-    selectedCategory,
-    filteredProducts,
-    cart,
-  ]);
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [showKeyboardShortcuts, showPayment, showInvoice, showProductsModal, showCustomerSearch, showInvoiceDetails, cart.length]);
 
   // Add effect to handle search input focus/blur
   useEffect(() => {
@@ -963,88 +956,77 @@ const BillingPOSSystem = () => {
 
   return (
     <div className="min-h-screen bg-background text-text-primary">
-      {/* Status Bar */}
-
-      {/* Shortcuts Info Box */}
+      {/* Floating Keyboard Shortcuts Button */}
       {activeTab === "pos" && (
-        <div className="w-64 fixed top-16 left-1/2 transform -translate-x-1/2 z-50 no-print"> {/* Adjusted vertical position */}
-          {/* Green Pin - positioned absolutely */}
-          <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 z-10">
-            <div className="w-4 h-4 bg-green-500 rounded-full shadow-md"></div>
-          </div>
+        <button
+          onClick={() => setShowKeyboardShortcuts(!showKeyboardShortcuts)}
+          className="fixed bottom-4 right-4 z-50 bg-primary hover:bg-primary-dark text-white rounded-full p-3 shadow-lg transition-all duration-200 hover:scale-105"
+          title="Keyboard Shortcuts"
+        >
+          <span className="material-icons">X</span>
+        </button>
+      )}
 
-          <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-3 shadow-md relative overflow-hidden"> {/* Reduced padding */}
-            {/* Notepad Lines (optional, but adds to realism) */}
-            <div className="absolute inset-y-0 left-0 w-full h-full pointer-events-none">
-              <div className="absolute left-6 w-px h-full bg-blue-200"></div> {/* Vertical line */}
-              <div className="absolute left-7 w-px h-full bg-blue-200"></div> {/* Second vertical line */}
-              {/* Horizontal lines - adjusted spacing for smaller height */}
-              {Array.from({ length: 6 }).map((_, i) => ( // Further reduced number of horizontal lines
-                <div
-                  key={i}
-                  className="absolute inset-x-0 h-px bg-blue-100"
-                  style={{ top: `${15 + i * 16}px` }}
-                ></div>
-              ))}
+      {/* Keyboard Shortcuts Modal */}
+      {showKeyboardShortcuts && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-background border border-border rounded-lg p-6 w-full max-w-md shadow-xl">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-primary">Keyboard Shortcuts</h2>
+              <button 
+                onClick={() => setShowKeyboardShortcuts(false)}
+                className="text-text-secondary hover:text-primary text-2xl"
+              >
+                ×
+              </button>
             </div>
-
-            <div className="relative z-10"> 
-              <div className="font-semibold text-gray-800 text-base mb-1">Quick Reference - Keyboard Shortcuts</div> {/* Reduced margin-bottom */}
-              <div className="grid grid-cols-2 gap-y-0.5 gap-x-2 text-xs"> {/* Reduced vertical gap */}
-                {/* Each shortcut item */}
-                <div className="flex items-baseline gap-1">
-                  <span className="font-bold text-gray-700">Ctrl+B:</span>
-                  <span className="text-gray-600">Focus Barcode</span>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="font-bold text-gray-700">Ctrl+M:</span>
-                  <span className="text-gray-600">Checkout</span>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="font-bold text-gray-700">Ctrl+D:</span>
-                  <span className="text-gray-600">Switch Price Type</span>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="font-bold text-gray-700">Ctrl+K:</span>
-                  <span className="text-gray-600">Select Customer</span>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="font-bold text-gray-700">Ctrl+J:</span>
-                  <span className="text-gray-600">POS System</span>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="font-bold text-gray-700">Ctrl+I:</span>
-                  <span className="text-gray-600">Invoices</span>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="font-bold text-gray-700">Ctrl+R:</span>
-                  <span className="text-gray-600">Refresh Page</span>
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="font-bold text-gray-700">Esc:</span>
-                  <span className="text-gray-600">Close/Clear</span>
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="font-bold text-gray-700">Ctrl+F:</span>
-                  <span className="text-gray-600">Search Products</span>
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="font-bold text-gray-700">Ctrl+F+F:</span>
-                  <span className="text-gray-600">Show Products</span>
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="font-bold text-gray-700">Ctrl+C:</span>
-                  <span className="text-gray-600">Copy (Default)</span>
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="font-bold text-gray-700">Ctrl+V:</span>
-                  <span className="text-gray-600">Paste (Default)</span>
-                </div>
+            <div className="space-y-3">
+              <div className="flex items-baseline gap-1">
+                <span className="font-bold text-gray-700">Ctrl+B:</span>
+                <span className="text-gray-600">Focus Barcode</span>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="font-bold text-gray-700">Ctrl+M:</span>
+                <span className="text-gray-600">Checkout</span>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="font-bold text-gray-700">Ctrl+D:</span>
+                <span className="text-gray-600">Switch Price Type</span>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="font-bold text-gray-700">Ctrl+K:</span>
+                <span className="text-gray-600">Select Customer</span>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="font-bold text-gray-700">Ctrl+J:</span>
+                <span className="text-gray-600">POS System</span>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="font-bold text-gray-700">Ctrl+I:</span>
+                <span className="text-gray-600">Invoices</span>
+              </div>
+              <div className="flex items-baseline gap-1">
+                <span className="font-bold text-gray-700">Ctrl+R:</span>
+                <span className="text-gray-600">Refresh Page</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-bold text-gray-700">Esc:</span>
+                <span className="text-gray-600">Close/Clear</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-bold text-gray-700">Ctrl+F:</span>
+                <span className="text-gray-600">Search Products</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="font-bold text-gray-700">Ctrl+F+F:</span>
+                <span className="text-gray-600">Show Products</span>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Status Bar */}
 
       {/* Toast Notification */}
       <Toast
