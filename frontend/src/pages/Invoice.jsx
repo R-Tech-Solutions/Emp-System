@@ -134,6 +134,7 @@ const BillingPOSSystem = () => {
   });
 
   const barcodeRef = useRef(null);
+  const searchInputRef = useRef(null);
 
   // Add new state variables
   const [purchaseHistory, setPurchaseHistory] = useState([]);
@@ -496,6 +497,46 @@ const BillingPOSSystem = () => {
     window.addEventListener("keydown", handleKeyPress);
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [showKeyboardShortcuts, showPayment, showInvoice, showProductsModal, showCustomerSearch, showInvoiceDetails, cart.length]);
+
+  // Keyboard navigation for product search and list
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ctrl+F focuses product search
+      if (e.ctrlKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        setIsSearchFocused(true);
+        setSelectedSearchIndex(filteredProducts.length > 0 ? 0 : -1);
+      }
+      // Only handle navigation if search is focused and there are filtered products
+      if (isSearchFocused && filteredProducts.length > 0) {
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          setSelectedSearchIndex((prev) => {
+            const next = prev < filteredProducts.length - 1 ? prev + 1 : 0;
+            return next;
+          });
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          setSelectedSearchIndex((prev) => {
+            const next = prev > 0 ? prev - 1 : filteredProducts.length - 1;
+            return next;
+          });
+        } else if (e.key === "Enter" && selectedSearchIndex >= 0) {
+          e.preventDefault();
+          addToCart(filteredProducts[selectedSearchIndex]);
+          setSearchTerm("");
+          setSelectedSearchIndex(-1);
+          setIsSearchFocused(false);
+        } else if (e.key === "Escape") {
+          setIsSearchFocused(false);
+          setSelectedSearchIndex(-1);
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isSearchFocused, filteredProducts, selectedSearchIndex]);
 
   // Add effect to handle search input focus/blur
   useEffect(() => {
@@ -1108,41 +1149,48 @@ const BillingPOSSystem = () => {
               {/* Search and Category Filter */}
               <div className="flex flex-col md:flex-row gap-2 mb-4">
                 <div className="flex-1 relative">
-                <input
-                  type="text"
-                  value={searchTerm}
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchTerm}
                     onChange={(e) => {
                       setSearchTerm(e.target.value);
                       setSelectedSearchIndex(-1);
                     }}
-                  placeholder="Search products..."
+                    onFocus={() => {
+                      setIsSearchFocused(true);
+                      setSelectedSearchIndex(filteredProducts.length > 0 ? 0 : -1);
+                    }}
+                    onBlur={() => setIsSearchFocused(false)}
+                    placeholder="Search products..."
                     className="w-full px-4 py-2 bg-background border border-border rounded-lg text-text-primary placeholder-text-muted focus:ring-2 focus:ring-primary"
                   />
                   {isSearchFocused && searchTerm && (
                     <div className="absolute z-50 w-full mt-1 bg-surface border border-border rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {filteredProducts.map((product, index) => (
-                        <div
-                          key={product.id}
-                          className={`p-2 cursor-pointer ${
-                            index === selectedSearchIndex
-                              ? "bg-primary text-white"
-                              : "hover:bg-primary-light"
-                          }`}
-                          onClick={() => {
-                            addToCart(product);
-                            setSearchTerm("");
-                            setSelectedSearchIndex(-1);
-                            setIsSearchFocused(false);
-                          }}
-                        >
-                          <div className="font-medium">{product.name}</div>
-                          <div className="text-sm">
-                            {product.category} • Rs {product[`${selectedPriceType}Price`].toFixed(2)}
-                          </div>
-                        </div>
-                      ))}
-                      {filteredProducts.length === 0 && (
+                      {filteredProducts.length === 0 ? (
                         <div className="p-2 text-text-muted">No products found</div>
+                      ) : (
+                        filteredProducts.map((product, index) => (
+                          <div
+                            key={product.id}
+                            className={`p-2 cursor-pointer ${
+                              index === selectedSearchIndex
+                                ? "bg-primary text-white"
+                                : "hover:bg-primary-light"
+                            }`}
+                            onClick={() => {
+                              addToCart(product);
+                              setSearchTerm("");
+                              setSelectedSearchIndex(-1);
+                              setIsSearchFocused(false);
+                            }}
+                          >
+                            <div className="font-medium">{product.name}</div>
+                            <div className="text-sm">
+                              {product.category} • Rs {product[`${selectedPriceType}Price`].toFixed(2)}
+                            </div>
+                          </div>
+                        ))
                       )}
                     </div>
                   )}
@@ -1186,7 +1234,7 @@ const BillingPOSSystem = () => {
                           product={product}
                           onAddToCart={addToCart}
                           selectedPriceType={selectedPriceType}
-                          isSelected={index === selectedProductIndex}
+                          isSelected={index === selectedSearchIndex}
                         />
                         {product.stock <= 5 && (
                           <span className="absolute top-2 right-2 bg-primary-dark text-white text-xs px-2 py-1 rounded-full font-bold animate-pulse">
@@ -1904,12 +1952,16 @@ const PaymentModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-surface border border-border rounded-lg p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-xl">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-primary">Payment Processing</h2>
-          <button onClick={onClose} className="text-text-secondary hover:text-primary text-2xl">×</button>
-        </div>
-
+      <div className="bg-surface border border-border rounded-lg p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto relative shadow-xl">
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 text-text-secondary hover:text-primary text-2xl"
+        >
+          ×
+        </button>
+        <h2 className="text-xl font-semibold text-primary mb-4">
+          Payment Processing
+        </h2>
         {/* Summary Section */}
         <div className="space-y-1 mb-4 p-3 bg-primary-light/50 rounded-lg text-sm border border-primary-light">
           <div className="flex justify-between text-text-secondary">
@@ -2321,7 +2373,9 @@ const InvoiceModal = ({ invoice, onClose }) => {
                 {invoice.discountAmount > 0 && (
                   <div className="flex justify-between py-1 text-primary-dark">
                     <span>Discount:</span>
-                    <span>-Rs {invoice.discountAmount.toFixed(2)}</span>
+                    <span className="text-text-primary">
+                      -Rs {invoice.discountAmount.toFixed(2)}
+                    </span>
                   </div>
                 )}
                 <div className="flex justify-between py-1">
