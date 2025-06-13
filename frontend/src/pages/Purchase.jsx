@@ -141,7 +141,7 @@ export default function PurchaseApp() {
                 }))
             }
         }
-    }, [supplierType, selectedSupplierId, suppliers])
+    }, [selectedSupplierId, suppliers, supplierType])
 
     useEffect(() => {
         async function fetchProducts() {
@@ -172,7 +172,6 @@ export default function PurchaseApp() {
                 }
             })
         )
-        // eslint-disable-next-line
     }, [priceList, products])
 
     // Add this useEffect after other useEffect hooks
@@ -565,7 +564,7 @@ export default function PurchaseApp() {
                             </thead>
                             <tbody>
                                 {purchases.map((purchase) => (
-                                    <tr key={purchase.purchaseId} className="border-b border-gray-700 hover:bg-gray-750">
+                                    <tr key={`purchase-${purchase.purchaseId}`} className="border-b border-gray-700 hover:bg-gray-750">
                                         <td className="py-4 px-6">
                                             <div className="font-medium text-white">{purchase.purchaseId}</div>
                                         </td>

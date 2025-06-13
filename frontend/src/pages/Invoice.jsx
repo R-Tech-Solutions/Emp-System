@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import axios from "axios";
 import { backEndURL } from "../Backendurl";
 import DotSpinner from "../loaders/Loader";
@@ -559,17 +559,54 @@ const BillingPOSSystem = () => {
     );
   }, [selectedPriceType, products]);
 
+  // New function to update individual cart item discounts
+  const updateCartItemDiscount = useCallback((itemId, method, value) => {
+    setCart(prevCart => 
+      prevCart.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              discountMethod: method,
+              discountValue: value
+            }
+          : item
+      )
+    );
+  }, []); // Empty dependency array since it only uses setCart which is stable
+
   // Calculations
-  const subtotal = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
+  // Helper to calculate the final price of an item after its individual discount
+  const getCalculatedItemPrice = useCallback((item) => {
+    let finalPrice = item.price;
+
+    if (item.discountMethod === "price") {
+      finalPrice = Math.max(0, item.price - item.discountValue);
+    } else if (item.discountMethod === "percentage") {
+      finalPrice = item.price * (1 - item.discountValue / 100);
+    }
+
+    return finalPrice;
+  }, []); // Empty dependency array since it only uses item properties
+
+  // Calculate subtotal using discounted prices
+  const calculatedSubtotal = useMemo(() => 
+    cart.reduce(
+      (sum, item) => {
+        const discountedPrice = getCalculatedItemPrice(item);
+        return sum + (discountedPrice * item.quantity);
+      },
+      0
+    ),
+    [cart, getCalculatedItemPrice]
   );
+
+  // Calculate total discount amount
   const discountAmount =
     discount.type === "percentage"
-      ? (subtotal * discount.value) / 100
+      ? (calculatedSubtotal * discount.value) / 100
       : discount.value;
   const totalDiscount = discountAmount;
-  const taxableAmount = subtotal - totalDiscount;
+  const taxableAmount = calculatedSubtotal - totalDiscount;
   const taxAmount = taxableAmount * (taxRate / 100);
   const grandTotal = taxableAmount + taxAmount;
 
@@ -609,22 +646,26 @@ const BillingPOSSystem = () => {
           quantity: 1,
           barcode: product.barcode,
           category: product.category,
+          discountMethod: "none",
+          discountValue: 0,
+          stock: product.stock
         },
       ]);
     }
-    // Don't reset search or selection after adding to cart
   };
 
   const updateQuantity = (id, newQuantity) => {
-    const product = products.find((p) => p.id === id);
-    if (!product) return;
-    if (newQuantity > product.stock) {
+    const cartItem = cart.find(item => item.id === id);
+    if (!cartItem) return;
+
+    if (newQuantity > cartItem.stock) {
       showToast(
-        `Cannot set quantity more than available stock (${product.stock})`,
+        `Cannot set quantity more than available stock (${cartItem.stock})`,
         "error"
       );
       return;
     }
+
     if (newQuantity <= 0) {
       removeFromCart(id);
     } else {
@@ -693,26 +734,41 @@ const BillingPOSSystem = () => {
   // Enhanced completePayment function
   const completePayment = async (paymentData) => {
     try {
-      // Prepare invoice items with only product id, quantity, price, and name
-      const invoiceItems = cart.map((item) => ({
-        id: item.id, // product id
-        quantity: item.quantity,
-        price: item.price,
-        name: item.name,
-        category: item.category,
-        barcode: item.barcode,
-      }));
+      // Prepare invoice items with both original and discounted prices
+      const invoiceItems = cart.map((item) => {
+        const originalPrice = item.price;
+        let discountedPrice = originalPrice;
+
+        if (item.discountMethod === "price") {
+          discountedPrice = Math.max(0, originalPrice - item.discountValue);
+        } else if (item.discountMethod === "percentage") {
+          discountedPrice = originalPrice * (1 - item.discountValue / 100);
+        }
+
+        return {
+          id: item.id, // product id
+          quantity: item.quantity,
+          originalPrice: originalPrice,
+          discountedPrice: discountedPrice,
+          discountMethod: item.discountMethod,
+          discountValue: item.discountValue
+        };
+      });
 
       const invoice = {
-        date: new Date(),
         items: invoiceItems,
         customer: selectedCustomer ? { id: selectedCustomer.id } : null,
-        subtotal,
+        subtotal: calculatedSubtotal,
         discountAmount: totalDiscount,
         taxAmount,
         total: grandTotal,
-        payments: paymentData.payments,
-        change: paymentData.change,
+        paymentMethod: paymentData.method,
+        paymentStatus: "Paid",
+        cardDetails: paymentData.method === "card" ? {
+          cardNumber: paymentData.cardNumber,
+          cardType: paymentData.cardType,
+          transactionId: paymentData.transactionId
+        } : null
       };
 
       // Save to backend (POST to /api/invoices)
@@ -1224,6 +1280,9 @@ const BillingPOSSystem = () => {
                           }
                         }}
                         isSelected={selectedItems.includes(item.id)}
+                        onUpdateItemDiscount={(id, type, value) => {
+                          updateCartItemDiscount(id, type, value);
+                        }}
                       />
                     </div>
                   ))
@@ -1267,7 +1326,7 @@ const BillingPOSSystem = () => {
                 <div className="space-y-2 text-sm border-t border-border pt-4 bg-surface z-10">
                   <div className="flex justify-between text-text-secondary">
                     <span>Subtotal:</span>
-                    <span className="text-text-primary">Rs {subtotal.toFixed(2)}</span>
+                    <span className="text-text-primary">Rs {calculatedSubtotal.toFixed(2)}</span>
                   </div>
                   {discount.value > 0 && (
                     <div className="flex justify-between text-primary-dark">
@@ -1275,7 +1334,7 @@ const BillingPOSSystem = () => {
                       <span>
                         -Rs{" "}
                         {(discount.type === "percentage"
-                          ? (subtotal * discount.value) / 100
+                          ? (calculatedSubtotal * discount.value) / 100
                           : discount.value
                         ).toFixed(2)}
                       </span>
@@ -1419,7 +1478,7 @@ const BillingPOSSystem = () => {
       {showPayment && (
         <PaymentModal
           grandTotal={grandTotal}
-          subtotal={subtotal}
+          subtotal={calculatedSubtotal}
           taxRate={taxRate}
           discount={discount}
           onClose={() => setShowPayment(false)}
@@ -1533,7 +1592,32 @@ const CartItem = ({
   removeFromCart,
   onSelect,
   isSelected,
+  onUpdateItemDiscount,
 }) => {
+  const [showDiscountFields, setShowDiscountFields] = useState(false);
+  const [discountMethod, setDiscountMethod] = useState(item.discountMethod || "none");
+  const [discountValue, setDiscountValue] = useState(item.discountValue || 0);
+
+  // Calculate final price of the item after applying its discount
+  const calculateFinalItemPrice = () => {
+    let finalPrice = item.price;
+
+    if (discountMethod === "price") {
+      finalPrice = Math.max(0, item.price - discountValue);
+    } else if (discountMethod === "percentage") {
+      finalPrice = item.price * (1 - discountValue / 100);
+    }
+
+    return finalPrice;
+  };
+
+  const finalItemPrice = calculateFinalItemPrice();
+
+  // Handle changes to discount fields
+  useEffect(() => {
+    onUpdateItemDiscount(item.id, discountMethod, discountValue);
+  }, [discountMethod, discountValue, item.id, onUpdateItemDiscount]);
+
   return (
     <div 
       className="bg-surface rounded-lg p-3 border border-border hover:bg-primary-light/50"
@@ -1546,8 +1630,18 @@ const CartItem = ({
             {item.name}
           </h4>
           <div className="text-xs text-text-secondary">
-            Rs {item.price.toFixed(2)} each • {item.category}
+            <div>Original Price: Rs {item.price.toFixed(2)} each</div>
+            <div>Category: {item.category}</div>
           </div>
+          {discountMethod !== "none" && (
+            <div className="text-xs text-primary-dark mt-1">
+              Discount: {
+                discountMethod === "price" ? `-Rs ${discountValue.toFixed(2)}` :
+                discountMethod === "percentage" ? `-${discountValue.toFixed(2)}%` :
+                ""
+              }
+            </div>
+          )}
         </div>
         <button
           onClick={() => removeFromCart(item.id)}
@@ -1557,7 +1651,7 @@ const CartItem = ({
         </button>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mt-2">
         <div className="flex items-center gap-2">
           <button
             onClick={() => updateQuantity(item.id, item.quantity - 1)}
@@ -1586,12 +1680,57 @@ const CartItem = ({
 
         <div className="text-right">
           <div className="font-medium text-text-primary">
-            Rs {(item.price * item.quantity).toFixed(2)}
+            Rs {(finalItemPrice * item.quantity).toFixed(2)}
           </div>
+          {discountMethod !== "none" && (
+            <div className="text-xs text-text-secondary line-through">
+              Rs {(item.price * item.quantity).toFixed(2)}
+            </div>
+          )}
           <div className="text-xs text-text-secondary">
-            {item.quantity} × Rs {item.price.toFixed(2)}
+            {item.quantity} × Rs {finalItemPrice.toFixed(2)}
           </div>
         </div>
+      </div>
+      
+      {/* Discount Fields */}
+      <div className="flex items-center justify-between mt-3">
+        <button
+          onClick={() => setShowDiscountFields(!showDiscountFields)}
+          className="px-3 py-1 bg-secondary text-text-primary rounded-lg hover:bg-accent text-sm"
+        >
+          {showDiscountFields ? "Hide Discount" : "Add Discount"}
+        </button>
+
+        {showDiscountFields && (
+          <div className="flex gap-2 items-center">
+            <select
+              value={discountMethod}
+              onChange={(e) => {
+                setDiscountMethod(e.target.value);
+                setDiscountValue(0);
+              }}
+              className="px-2 py-1 bg-background border border-border rounded-lg text-text-primary text-xs"
+            >
+              <option value="none">No Discount</option>
+              <option value="price">Price Discount</option>
+              <option value="percentage">Percentage Discount</option>
+            </select>
+
+            {discountMethod !== "none" && (
+              <input
+                type="number"
+                value={discountValue}
+                onChange={(e) => setDiscountValue(Number(e.target.value) || 0)}
+                className="w-24 px-2 py-1 bg-background border border-border rounded-lg text-text-primary text-xs"
+                min="0"
+                max={discountMethod === "percentage" ? "100" : undefined}
+                step={discountMethod === "percentage" ? "1" : "0.01"}
+                placeholder={discountMethod === "percentage" ? "0-100" : "0.00"}
+              />
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1939,9 +2078,11 @@ const PaymentModal = ({
             disabled={
               paymentMethod === "cash"
                 ? !amountReceived || Number.parseFloat(amountReceived) < grandTotal
-                : !(cardDetails.number.replace(/\s/g, "").length === 19 && // Changed to 19 for formatted length
+                : !(
+                    cardDetails.number.replace(/\s/g, "").length === 16 && /* Card number should be 16 digits */
                     cardDetails.expiry.length === 5 &&
-                    cardDetails.cvv.length === 3)
+                    cardDetails.cvv.length === 3
+                  )
             }
           >
             Complete Payment
@@ -2156,10 +2297,29 @@ const InvoiceModal = ({ invoice, onClose }) => {
                     </td>
                     <td className="text-center py-3 px-2 text-text-primary">{item.quantity}</td>
                     <td className="text-right py-3 px-2 text-text-primary">
-                      Rs {item.price.toFixed(2)}
+                      <div>
+                        <div>Rs {item.originalPrice.toFixed(2)}</div>
+                        {item.discountMethod !== "none" && (
+                          <div className="text-sm text-primary-dark">
+                            {item.discountMethod === "price" 
+                              ? `-Rs ${item.discountValue.toFixed(2)}`
+                              : `-${item.discountValue.toFixed(2)}%`}
+                          </div>
+                        )}
+                        <div className="text-sm font-medium">
+                          Rs {item.discountedPrice.toFixed(2)}
+                        </div>
+                      </div>
                     </td>
                     <td className="text-right py-3 px-2 font-medium text-text-primary">
-                      Rs {(item.price * item.quantity).toFixed(2)}
+                      <div>
+                        <div>Rs {(item.discountedPrice * item.quantity).toFixed(2)}</div>
+                        {item.discountMethod !== "none" && (
+                          <div className="text-xs text-text-secondary line-through">
+                            Rs {(item.originalPrice * item.quantity).toFixed(2)}
+                          </div>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

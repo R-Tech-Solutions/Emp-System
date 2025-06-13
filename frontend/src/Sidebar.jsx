@@ -58,8 +58,8 @@ function Sidebar() {
   };
 
   const navItems = [
-    { type: "header", name: "Dashboard" },
-    { name: "Dashboard", path: "/dashboard", icon: <Home className="w-5 h-5" /> },
+    { type: "header", name: "Main Dashboard" },
+    { name: "Admin Dashboard", path: "/dashboard", icon: <Home className="w-5 h-5" /> },
     { type: "header", name: "Human Resource", section: "hrm" },
     { name: "Sections", path: "/sections", icon: <Building2 className="w-5 h-5" />, section: "hrm" },
     { name: "Employees", path: "/employees", icon: <Users className="w-5 h-5" />, section: "hrm" },
@@ -74,7 +74,8 @@ function Sidebar() {
     { name: "Profile", path: "/my", icon: <User className="w-5 h-5" />, section: "hrm" },
     { name: "Reports", path: "/reports", icon: <BarChart2 className="w-5 h-5" />, section: "hrm" },
 
-    { name: "Sales Dashboard", path: "/salesdashboard", icon: <Home className="w-5 h-5" /> },
+    { type: "header", name: "Sales Dashboard" },
+    { name: "Sales Overview", path: "/salesdashboard", icon: <Home className="w-5 h-5" /> },
     { type: "header", name: "Sales & Inventory", section: "sales" },
     { name: "CRM", path: "/crm", icon: <Users className="w-5 h-5" />, section: "sales" },
     { name: "Products", path: "/products", icon: <Boxes className="w-5 h-5" />, section: "sales" },
