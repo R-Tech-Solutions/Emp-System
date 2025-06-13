@@ -347,7 +347,7 @@ export default function SalesDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <MetricCard
           title="Total Sales"
-          value={`$${metrics.totalSales.toLocaleString()}`}
+          value={`Rs ${metrics.totalSales.toLocaleString()}`}
         />
         <MetricCard
           title="Total Leads"

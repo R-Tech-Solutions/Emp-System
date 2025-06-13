@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import DotSpinner from "../loaders/Loader"; 
-import { backEndURL } from "../Backendurl";
+import { backEndURL } from "../Backendurl.jsx";
 
 export default function AttendancePage() {
   const [employees, setEmployees] = useState([]);
