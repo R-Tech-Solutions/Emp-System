@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { backEndURL } from "../Backendurl"
 import Dotspinner from "../loaders/Loader"
+import { useNavigate } from "react-router-dom"
 // Enhanced Print Styles for both POS and A4 formats
 const printStyles = `
 @media print {
@@ -681,47 +682,60 @@ const OptimizedToast = ({ message, type, isVisible, onClose }) => {
 // Enhanced Tab Component with faster switching
 const FastTabComponent = ({ tabs, activeTab, onTabChange, onAddTab, heldBills, onHoldBill, onUnholdBill }) => {
   return (
-    <div className="flex items-center gap-2 mb-6 bg-white p-4 rounded-lg card-shadow">
-      <h1 className="text-xl font-bold text-gray-800 mr-4">🏪 POS System</h1>
-      <div className="flex items-center gap-2 flex-1">
-        {tabs.map((tab) => (
+    <div className="mb-6">
+      <div className="flex flex-col space-y-4">
+        {/* POS System Box and Hold/Unhold Buttons */}
+        <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex items-center space-x-4">
+            <h2 className="text-xl font-semibold text-gray-800">POS System</h2>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => onHoldBill(activeTab)}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                title="Hold Current Bill (Shift+H)"
+              >
+                Hold Bill
+              </button>
+              <button
+                onClick={() => onUnholdBill(activeTab)}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                title="Unhold Current Bill (Shift+U)"
+              >
+                Unhold Bill
+              </button>
+            </div>
+          </div>
           <button
-            key={tab.id}
-            onClick={() => onTabChange(tab.id)}
-            className={`px-4 py-2 rounded-lg font-medium transition-all duration-150 ${activeTab === tab.id
-              ? "tab-active"
-              : heldBills.some((h) => h.tabId === tab.id)
-                ? "tab-held"
-                : "tab-inactive hover:bg-gray-100"
-              }`}
+            onClick={onAddTab}
+            className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors"
+            title="Add New Tab (Shift+N)"
           >
-            {String(tab.number).padStart(2, "0")}
+            New Tab
           </button>
-        ))}
-        <button
-          onClick={onAddTab}
-          className="w-10 h-10 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 hover:text-gray-800 transition-all duration-150"
-          title="Add New Tab"
-        >
-          ➕
-        </button>
-      </div>
-      <div className="flex gap-2">
-        <button
-          onClick={() => onHoldBill(activeTab)}
-          className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-all duration-150 flex items-center gap-2"
-          title="Hold Current Bill"
-        >
-          🏷️ Hold
-        </button>
-        <button
-          onClick={() => onUnholdBill(activeTab)}
-          className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-all duration-150 flex items-center gap-2"
-          title="Unhold Previous Bill"
-          disabled={!heldBills.some((h) => h.tabId === activeTab)}
-        >
-          📋 Unhold
-        </button>
+        </div>
+
+        {/* Tabs Container with Wrapping */}
+        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+          <div className="flex flex-wrap gap-2">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => onTabChange(tab.id)}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  activeTab === tab.id
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+                title={`Switch to Tab ${String(tab.number).padStart(2, "0")} (Ctrl+${tab.number})`}
+              >
+                Tab {String(tab.number).padStart(2, "0")}
+                {heldBills.includes(tab.id) && (
+                  <span className="ml-2 text-yellow-500">🔒</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -994,6 +1008,7 @@ const CustomSearchModal = ({
 
 // Main Enhanced POS Component with Performance Optimizations
 const EnhancedBillingPOSSystem = () => {
+  const navigate = useNavigate()
   // State management with performance optimizations
   const [products, setProducts] = useState([])
   const [customers, setCustomers] = useState([])
@@ -1010,6 +1025,12 @@ const EnhancedBillingPOSSystem = () => {
   const [categories, setCategories] = useState(["All"])
   const [invoices, setInvoices] = useState([])
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false)
+  const [tabNumberBuffer, setTabNumberBuffer] = useState("")
+  const tabNumberTimeoutRef = useRef(null)
+  const [lastKeyPressTime, setLastKeyPressTime] = useState(0)
+  const [isAltPressed, setIsAltPressed] = useState(false)
+  const [focusedElement, setFocusedElement] = useState(null)
+  const focusableElementsRef = useRef([])
 
   // Enhanced state for better performance
   const [activeMainTab, setActiveMainTab] = useState("pos")
@@ -1037,7 +1058,6 @@ const EnhancedBillingPOSSystem = () => {
   const [pendingInvoice, setPendingInvoice] = useState(null)
 
   // Performance state
-  const [focusedElement, setFocusedElement] = useState(null)
   const [selectedProductIndex, setSelectedProductIndex] = useState(-1)
   const [isProcessing, setIsProcessing] = useState(false)
 
@@ -1072,11 +1092,178 @@ const EnhancedBillingPOSSystem = () => {
   const currentDiscount = currentTabData.discount
   const currentTaxRate = currentTabData.taxRate
 
-  // Enhanced keyboard shortcuts with faster response
+  // Function to handle tab number input with improved timing
+  const handleTabNumberInput = (number, isAlt = false) => {
+    const now = Date.now()
+    const timeSinceLastPress = now - lastKeyPressTime
+    setLastKeyPressTime(now)
+
+    setTabNumberBuffer(prev => {
+      // Clear buffer if more than 500ms since last press
+      if (timeSinceLastPress > 500) {
+        return number
+      }
+
+      const newBuffer = prev + number
+      const tabNum = parseInt(newBuffer)
+      
+      // Calculate target tab number based on Alt key
+      let targetTabNum
+      if (isAlt) {
+        // For Alt combinations, multiply first digit by 10 and add second digit
+        if (newBuffer.length === 1) {
+          targetTabNum = parseInt(newBuffer) * 10
+        } else {
+          targetTabNum = parseInt(newBuffer[0]) * 10 + parseInt(newBuffer[1])
+        }
+      } else {
+        targetTabNum = tabNum
+      }
+
+      // Find matching tab
+      const matchingTab = tabs.find(t => t.number === targetTabNum)
+      
+      if (matchingTab) {
+        setActiveTab(matchingTab.id)
+        showToast(`Switched to tab ${String(targetTabNum).padStart(2, "0")}`, "info")
+        return "" // Clear buffer after successful switch
+      }
+      
+      return newBuffer
+    })
+  }
+
+  // Function to handle element focus navigation
+  const handleElementFocus = (direction) => {
+    if (!focusableElementsRef.current.length) return
+
+    const currentIndex = focusableElementsRef.current.indexOf(focusedElement)
+    let newIndex
+
+    switch (direction) {
+      case 'up':
+        newIndex = currentIndex > 0 ? currentIndex - 1 : focusableElementsRef.current.length - 1
+        break
+      case 'down':
+        newIndex = currentIndex < focusableElementsRef.current.length - 1 ? currentIndex + 1 : 0
+        break
+      case 'left':
+        newIndex = currentIndex > 0 ? currentIndex - 1 : focusableElementsRef.current.length - 1
+        break
+      case 'right':
+        newIndex = currentIndex < focusableElementsRef.current.length - 1 ? currentIndex + 1 : 0
+        break
+      default:
+        return
+    }
+
+    const newElement = focusableElementsRef.current[newIndex]
+    if (newElement) {
+      newElement.focus()
+      setFocusedElement(newElement)
+    }
+  }
+
+  // Update focusable elements when tab changes
+  useEffect(() => {
+    const updateFocusableElements = () => {
+      const currentTab = document.querySelector('.tab.active')
+      if (currentTab) {
+        focusableElementsRef.current = Array.from(
+          currentTab.querySelectorAll('button, input, select, textarea, [tabindex]:not([tabindex="-1"])')
+        )
+      }
+    }
+
+    updateFocusableElements()
+  }, [activeTab])
+
   useEffect(() => {
     const handleKeyPress = (e) => {
-      if (e.ctrlKey) {
-        switch (e.key.toLowerCase()) {
+      // Handle Escape key for all modals
+      if (e.key === "Escape") {
+        e.preventDefault()
+        if (showCustomSearchModal) setShowCustomSearchModal(false)
+        else if (showKeyboardShortcuts) setShowKeyboardShortcuts(false)
+        else if (showPayment) setShowPayment(false)
+        else if (showInvoice) setShowInvoice(false)
+        else if (showCustomerModal) setShowCustomerModal(false)
+        else if (showProductsModal) setShowProductsModal(false)
+        else if (showPrintSelection) setShowPrintSelection(false)
+        else if (showInvoiceDetails) setShowInvoiceDetails(false)
+        else if (cart.length > 0) handleClearCart()
+        return false
+      }
+
+      // Handle Alt key state
+      if (e.key === "Alt") {
+        setIsAltPressed(e.type === "keydown")
+        return
+      }
+
+      // Handle Ctrl+Number for tab switching
+      if (e.ctrlKey && /^[0-9]$/.test(e.key)) {
+        e.preventDefault()
+        handleTabNumberInput(e.key, isAltPressed)
+        return false
+      }
+
+      // Handle Shift+Arrow for tab navigation
+      if (e.shiftKey && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+        e.preventDefault()
+        const currentTabIndex = tabs.findIndex(t => t.id === activeTab)
+        let newTabIndex
+
+        if (e.key === "ArrowLeft") {
+          newTabIndex = currentTabIndex > 0 ? currentTabIndex - 1 : tabs.length - 1
+        } else {
+          newTabIndex = currentTabIndex < tabs.length - 1 ? currentTabIndex + 1 : 0
+        }
+
+        const newTab = tabs[newTabIndex]
+        setActiveTab(newTab.id)
+        showToast(`Switched to tab ${String(newTab.number).padStart(2, "0")}`, "info")
+        return false
+      }
+
+      // Handle Arrow keys for element focus
+      if (!e.ctrlKey && !e.shiftKey && !e.altKey) {
+        switch (e.key) {
+          case "ArrowUp":
+          case "ArrowDown":
+          case "ArrowLeft":
+          case "ArrowRight":
+            e.preventDefault()
+            handleElementFocus(e.key.replace("Arrow", "").toLowerCase())
+            return false
+        }
+      }
+
+      // Handle other Shift-based shortcuts
+      if (e.shiftKey) {
+        const key = e.key.toLowerCase()
+        
+        switch (key) {
+          case "enter":
+            e.preventDefault()
+            setShowKeyboardShortcuts(true)
+            return false
+          case "n":
+            e.preventDefault()
+            handleAddTab()
+            return false
+          case "h":
+            e.preventDefault()
+            if (showKeyboardShortcuts) {
+              setShowKeyboardShortcuts(false)
+            } else {
+              handleHoldBill(activeTab)
+            }
+            return false
+          case "u":
+            e.preventDefault()
+            handleUnholdBill(activeTab)
+            return false
           case "f":
             e.preventDefault()
             e.stopPropagation()
@@ -1094,16 +1281,18 @@ const EnhancedBillingPOSSystem = () => {
                 setShowCustomSearchModal(true)
                 setSearchModalTerm("")
                 setSearchModalSelectedIndex(0)
-                searchInputRef.current?.focus()
+                setTimeout(() => {
+                  searchInputRef.current?.focus()
+                }, 100)
               }
               setCtrlFPressCount(0)
-            }, 200)
+            }, 300)
 
             return false
-          case "h":
+          case "k":
             e.preventDefault()
             e.stopPropagation()
-            setShowKeyboardShortcuts(true)
+            setShowCustomerModal(true)
             return false
           case "b":
             e.preventDefault()
@@ -1114,26 +1303,6 @@ const EnhancedBillingPOSSystem = () => {
             e.preventDefault()
             e.stopPropagation()
             if (cart.length > 0) setShowPayment(true)
-            return false
-          case "k":
-            e.preventDefault()
-            e.stopPropagation()
-            setShowCustomerModal(true)
-            return false
-          case "n":
-            e.preventDefault()
-            e.stopPropagation()
-            handleAddTab()
-            return false
-          case "t":
-            e.preventDefault()
-            e.stopPropagation()
-            handleHoldBill(activeTab)
-            return false
-          case "u":
-            e.preventDefault()
-            e.stopPropagation()
-            handleUnholdBill(activeTab)
             return false
           case "c":
             e.preventDefault()
@@ -1162,44 +1331,18 @@ const EnhancedBillingPOSSystem = () => {
             e.stopPropagation()
             setActiveMainTab("pos")
             return false
-          case "1":
-          case "2":
-          case "3":
-          case "4":
-          case "5":
-          case "6":
-          case "7":
-          case "8":
-          case "9":
-            e.preventDefault()
-            e.stopPropagation()
-            const tabNum = Number.parseInt(e.key)
-            if (tabs.find((t) => t.number === tabNum)) {
-              const tab = tabs.find((t) => t.number === tabNum)
-              setActiveTab(tab.id)
-            }
-            return false
         }
-      }
-
-      if (e.key === "Escape") {
-        e.preventDefault()
-        if (showCustomSearchModal) setShowCustomSearchModal(false)
-        else if (showKeyboardShortcuts) setShowKeyboardShortcuts(false)
-        else if (showPayment) setShowPayment(false)
-        else if (showInvoice) setShowInvoice(false)
-        else if (showProductsModal) setShowProductsModal(false)
-        else if (showCustomerModal) setShowCustomerModal(false)
-        else if (showPrintSelection) setShowPrintSelection(false)
-        else if (showInvoiceDetails) setShowInvoiceDetails(false)
       }
     }
 
     window.addEventListener("keydown", handleKeyPress, true)
+    window.addEventListener("keyup", handleKeyPress, true)
+    
     return () => {
       window.removeEventListener("keydown", handleKeyPress, true)
-      if (ctrlFTimeoutRef.current) {
-        clearTimeout(ctrlFTimeoutRef.current)
+      window.removeEventListener("keyup", handleKeyPress, true)
+      if (tabNumberTimeoutRef.current) {
+        clearTimeout(tabNumberTimeoutRef.current)
       }
     }
   }, [
@@ -1214,6 +1357,7 @@ const EnhancedBillingPOSSystem = () => {
     selectedProductIndex,
     ctrlFPressCount,
     tabs,
+    isAltPressed,
   ])
 
   // Fast tab management functions
@@ -1600,63 +1744,87 @@ const EnhancedBillingPOSSystem = () => {
     }
   }, [activeMainTab, fetchInvoices])
 
-  // Optimized data fetching
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true)
+  // Optimized data fetching with caching
+  const fetchData = useCallback(async () => {
+    try {
+      setIsLoading(true)
 
-        // Parallel fetch for better performance
-        const [productsResponse, inventoryResponse, customersResponse] = await Promise.all([
-          fetch(`${backEndURL}/api/products`),
-          fetch(`${backEndURL}/api/inventory`),
-          fetch(`${backEndURL}/api/contacts`),
-        ])
-
-        const [productsData, inventoryData, contactsData] = await Promise.all([
-          productsResponse.json(),
-          inventoryResponse.json(),
-          customersResponse.json(),
-        ])
-
-        // Combine products with inventory data
-        const combinedProducts = productsData.map((product) => {
-          const inventory = inventoryData.find((inv) => inv.productId === product.id)
-          return {
-            id: product.id,
-            name: product.name,
-            barcode: product.barcode,
-            category: product.category,
-            stock: inventory ? inventory.totalQuantity : 0,
-            standardPrice: product.salesPrice,
-            wholesalePrice: product.marginPrice,
-            retailPrice: product.retailPrice,
-            cost: product.costPrice,
-            description: product.description,
-            image: product.imageUrl,
-          }
-        })
-
-        setProducts(combinedProducts)
-
-        // Filter customers
-        const customerContacts = contactsData.filter((c) => c.categoryType === "Customer")
-        setCustomers(customerContacts)
-
-        // Set categories
-        const uniqueCategories = Array.from(new Set(productsData.map((p) => p.category).filter(Boolean)))
-        setCategories(["All", ...uniqueCategories])
-
+      // Check if we have cached data
+      const cachedData = sessionStorage.getItem('invoiceData')
+      const cacheTimestamp = sessionStorage.getItem('invoiceDataTimestamp')
+      const now = Date.now()
+      
+      // Use cached data if it's less than 5 minutes old
+      if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < 300000) {
+        const { products: cachedProducts, customers: cachedCustomers, categories: cachedCategories } = JSON.parse(cachedData)
+        setProducts(cachedProducts)
+        setCustomers(cachedCustomers)
+        setCategories(cachedCategories)
         setIsLoading(false)
-      } catch (error) {
-        console.error("Error fetching data:", error)
-        showToast("Failed to load data", "error")
-        setIsLoading(false)
+        return
       }
-    }
 
-    fetchData()
+      // Parallel fetch for better performance
+      const [productsResponse, inventoryResponse, customersResponse] = await Promise.all([
+        fetch(`${backEndURL}/api/products`),
+        fetch(`${backEndURL}/api/inventory`),
+        fetch(`${backEndURL}/api/contacts`),
+      ])
+
+      const [productsData, inventoryData, contactsData] = await Promise.all([
+        productsResponse.json(),
+        inventoryResponse.json(),
+        customersResponse.json(),
+      ])
+
+      // Combine products with inventory data
+      const combinedProducts = productsData.map((product) => {
+        const inventory = inventoryData.find((inv) => inv.productId === product.id)
+        return {
+          id: product.id,
+          name: product.name,
+          barcode: product.barcode,
+          category: product.category,
+          stock: inventory ? inventory.totalQuantity : 0,
+          standardPrice: product.salesPrice,
+          wholesalePrice: product.marginPrice,
+          retailPrice: product.retailPrice,
+          cost: product.costPrice,
+          description: product.description,
+          image: product.imageUrl,
+        }
+      })
+
+      // Filter customers
+      const customerContacts = contactsData.filter((c) => c.categoryType === "Customer")
+      
+      // Set categories
+      const uniqueCategories = Array.from(new Set(productsData.map((p) => p.category).filter(Boolean)))
+      const categories = ["All", ...uniqueCategories]
+
+      // Cache the data
+      const dataToCache = {
+        products: combinedProducts,
+        customers: customerContacts,
+        categories: categories
+      }
+      sessionStorage.setItem('invoiceData', JSON.stringify(dataToCache))
+      sessionStorage.setItem('invoiceDataTimestamp', now.toString())
+
+      setProducts(combinedProducts)
+      setCustomers(customerContacts)
+      setCategories(categories)
+    } catch (error) {
+      console.error("Error fetching data:", error)
+      showToast("Failed to load data", "error")
+    } finally {
+      setIsLoading(false)
+    }
   }, [showToast])
+
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   // Inject enhanced styles
   useEffect(() => {
@@ -1715,14 +1883,39 @@ const EnhancedBillingPOSSystem = () => {
   if (isLoading) {
     return (
       <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
-        
+        <div className="flex flex-col items-center">
           <Dotspinner />
+          <p className="mt-4 text-white text-lg">Loading Invoice System...</p>
+        </div>
       </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Close button */}
+      <div className="fixed top-4 right-4 z-50">
+        <button
+          onClick={() => navigate('/')}
+          className="p-2 rounded-full bg-white shadow-lg hover:bg-gray-100 transition-colors duration-200"
+          title="Close and return to dashboard"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6 text-gray-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
       {/* Optimized Toast Notification */}
       <OptimizedToast message={toast.message} type={toast.type} isVisible={toast.isVisible} onClose={hideToast} />
 
@@ -1730,7 +1923,7 @@ const EnhancedBillingPOSSystem = () => {
       <button
         onClick={() => setShowKeyboardShortcuts(true)}
         className="fixed bottom-4 right-4 z-40 bg-blue-500 hover:bg-blue-600 text-white rounded-full p-3 card-shadow transition-all duration-150 hover:scale-105"
-        title="Keyboard Shortcuts (Ctrl+H)"
+        title="Keyboard Shortcuts (Shift+Enter)"
       >
         ⌨️
       </button>
@@ -1738,88 +1931,92 @@ const EnhancedBillingPOSSystem = () => {
       {/* Enhanced Keyboard Shortcuts Modal */}
       {showKeyboardShortcuts && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto card-shadow fade-in">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-800">⌨️ Keyboard Shortcuts</h2>
+              <h2 className="text-xl font-bold">Keyboard Shortcuts</h2>
               <button
                 onClick={() => setShowKeyboardShortcuts(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
+                className="text-gray-500 hover:text-gray-700"
               >
-                ×
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <h3 className="font-semibold text-gray-700 mb-2">Navigation</h3>
-                <div className="text-sm space-y-1">
-                  <div>
-                    <kbd className="px-2 py-1 bg-gray-100 rounded">Ctrl+H</kbd> Help
+              <div>
+                <h3 className="font-semibold mb-2">Tab Management</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Switch to Tab 1-9:</span>
+                    <kbd className="px-2 py-1 bg-gray-100 rounded">Ctrl + 1-9</kbd>
                   </div>
-                  <div>
-                    <kbd className="px-2 py-1 bg-gray-100 rounded">Ctrl+B</kbd> Focus Barcode
+                  <div className="flex justify-between">
+                    <span>Switch to Tab 10-19:</span>
+                    <kbd className="px-2 py-1 bg-gray-100 rounded">Ctrl + Alt + 1-9</kbd>
                   </div>
-                  <div>
-                    <kbd className="px-2 py-1 bg-gray-100 rounded">Ctrl+F</kbd> Search Products
+                  <div className="flex justify-between">
+                    <span>Switch to Tab 20:</span>
+                    <kbd className="px-2 py-1 bg-gray-100 rounded">Ctrl + Alt + 0</kbd>
                   </div>
-                  <div>
-                    <kbd className="px-2 py-1 bg-gray-100 rounded">Ctrl+F+F</kbd> All Products
+                  <div className="flex justify-between">
+                    <span>Next Tab:</span>
+                    <kbd className="px-2 py-1 bg-gray-100 rounded">Shift + →</kbd>
                   </div>
-                  <div>
-                    <kbd className="px-2 py-1 bg-gray-100 rounded">Ctrl+K</kbd> Select Customer
+                  <div className="flex justify-between">
+                    <span>Previous Tab:</span>
+                    <kbd className="px-2 py-1 bg-gray-100 rounded">Shift + ←</kbd>
                   </div>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <h3 className="font-semibold text-gray-700 mb-2">Actions</h3>
-                <div className="text-sm space-y-1">
-                  <div>
-                    <kbd className="px-2 py-1 bg-gray-100 rounded">Ctrl+M</kbd> Checkout
+                  <div className="flex justify-between">
+                    <span>New Tab:</span>
+                    <kbd className="px-2 py-1 bg-gray-100 rounded">Shift + N</kbd>
                   </div>
-                  <div>
-                    <kbd className="px-2 py-1 bg-gray-100 rounded">Ctrl+C</kbd> Clear Cart
+                  <div className="flex justify-between">
+                    <span>Hold Bill:</span>
+                    <kbd className="px-2 py-1 bg-gray-100 rounded">Shift + H</kbd>
                   </div>
-                  <div>
-                    <kbd className="px-2 py-1 bg-gray-100 rounded">Ctrl+D</kbd> Switch Price
-                  </div>
-                  <div>
-                    <kbd className="px-2 py-1 bg-gray-100 rounded">Ctrl+N</kbd> New Tab
-                  </div>
-                  <div>
-                    <kbd className="px-2 py-1 bg-gray-100 rounded">Ctrl+T</kbd> Hold Bill
-                  </div>
-                  <div>
-                    <kbd className="px-2 py-1 bg-gray-100 rounded">Ctrl+U</kbd> Unhold Bill
+                  <div className="flex justify-between">
+                    <span>Unhold Bill:</span>
+                    <kbd className="px-2 py-1 bg-gray-100 rounded">Shift + U</kbd>
                   </div>
                 </div>
               </div>
-              <div className="space-y-2">
-                <h3 className="font-semibold text-gray-700 mb-2">Search Navigation</h3>
-                <div className="text-sm space-y-1">
-                  <div>
-                    <kbd className="px-2 py-1 bg-gray-100 rounded">↑↓</kbd> Navigate Products
+              
+              <div>
+                <h3 className="font-semibold mb-2">Navigation & Actions</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Search Products:</span>
+                    <kbd className="px-2 py-1 bg-gray-100 rounded">Shift + F</kbd>
                   </div>
-                  <div>
-                    <kbd className="px-2 py-1 bg-gray-100 rounded">Enter</kbd> Add to Cart
+                  <div className="flex justify-between">
+                    <span>Show All Products:</span>
+                    <kbd className="px-2 py-1 bg-gray-100 rounded">Shift + F + F</kbd>
                   </div>
-                  <div>
-                    <kbd className="px-2 py-1 bg-gray-100 rounded">Multiple Enter</kbd> Add Quantity
+                  <div className="flex justify-between">
+                    <span>Select Customer:</span>
+                    <kbd className="px-2 py-1 bg-gray-100 rounded">Shift + K</kbd>
                   </div>
-                  <div>
-                    <kbd className="px-2 py-1 bg-gray-100 rounded">Esc</kbd> Cancel/Close
+                  <div className="flex justify-between">
+                    <span>Checkout:</span>
+                    <kbd className="px-2 py-1 bg-gray-100 rounded">Shift + M</kbd>
                   </div>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <h3 className="font-semibold text-gray-700 mb-2">Tab Switching</h3>
-                <div className="text-sm space-y-1">
-                  <div>
-                    <kbd className="px-2 py-1 bg-gray-100 rounded">Ctrl+1-9</kbd> Switch to Tab
+                  <div className="flex justify-between">
+                    <span>Clear Cart:</span>
+                    <kbd className="px-2 py-1 bg-gray-100 rounded">Shift + C</kbd>
                   </div>
-                  <div>
-                    <kbd className="px-2 py-1 bg-gray-100 rounded">Ctrl+I</kbd> Invoices
+                  <div className="flex justify-between">
+                    <span>Switch Price Type:</span>
+                    <kbd className="px-2 py-1 bg-gray-100 rounded">Shift + D</kbd>
                   </div>
-                  <div>
-                    <kbd className="px-2 py-1 bg-gray-100 rounded">Ctrl+J</kbd> POS System
+                  <div className="flex justify-between">
+                    <span>Show Products:</span>
+                    <kbd className="px-2 py-1 bg-gray-100 rounded">Shift + P</kbd>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Close Modal/Clear Cart:</span>
+                    <kbd className="px-2 py-1 bg-gray-100 rounded">Esc</kbd>
                   </div>
                 </div>
               </div>
@@ -1903,7 +2100,7 @@ const EnhancedBillingPOSSystem = () => {
                     setSearchModalTerm(searchTerm)
                     setSearchModalSelectedIndex(0)
                   }}
-                  placeholder="🔍 Search products... (Ctrl+F)"
+                  placeholder="🔍 Search products... (Ctrl+F, Ctrl+F+F for all products)"
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <select
@@ -2429,205 +2626,273 @@ const EnhancedCartItemWithDiscount = ({ item, updateQuantity, removeFromCart, up
 // Enhanced Payment Modal Component
 const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose, onPaymentComplete }) => {
   const [paymentMethod, setPaymentMethod] = useState("cash")
-  const [amountReceived, setAmountReceived] = useState("")
-  const [cardDetails, setCardDetails] = useState({
-    reference: "",
-    last4: "",
-  })
+  const [cashAmount, setCashAmount] = useState("")
+  const [cardAmount, setCardAmount] = useState("")
+  const [cardNumber, setCardNumber] = useState("")
+  const [cardPreference, setCardPreference] = useState("")
+  const [selectedInput, setSelectedInput] = useState("cash")
   const [isProcessing, setIsProcessing] = useState(false)
+  const [toast, setToast] = useState({ message: "", type: "", isVisible: false })
+  const [lastKeyPressTime, setLastKeyPressTime] = useState(0)
 
-  const quickAmounts = [1000, 2000, 5000, 10000]
-  const changeAmount = Number.parseFloat(amountReceived) - grandTotal
+  // Convert discount to number and handle null/undefined
+  const discountAmount = Number(discount || 0)
 
-  const handleQuickAmount = (amount) => {
-    setAmountReceived(amount.toString())
+  // Quick cash amounts based on total
+  const quickCashAmounts = useMemo(() => {
+    const total = Number(grandTotal)
+    return [
+      Math.ceil(total / 100) * 100, // Round up to nearest 100
+      Math.ceil(total / 500) * 500, // Round up to nearest 500
+      Math.ceil(total / 1000) * 1000, // Round up to nearest 1000
+      Math.ceil(total / 2000) * 2000 // Round up to nearest 2000
+    ]
+  }, [grandTotal])
+
+  // Set card amount to total when card is selected
+  useEffect(() => {
+    if (paymentMethod === "card") {
+      setCardAmount(grandTotal.toString())
+    }
+  }, [paymentMethod, grandTotal])
+
+  const showToast = (message, type) => {
+    setToast({ message, type, isVisible: true })
+    setTimeout(() => setToast(prev => ({ ...prev, isVisible: false })), 3000)
   }
 
-  const completePayment = async () => {
-    setIsProcessing(true)
-    try {
+  // Handle arrow key navigation with debounce
+  const handleKeyDown = (e) => {
+    const now = Date.now()
+    if (now - lastKeyPressTime < 300) return // Debounce key presses
+    setLastKeyPressTime(now)
+
+    if (e.key === "ArrowLeft") {
+      e.preventDefault()
+      setPaymentMethod("cash")
+      setSelectedInput("cash")
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault()
+      setPaymentMethod("card")
+      setSelectedInput("card")
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault()
       if (paymentMethod === "cash") {
-        const finalAmount = Number.parseFloat(amountReceived) || 0
-        if (finalAmount >= grandTotal) {
-          await onPaymentComplete({
-            method: paymentMethod,
-            payments: [{ method: paymentMethod, amount: finalAmount, timestamp: new Date() }],
-            change: changeAmount > 0 ? changeAmount : 0,
-          })
-        }
+        setSelectedInput("cashAmount")
       } else if (paymentMethod === "card") {
-        if (cardDetails.reference && cardDetails.last4.length === 4) {
-          await onPaymentComplete({
-            method: paymentMethod,
-            payments: [
-              {
-                method: paymentMethod,
-                amount: grandTotal,
-                timestamp: new Date(),
-                cardReference: cardDetails.reference,
-                last4: cardDetails.last4,
-              },
-            ],
-            change: 0,
-          })
-        }
+        setSelectedInput("cardAmount")
       }
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault()
+      if (selectedInput === "cashAmount" || selectedInput === "cardAmount") {
+        setSelectedInput(paymentMethod)
+      }
+    } else if (e.key === "Enter") {
+      e.preventDefault()
+      handleCompletePayment()
+    }
+  }
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [paymentMethod, selectedInput, lastKeyPressTime])
+
+  const handleQuickCashAmount = (amount) => {
+    setCashAmount(amount.toString())
+    setSelectedInput("cashAmount")
+  }
+
+  const handleCompletePayment = async () => {
+    try {
+      setIsProcessing(true)
+      const totalAmount = parseFloat(cashAmount || 0) + parseFloat(cardAmount || 0)
+      
+      if (totalAmount < grandTotal) {
+        showToast("Total payment amount is less than the grand total", "error")
+        return
+      }
+
+      const paymentDetails = {
+        method: paymentMethod,
+        cashAmount: parseFloat(cashAmount || 0),
+        cardAmount: parseFloat(cardAmount || 0),
+        cardNumber: cardNumber.slice(-4),
+        cardPreference,
+        totalAmount,
+        change: totalAmount - grandTotal
+      }
+
+      await onPaymentComplete(paymentDetails)
+      onClose()
     } catch (error) {
-      console.error("Payment error:", error)
+      showToast("Payment processing failed", "error")
     } finally {
       setIsProcessing(false)
     }
   }
 
-  const discountAmount = discount.type === "percentage" ? (subtotal * discount.value) / 100 : discount.value
-  const taxAmount = (subtotal - discountAmount) * (taxRate / 100)
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto card-shadow fade-in">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-800">💳 Payment Processing</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">
-            ×
-          </button>
-        </div>
-
-        {/* Enhanced Summary */}
-        <div className="bg-blue-50 rounded-lg p-4 mb-6 border border-blue-200">
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Subtotal:</span>
-              <span className="font-medium">Rs {subtotal.toFixed(2)}</span>
-            </div>
-            {discount.value > 0 && (
-              <div className="flex justify-between text-red-600">
-                <span>Discount:</span>
-                <span>-Rs {discountAmount.toFixed(2)}</span>
-              </div>
-            )}
-            <div className="flex justify-between">
-              <span className="text-gray-600">Tax ({taxRate}%):</span>
-              <span className="font-medium">Rs {taxAmount.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between font-bold text-lg border-t border-blue-200 pt-2 text-blue-600">
-              <span>Total:</span>
-              <span>Rs {grandTotal.toFixed(2)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Enhanced Payment Method Selection */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-3">Payment Method</label>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => setPaymentMethod("cash")}
-              className={`p-4 rounded-lg border-2 transition-all ${paymentMethod === "cash"
-                ? "border-blue-500 bg-blue-50 text-blue-700"
-                : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
-                }`}
-            >
-              <div className="text-2xl mb-1">💵</div>
-              <div className="font-medium">Cash</div>
-            </button>
-            <button
-              onClick={() => setPaymentMethod("card")}
-              className={`p-4 rounded-lg border-2 transition-all ${paymentMethod === "card"
-                ? "border-blue-500 bg-blue-50 text-blue-700"
-                : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
-                }`}
-            >
-              <div className="text-2xl mb-1">💳</div>
-              <div className="font-medium">Card</div>
-            </button>
-          </div>
-        </div>
-
-        {/* Payment Details */}
-        {paymentMethod === "cash" ? (
-          <div className="space-y-4 mb-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">💰 Amount Received</label>
-              <input
-                type="number"
-                value={amountReceived}
-                onChange={(e) => setAmountReceived(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
-                placeholder="Enter amount"
-                min={grandTotal}
-                step="0.01"
-              />
-            </div>
-
-            {changeAmount > 0 && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                <div className="text-green-800 font-medium">💰 Change Due: Rs {changeAmount.toFixed(2)}</div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-2">
-              {quickAmounts.map((amount) => (
-                <button
-                  key={amount}
-                  onClick={() => handleQuickAmount(amount)}
-                  className="p-2 border border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors"
-                >
-                  Rs {amount}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4 mb-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">🔗 Card Reference</label>
-              <input
-                type="text"
-                value={cardDetails.reference}
-                onChange={(e) => setCardDetails((prev) => ({ ...prev, reference: e.target.value }))}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter card reference"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">🔢 Last 4 Digits</label>
-              <input
-                type="text"
-                value={cardDetails.last4}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, "").slice(0, 4)
-                  setCardDetails((prev) => ({ ...prev, last4: value }))
-                }}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="1234"
-                maxLength="4"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex gap-3">
+          <h2 className="text-xl font-bold">Payment Processing</h2>
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="text-gray-500 hover:text-gray-700"
           >
-            ❌ Cancel
-          </button>
-          <button
-            onClick={completePayment}
-            className="flex-1 px-4 py-3 btn-success rounded-lg font-semibold flex items-center justify-center gap-2"
-            disabled={
-              isProcessing ||
-              (paymentMethod === "cash"
-                ? !amountReceived || Number.parseFloat(amountReceived) < grandTotal
-                : !cardDetails.reference || cardDetails.last4.length !== 4)
-            }
-          >
-            {isProcessing ? <FastSpinner /> : "✅ Complete Payment"}
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
+
+        <div className="space-y-4">
+          <div className="flex space-x-4 mb-4">
+            <button
+              className={`flex-1 p-3 rounded-lg border ${
+                paymentMethod === "cash"
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-300"
+              }`}
+              onClick={() => {
+                setPaymentMethod("cash")
+                setSelectedInput("cash")
+              }}
+            >
+              Cash
+            </button>
+            <button
+              className={`flex-1 p-3 rounded-lg border ${
+                paymentMethod === "card"
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-300"
+              }`}
+              onClick={() => {
+                setPaymentMethod("card")
+                setSelectedInput("card")
+              }}
+            >
+              Card
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex justify-between text-sm">
+              <span>Subtotal:</span>
+              <span>Rs {Number(subtotal).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span>Tax ({taxRate}%):</span>
+              <span>Rs {(Number(subtotal) * (Number(taxRate) / 100)).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span>Discount:</span>
+              <span>Rs {discountAmount.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between font-bold">
+              <span>Total:</span>
+              <span>Rs {Number(grandTotal).toFixed(2)}</span>
+            </div>
+          </div>
+
+          {paymentMethod === "cash" ? (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Cash Amount
+                </label>
+                <input
+                  type="number"
+                  value={cashAmount}
+                  onChange={(e) => setCashAmount(e.target.value)}
+                  className={`w-full p-2 border rounded ${
+                    selectedInput === "cashAmount" ? "border-blue-500" : "border-gray-300"
+                  }`}
+                  placeholder="Enter cash amount"
+                  onFocus={() => setSelectedInput("cashAmount")}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {quickCashAmounts.map((amount, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleQuickCashAmount(amount)}
+                    className="p-2 text-sm border rounded hover:bg-gray-50"
+                  >
+                    Rs {amount.toFixed(2)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Card Number (Last 4 digits)
+                </label>
+                <input
+                  type="text"
+                  value={cardNumber}
+                  onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                  className="w-full p-2 border rounded"
+                  placeholder="Enter last 4 digits"
+                  maxLength={4}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Card Amount
+                </label>
+                <input
+                  type="number"
+                  value={cardAmount}
+                  onChange={(e) => setCardAmount(e.target.value)}
+                  className={`w-full p-2 border rounded ${
+                    selectedInput === "cardAmount" ? "border-blue-500" : "border-gray-300"
+                  }`}
+                  placeholder="Enter card amount"
+                  onFocus={() => setSelectedInput("cardAmount")}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Card Preference
+                </label>
+                <input
+                  type="text"
+                  value={cardPreference}
+                  onChange={(e) => setCardPreference(e.target.value)}
+                  className="w-full p-2 border rounded"
+                  placeholder="Enter card preference"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end space-x-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleCompletePayment}
+              disabled={isProcessing}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+            >
+              {isProcessing ? "Processing..." : "Complete Payment"}
+            </button>
+          </div>
+        </div>
       </div>
+      <OptimizedToast
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onClose={() => setToast(prev => ({ ...prev, isVisible: false }))}
+      />
     </div>
   )
 }
@@ -3276,3 +3541,4 @@ const InvoicesPage = ({ invoices, searchTerm, setSearchTerm, dateRange, setDateR
 }
 
 export default EnhancedBillingPOSSystem
+
