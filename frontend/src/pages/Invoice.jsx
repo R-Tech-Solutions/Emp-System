@@ -2495,12 +2495,12 @@ const EnhancedCartItemWithDiscount = ({ item, updateQuantity, removeFromCart, up
 
 // Enhanced Payment Modal Component
 const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose, onPaymentComplete }) => {
-  const [paymentMethod, setPaymentMethod] = useState("cash")
+  // Removed paymentMethod state as both cash and card inputs will be visible simultaneously
   const [cashAmount, setCashAmount] = useState("")
   const [cardAmount, setCardAmount] = useState("")
   const [cardNumber, setCardNumber] = useState("")
   const [cardPreference, setCardPreference] = useState("")
-  const [selectedInput, setSelectedInput] = useState("cash")
+  const [selectedInput, setSelectedInput] = useState("cashAmount") // Initialize with cash amount focused
   const [isProcessing, setIsProcessing] = useState(false)
   const [toast, setToast] = useState({ message: "", type: "", isVisible: false })
   const [lastKeyPressTime, setLastKeyPressTime] = useState(0)
@@ -2519,88 +2519,92 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
     ]
   }, [grandTotal])
 
-  // Set card amount to total when card is selected
-  useEffect(() => {
-    if (paymentMethod === "card") {
-      setCardAmount(grandTotal.toString())
-    }
-  }, [paymentMethod, grandTotal])
-
-  const showToast = (message, type) => {
+  // Memoized showToast
+  const showToast = useCallback((message, type) => {
     setToast({ message, type, isVisible: true })
     setTimeout(() => setToast(prev => ({ ...prev, isVisible: false })), 3000)
-  }
+  }, [])
 
-  // Handle arrow key navigation with debounce
-  const handleKeyDown = (e) => {
-    const now = Date.now()
-    if (now - lastKeyPressTime < 300) return // Debounce key presses
-    setLastKeyPressTime(now)
+  // Calculate amounts (moved before functions that use them)
+  const currentCashAmount = parseFloat(cashAmount) || 0
+  const currentCardAmount = parseFloat(cardAmount) || 0
+  const totalPaid = currentCashAmount + currentCardAmount
+  const balanceDue = grandTotal - totalPaid
+  const changeDue = totalPaid > grandTotal ? totalPaid - grandTotal : 0
 
-    if (e.key === "ArrowLeft") {
-      e.preventDefault()
-      setPaymentMethod("cash")
-      setSelectedInput("cash")
-    } else if (e.key === "ArrowRight") {
-      e.preventDefault()
-      setPaymentMethod("card")
-      setSelectedInput("card")
-    } else if (e.key === "ArrowDown") {
-      e.preventDefault()
-      if (paymentMethod === "cash") {
-        setSelectedInput("cashAmount")
-      } else if (paymentMethod === "card") {
-        setSelectedInput("cardAmount")
-      }
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault()
-      if (selectedInput === "cashAmount" || selectedInput === "cardAmount") {
-        setSelectedInput(paymentMethod)
-      }
-    } else if (e.key === "Enter") {
-      e.preventDefault()
-      handleCompletePayment()
-    }
-  }
-
-  useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [paymentMethod, selectedInput, lastKeyPressTime])
-
-  const handleQuickCashAmount = (amount) => {
-    setCashAmount(amount.toString())
-    setSelectedInput("cashAmount")
-  }
-
-  const handleCompletePayment = async () => {
+  // handleCompletePayment must be declared before handleKeyDown if handleKeyDown depends on it
+  const handleCompletePayment = useCallback(async () => {
+    setIsProcessing(true)
     try {
-      setIsProcessing(true)
-      const totalAmount = parseFloat(cashAmount || 0) + parseFloat(cardAmount || 0)
-
-      if (totalAmount < grandTotal) {
+      if (totalPaid < grandTotal) {
         showToast("Total payment amount is less than the grand total", "error")
         return
       }
 
       const paymentDetails = {
-        method: paymentMethod,
-        cashAmount: parseFloat(cashAmount || 0),
-        cardAmount: parseFloat(cardAmount || 0),
-        cardNumber: cardNumber.slice(-4),
+        method: currentCashAmount > 0 && currentCardAmount > 0 ? "split" : (currentCashAmount > 0 ? "cash" : "card"), // Determine method based on inputs
+        cashAmount: currentCashAmount,
+        cardAmount: currentCardAmount,
+        cardNumber: cardNumber.slice(-4), // Only send last 4 digits
         cardPreference,
-        totalAmount,
-        change: totalAmount - grandTotal
+        totalAmount: totalPaid,
+        change: changeDue,
       }
 
       await onPaymentComplete(paymentDetails)
-      onClose()
+      onClose() // Close modal after successful payment
     } catch (error) {
-      showToast("Payment processing failed", "error")
+      console.error("Payment processing failed:", error); // Log error for debugging
+      showToast("Failed to complete payment", "error")
     } finally {
       setIsProcessing(false)
     }
-  }
+  }, [
+    setIsProcessing, totalPaid, grandTotal, showToast, currentCashAmount,
+    currentCardAmount, cardNumber, cardPreference, changeDue, onPaymentComplete, onClose
+  ])
+
+  // handleQuickCashAmount depends on setCashAmount, setCardAmount, setSelectedInput
+  const handleQuickCashAmount = useCallback((amount) => {
+    setCashAmount(amount.toFixed(2).toString()) // Format to 2 decimal places
+    setCardAmount("") // Clear card amount when quick cash is used
+    document.getElementById('cash-amount-input')?.focus()
+    setSelectedInput("cashAmount")
+  }, [setCashAmount, setCardAmount, setSelectedInput])
+
+
+  // Handle keyboard navigation (modified for split payments)
+  const handleKeyDown = useCallback((e) => {
+    const now = Date.now()
+    if (now - lastKeyPressTime < 100) return // Debounce key presses (reduced from 300ms for faster input)
+    setLastKeyPressTime(now)
+
+    // Navigate between cash/card amount inputs
+    if (e.key === "ArrowUp") {
+      e.preventDefault()
+      if (document.activeElement === document.getElementById('card-amount-input')) {
+        document.getElementById('cash-amount-input')?.focus()
+        setSelectedInput("cashAmount")
+      }
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault()
+      if (document.activeElement === document.getElementById('cash-amount-input')) {
+        document.getElementById('card-amount-input')?.focus()
+        setSelectedInput("cardAmount")
+      }
+    } else if (e.key === "Enter") {
+      e.preventDefault()
+      handleCompletePayment()
+    }
+    // Allow number input in cash amount, don't prevent default for standard typing
+    // No specific handling for '0'-'9' needed here as standard input works fine
+  }, [lastKeyPressTime, setSelectedInput, handleCompletePayment]); // Corrected dependencies
+
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [handleKeyDown]) // Re-run effect if handleKeyDown changes (due to dependencies like `handleCompletePayment`)
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -2618,137 +2622,141 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
         </div>
 
         <div className="space-y-4">
-          <div className="flex space-x-4 mb-4">
-            <button
-              className={`flex-1 p-3 rounded-lg border ${paymentMethod === "cash"
-                ? "border-blue-500 bg-blue-50"
-                : "border-gray-300"
-                }`}
-              onClick={() => {
-                setPaymentMethod("cash")
-                setSelectedInput("cash")
-              }}
-            >
-              Cash
-            </button>
-            <button
-              className={`flex-1 p-3 rounded-lg border ${paymentMethod === "card"
-                ? "border-blue-500 bg-blue-50"
-                : "border-gray-300"
-                }`}
-              onClick={() => {
-                setPaymentMethod("card")
-                setSelectedInput("card")
-              }}
-            >
-              Card
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex justify-between text-sm">
+          <div className="space-y-2 mb-4 p-3 bg-gray-50 rounded-lg">
+            <div className="flex justify-between text-base font-semibold">
+              <span>Total Due:</span>
+              <span>Rs {Number(grandTotal).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm text-gray-600">
               <span>Subtotal:</span>
               <span>Rs {Number(subtotal).toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between text-sm text-gray-600">
+              <span>Discount:</span>
+              <span>- Rs {discountAmount.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm text-gray-600">
               <span>Tax ({taxRate}%):</span>
               <span>Rs {(Number(subtotal) * (Number(taxRate) / 100)).toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span>Discount:</span>
-              <span>Rs {discountAmount.toFixed(2)}</span>
+          </div>
+
+          <div className="space-y-4">
+            {/* Cash Payment Section */}
+            <div>
+              <label htmlFor="cash-amount-input" className="block text-sm font-medium text-gray-700 mb-1">
+                Cash Amount
+              </label>
+              <input
+                id="cash-amount-input"
+                type="number"
+                value={cashAmount}
+                onChange={(e) => setCashAmount(e.target.value)}
+                className={`w-full p-2 border rounded ${selectedInput === "cashAmount" ? "border-blue-500" : "border-gray-300"
+                  }`}
+                placeholder="0.00"
+                onFocus={() => setSelectedInput("cashAmount")}
+                min="0"
+              />
             </div>
-            <div className="flex justify-between font-bold">
-              <span>Total:</span>
-              <span>Rs {Number(grandTotal).toFixed(2)}</span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {quickCashAmounts.map((amount, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleQuickCashAmount(amount)}
+                  className="p-2 text-sm border rounded hover:bg-gray-100 transition-colors"
+                >
+                  Rs {amount.toFixed(2)}
+                </button>
+              ))}
+              <button
+                onClick={() => setCashAmount(grandTotal.toFixed(2).toString())}
+                className="p-2 text-sm border rounded hover:bg-gray-100 transition-colors col-span-2 sm:col-span-1"
+              >
+                Exact Cash
+              </button>
+            </div>
+
+            {/* Card Payment Section */}
+            <div>
+              <label htmlFor="card-amount-input" className="block text-sm font-medium text-gray-700 mb-1">
+                Card Amount
+              </label>
+              <input
+                id="card-amount-input"
+                type="number"
+                value={cardAmount}
+                onChange={(e) => setCardAmount(e.target.value)}
+                className={`w-full p-2 border rounded ${selectedInput === "cardAmount" ? "border-blue-500" : "border-gray-300"
+                  }`}
+                placeholder="0.00"
+                onFocus={() => setSelectedInput("cardAmount")}
+                min="0"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Card Number (Last 4 digits)
+              </label>
+              <input
+                type="text"
+                value={cardNumber}
+                onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                className="w-full p-2 border rounded border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="XXXX"
+                maxLength={4}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Card Preference (e.g., Visa, Mastercard)
+              </label>
+              <input
+                type="text"
+                value={cardPreference}
+                onChange={(e) => setCardPreference(e.target.value)}
+                className="w-full p-2 border rounded border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Optional"
+              />
             </div>
           </div>
 
-          {paymentMethod === "cash" ? (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Cash Amount
-                </label>
-                <input
-                  type="number"
-                  value={cashAmount}
-                  onChange={(e) => setCashAmount(e.target.value)}
-                  className={`w-full p-2 border rounded ${selectedInput === "cashAmount" ? "border-blue-500" : "border-gray-300"
-                    }`}
-                  placeholder="Enter cash amount"
-                  onFocus={() => setSelectedInput("cashAmount")}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {quickCashAmounts.map((amount, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleQuickCashAmount(amount)}
-                    className="p-2 text-sm border rounded hover:bg-gray-50"
-                  >
-                    Rs {amount.toFixed(2)}
-                  </button>
-                ))}
-              </div>
+          {/* Payment Summary & Change/Balance Due */}
+          <div className="mt-4 p-3 rounded-lg border-t border-gray-200 pt-4">
+            <div className="flex justify-between text-base font-semibold mb-2">
+              <span>Total Paid:</span>
+              <span>Rs {totalPaid.toFixed(2)}</span>
             </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Card Number (Last 4 digits)
-                </label>
-                <input
-                  type="text"
-                  value={cardNumber}
-                  onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                  className="w-full p-2 border rounded"
-                  placeholder="Enter last 4 digits"
-                  maxLength={4}
-                />
+            {balanceDue > 0.01 ? ( // Check against a small epsilon for floating point issues
+              <div className="flex justify-between text-lg font-bold text-red-600">
+                <span>Balance Due:</span>
+                <span>Rs {balanceDue.toFixed(2)}</span>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Card Amount
-                </label>
-                <input
-                  type="number"
-                  value={cardAmount}
-                  onChange={(e) => setCardAmount(e.target.value)}
-                  className={`w-full p-2 border rounded ${selectedInput === "cardAmount" ? "border-blue-500" : "border-gray-300"
-                    }`}
-                  placeholder="Enter card amount"
-                  onFocus={() => setSelectedInput("cardAmount")}
-                />
+            ) : (
+              <div className="flex justify-between text-lg font-bold text-green-600">
+                <span>Change Due:</span>
+                <span>Rs {changeDue.toFixed(2)}</span>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Card Preference
-                </label>
-                <input
-                  type="text"
-                  value={cardPreference}
-                  onChange={(e) => setCardPreference(e.target.value)}
-                  className="w-full p-2 border rounded"
-                  placeholder="Enter card preference"
-                />
-              </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          <div className="flex justify-end space-x-2">
+          <div className="flex gap-3 mt-6">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleCompletePayment}
-              disabled={isProcessing}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+              disabled={isProcessing || totalPaid < grandTotal} // Disable if not enough paid
+              className={`flex-1 px-4 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors ${
+                isProcessing || totalPaid < grandTotal
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "btn-success"
+              }`}
             >
-              {isProcessing ? "Processing..." : "Complete Payment"}
+              {isProcessing ? <FastSpinner /> : "💰 Complete Payment"}
             </button>
           </div>
         </div>
