@@ -1,9 +1,9 @@
 "use client"
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { backEndURL } from "../Backendurl"
-import Dotspinner from "../loaders/Loader"
 import { useNavigate } from "react-router-dom"
 // Enhanced Print Styles for both POS and A4 formats
+
 const printStyles = `
 @media print {
   html, body {
@@ -690,9 +690,9 @@ const FastTabComponent = ({ tabs, activeTab, onTabChange, onAddTab, heldBills, o
                   ? "bg-blue-500 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
-              title={`Switch to Tab ${String(tab.number).padStart(2, "0")} (Ctrl+${tab.number})`}
+              title={`Switch to ${String(tab.number).padStart(2, "0")} (Ctrl+${tab.number})`}
             >
-              Tab {String(tab.number).padStart(2, "0")}
+              {String(tab.number).padStart(2, "0")}
               {heldBills.includes(tab.id) && (
                 <span className="ml-1 text-yellow-500">🔒</span>
               )}
@@ -882,6 +882,7 @@ const EnhancedBillingPOSSystem = () => {
   const [selectedProductIndex, setSelectedProductIndex] = useState(-1)
   const [isProcessing, setIsProcessing] = useState(false)
   const [isSearchActive, setIsSearchActive] = useState(false)
+  const [lastQuantityUpdate, setLastQuantityUpdate] = useState(Date.now())
   const searchInputRef = useRef(null)
   const productGridRef = useRef(null)
 
@@ -1480,6 +1481,7 @@ const EnhancedBillingPOSSystem = () => {
     async (paymentData) => {
       setIsProcessing(true)
       try {
+        // Create invoice object with minimal required data
         const invoice = {
           items: cart.map((item) => ({
             id: item.id,
@@ -1505,33 +1507,98 @@ const EnhancedBillingPOSSystem = () => {
           payments: paymentData.payments || [],
         }
 
-        // Save to backend if needed
+        // Optimize API call with timeout and error handling
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+
         try {
-          const response = await fetch(`${backEndURL}/api/invoices`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(invoice),
-          })
+          const response = await Promise.race([
+            fetch(`${backEndURL}/api/invoices`, {
+              method: "POST",
+              headers: { 
+                "Content-Type": "application/json",
+                "X-Request-Type": "invoice-creation"
+              },
+              body: JSON.stringify(invoice),
+              signal: controller.signal
+            }),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Request timeout')), 3000)
+            )
+          ]);
 
-          if (response.ok) {
-            const savedInvoice = await response.json()
-            invoice.id = savedInvoice.id
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
           }
-        } catch (error) {
-          console.error("Error saving invoice:", error)
-          invoice.id = `INV-${Date.now()}`
-        }
 
-        setPendingInvoice(invoice)
-        setShowPrintSelection(true)
-        setShowPayment(false)
-        handleClearCart()
-        showToast("Payment completed successfully!", "success")
+          const savedInvoice = await response.json();
+          invoice.id = savedInvoice.id;
+
+          // Update inventory in parallel with optimized error handling
+          const inventoryUpdates = await Promise.all(
+            cart.map(async item => {
+              try {
+                const response = await fetch(`${backEndURL}/api/inventory/update`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    productId: item.id,
+                    quantity: -item.quantity,
+                    type: "sale",
+                    invoiceId: savedInvoice.id
+                  })
+                });
+
+                if (!response.ok) {
+                  throw new Error(`Failed to update inventory for item ${item.id}`);
+                }
+
+                const updatedInventory = await response.json();
+                
+                // Update local products state with new quantity
+                setProducts(prevProducts => 
+                  prevProducts.map(product => 
+                    product.id === item.id 
+                      ? { ...product, quantity: updatedInventory.quantity }
+                      : product
+                  )
+                );
+
+                return updatedInventory;
+              } catch (error) {
+                console.error(`Failed to update inventory for item ${item.id}:`, error);
+                return null;
+              }
+            })
+          );
+
+          // Update UI immediately
+          setPendingInvoice(invoice);
+          setShowPrintSelection(true);
+          setShowPayment(false);
+          handleClearCart();
+          showToast("Payment completed successfully!", "success");
+
+        } catch (error) {
+          if (error.name === 'AbortError' || error.message.includes('timeout')) {
+            console.warn("Request timed out, proceeding with offline mode");
+            invoice.id = `INV-${Date.now()}`;
+            setPendingInvoice(invoice);
+            setShowPrintSelection(true);
+            setShowPayment(false);
+            handleClearCart();
+            showToast("Payment completed with offline mode!", "warning");
+          } else {
+            throw error;
+          }
+        }
       } catch (error) {
-        console.error("Error completing payment:", error)
-        showToast("Failed to complete payment", "error")
+        console.error("Error completing payment:", error);
+        showToast("Failed to complete payment", "error");
       } finally {
-        setIsProcessing(false)
+        setIsProcessing(false);
       }
     },
     [
@@ -1543,6 +1610,7 @@ const EnhancedBillingPOSSystem = () => {
       grandTotal,
       handleClearCart,
       showToast,
+      setProducts, // Add setProducts to dependencies
     ],
   )
 
@@ -1565,7 +1633,41 @@ const EnhancedBillingPOSSystem = () => {
     }
   }, [activeMainTab, fetchInvoices])
 
-  // Optimized data fetching with caching
+  // Add new function for silent quantity updates
+  const updateProductQuantities = useCallback(async () => {
+    try {
+      const inventoryResponse = await fetch(`${backEndURL}/api/inventory`);
+      const inventoryData = await inventoryResponse.json();
+      
+      // Create a map for O(1) lookup
+      const inventoryMap = new Map(inventoryData.map(inv => [inv.productId, inv]));
+      
+      // Update products with new quantities
+      setProducts(prevProducts => 
+        prevProducts.map(product => {
+          const inventory = inventoryMap.get(product.id);
+          return {
+            ...product,
+            stock: inventory ? inventory.totalQuantity : 0
+          };
+        })
+      );
+      
+      setLastQuantityUpdate(Date.now());
+    } catch (error) {
+      console.error('Error updating quantities:', error);
+    }
+  }, []);
+
+  // Add interval for silent updates
+  useEffect(() => {
+    const intervalId = setInterval(updateProductQuantities, 100);
+    
+    // Cleanup interval on unmount
+    return () => clearInterval(intervalId);
+  }, [updateProductQuantities]);
+
+  // Modify the existing fetchData function to use the new update mechanism
   const fetchData = useCallback(async () => {
     try {
       setIsLoading(true)
@@ -1575,8 +1677,8 @@ const EnhancedBillingPOSSystem = () => {
       const cacheTimestamp = sessionStorage.getItem('invoiceDataTimestamp')
       const now = Date.now()
 
-      // Use cached data if it's less than 5 minutes old
-      if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < 300000) {
+      // Use cached data if it's less than 2 minutes old
+      if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < 120000) {
         const { products: cachedProducts, customers: cachedCustomers, categories: cachedCategories } = JSON.parse(cachedData)
         setProducts(cachedProducts)
         setCustomers(cachedCustomers)
@@ -1585,22 +1687,45 @@ const EnhancedBillingPOSSystem = () => {
         return
       }
 
+      // Parallel fetch with timeout and retry logic
+      const fetchWithRetry = async (url, retries = 3) => {
+        for (let i = 0; i < retries; i++) {
+          try {
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 10000) // Increased to 10 seconds
+            
+            const response = await fetch(url, { 
+              signal: controller.signal,
+              headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+              }
+            })
+            clearTimeout(timeoutId)
+            
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+            return await response.json()
+          } catch (err) {
+            if (i === retries - 1) throw err
+            // Exponential backoff with jitter
+            const delay = Math.min(1000 * Math.pow(2, i) + Math.random() * 1000, 10000)
+            await new Promise(resolve => setTimeout(resolve, delay))
+          }
+        }
+      }
+
       // Parallel fetch for better performance
-      const [productsResponse, inventoryResponse, customersResponse] = await Promise.all([
-        fetch(`${backEndURL}/api/products`),
-        fetch(`${backEndURL}/api/inventory`),
-        fetch(`${backEndURL}/api/contacts`),
-      ])
-
       const [productsData, inventoryData, contactsData] = await Promise.all([
-        productsResponse.json(),
-        inventoryResponse.json(),
-        customersResponse.json(),
+        fetchWithRetry(`${backEndURL}/api/products`),
+        fetchWithRetry(`${backEndURL}/api/inventory`),
+        fetchWithRetry(`${backEndURL}/api/contacts`),
       ])
 
-      // Combine products with inventory data
+      // Combine products with inventory data using Map for O(1) lookup
+      const inventoryMap = new Map(inventoryData.map(inv => [inv.productId, inv]))
+      
       const combinedProducts = productsData.map((product) => {
-        const inventory = inventoryData.find((inv) => inv.productId === product.id)
+        const inventory = inventoryMap.get(product.id)
         return {
           id: product.id,
           name: product.name,
@@ -1619,29 +1744,27 @@ const EnhancedBillingPOSSystem = () => {
       // Filter customers
       const customerContacts = contactsData.filter((c) => c.categoryType === "Customer")
 
-      // Set categories
-      const uniqueCategories = Array.from(new Set(productsData.map((p) => p.category).filter(Boolean)))
-      const categories = ["All", ...uniqueCategories]
+      // Update state
+      setProducts(combinedProducts)
+      setCustomers(customerContacts)
+      setCategories([...new Set(combinedProducts.map(p => p.category))])
 
-      // Cache the data
+      // Cache the results
       const dataToCache = {
         products: combinedProducts,
         customers: customerContacts,
-        categories: categories
+        categories: [...new Set(combinedProducts.map(p => p.category))]
       }
       sessionStorage.setItem('invoiceData', JSON.stringify(dataToCache))
       sessionStorage.setItem('invoiceDataTimestamp', now.toString())
 
-      setProducts(combinedProducts)
-      setCustomers(customerContacts)
-      setCategories(categories)
     } catch (error) {
-      console.error("Error fetching data:", error)
-      showToast("Failed to load data", "error")
+      console.error('Error fetching data:', error)
+      // Show error toast or notification
     } finally {
       setIsLoading(false)
     }
-  }, [showToast])
+  }, [])
 
   useEffect(() => {
     fetchData()
@@ -1754,7 +1877,6 @@ const EnhancedBillingPOSSystem = () => {
     return (
       <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
         <div className="flex flex-col items-center">
-          <Dotspinner />
         </div>
       </div>
     )
@@ -1952,7 +2074,7 @@ const EnhancedBillingPOSSystem = () => {
         )}
 
         {activeMainTab === "pos" ? (
-          <div className="grid grid-cols-2 gap-6 h-[calc(100vh-8rem)] mt-16">
+          <div className="grid grid-cols-2 gap-3 h-[calc(100vh-8rem)] w-auto">
             {/* Products Section */}
             <div className="bg-white rounded-lg p-6 card-shadow flex flex-col">
               <div className="flex justify-between items-center mb-4">
@@ -2274,7 +2396,7 @@ const EnhancedProductCard = ({ product, onAddToCart, selectedPriceType, isSelect
         </div>
 
         <div className="flex justify-between items-center">
-          <div className="text-xs font-bold text-blue-600">₹{currentPrice.toFixed(2)}</div>
+          <div className="text-xs font-bold text-blue-600">Rs {currentPrice.toFixed(2)}</div>
           <button
             onClick={(e) => {
               e.stopPropagation()
@@ -2495,15 +2617,22 @@ const EnhancedCartItemWithDiscount = ({ item, updateQuantity, removeFromCart, up
 
 // Enhanced Payment Modal Component
 const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose, onPaymentComplete }) => {
-  // Removed paymentMethod state as both cash and card inputs will be visible simultaneously
+  const [paymentMethod, setPaymentMethod] = useState("cash") // "cash" or "card"
   const [cashAmount, setCashAmount] = useState("")
   const [cardAmount, setCardAmount] = useState("")
   const [cardNumber, setCardNumber] = useState("")
-  const [cardPreference, setCardPreference] = useState("")
-  const [selectedInput, setSelectedInput] = useState("cashAmount") // Initialize with cash amount focused
+  const [cardHolderName, setCardHolderName] = useState("")
+  const [cardExpiry, setCardExpiry] = useState("")
+  const [cardCVV, setCardCVV] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [toast, setToast] = useState({ message: "", type: "", isVisible: false })
-  const [lastKeyPressTime, setLastKeyPressTime] = useState(0)
+
+  // Set card amount to grand total when payment method changes to card
+  useEffect(() => {
+    if (paymentMethod === "card") {
+      setCardAmount(grandTotal.toFixed(2))
+    }
+  }, [paymentMethod, grandTotal])
 
   // Convert discount to number and handle null/undefined
   const discountAmount = Number(discount || 0)
@@ -2525,239 +2654,227 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
     setTimeout(() => setToast(prev => ({ ...prev, isVisible: false })), 3000)
   }, [])
 
-  // Calculate amounts (moved before functions that use them)
-  const currentCashAmount = parseFloat(cashAmount) || 0
-  const currentCardAmount = parseFloat(cardAmount) || 0
-  const totalPaid = currentCashAmount + currentCardAmount
-  const balanceDue = grandTotal - totalPaid
-  const changeDue = totalPaid > grandTotal ? totalPaid - grandTotal : 0
+  // Calculate amounts
+  const currentAmount = paymentMethod === "cash" ? parseFloat(cashAmount) || 0 : parseFloat(cardAmount) || 0
+  const balanceDue = grandTotal - currentAmount
+  const changeDue = currentAmount > grandTotal ? currentAmount - grandTotal : 0
 
-  // handleCompletePayment must be declared before handleKeyDown if handleKeyDown depends on it
   const handleCompletePayment = useCallback(async () => {
     setIsProcessing(true)
     try {
-      if (totalPaid < grandTotal) {
-        showToast("Total payment amount is less than the grand total", "error")
+      if (currentAmount < grandTotal) {
+        showToast("Payment amount is less than the grand total", "error")
         return
       }
 
       const paymentDetails = {
-        method: currentCashAmount > 0 && currentCardAmount > 0 ? "split" : (currentCashAmount > 0 ? "cash" : "card"), // Determine method based on inputs
-        cashAmount: currentCashAmount,
-        cardAmount: currentCardAmount,
-        cardNumber: cardNumber.slice(-4), // Only send last 4 digits
-        cardPreference,
-        totalAmount: totalPaid,
+        method: paymentMethod,
+        amount: currentAmount,
         change: changeDue,
+        ...(paymentMethod === "card" && {
+          cardNumber: cardNumber.slice(-4),
+          cardHolderName,
+          cardExpiry,
+        })
       }
 
       await onPaymentComplete(paymentDetails)
-      onClose() // Close modal after successful payment
+      onClose()
     } catch (error) {
-      console.error("Payment processing failed:", error); // Log error for debugging
+      console.error("Payment processing failed:", error)
       showToast("Failed to complete payment", "error")
     } finally {
       setIsProcessing(false)
     }
   }, [
-    setIsProcessing, totalPaid, grandTotal, showToast, currentCashAmount,
-    currentCardAmount, cardNumber, cardPreference, changeDue, onPaymentComplete, onClose
+    currentAmount, grandTotal, paymentMethod, cardNumber, cardHolderName,
+    cardExpiry, changeDue, onPaymentComplete, onClose, showToast
   ])
 
-  // handleQuickCashAmount depends on setCashAmount, setCardAmount, setSelectedInput
   const handleQuickCashAmount = useCallback((amount) => {
-    setCashAmount(amount.toFixed(2).toString()) // Format to 2 decimal places
-    setCardAmount("") // Clear card amount when quick cash is used
-    document.getElementById('cash-amount-input')?.focus()
-    setSelectedInput("cashAmount")
-  }, [setCashAmount, setCardAmount, setSelectedInput])
-
-
-  // Handle keyboard navigation (modified for split payments)
-  const handleKeyDown = useCallback((e) => {
-    const now = Date.now()
-    if (now - lastKeyPressTime < 100) return // Debounce key presses (reduced from 300ms for faster input)
-    setLastKeyPressTime(now)
-
-    // Navigate between cash/card amount inputs
-    if (e.key === "ArrowUp") {
-      e.preventDefault()
-      if (document.activeElement === document.getElementById('card-amount-input')) {
-        document.getElementById('cash-amount-input')?.focus()
-        setSelectedInput("cashAmount")
-      }
-    } else if (e.key === "ArrowDown") {
-      e.preventDefault()
-      if (document.activeElement === document.getElementById('cash-amount-input')) {
-        document.getElementById('card-amount-input')?.focus()
-        setSelectedInput("cardAmount")
-      }
-    } else if (e.key === "Enter") {
-      e.preventDefault()
-      handleCompletePayment()
-    }
-    // Allow number input in cash amount, don't prevent default for standard typing
-    // No specific handling for '0'-'9' needed here as standard input works fine
-  }, [lastKeyPressTime, setSelectedInput, handleCompletePayment]); // Corrected dependencies
-
-
-  useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [handleKeyDown]) // Re-run effect if handleKeyDown changes (due to dependencies like `handleCompletePayment`)
+    setCashAmount(amount.toFixed(2))
+    setPaymentMethod("cash")
+  }, [])
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Payment Processing</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+          <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
         </div>
 
-        <div className="space-y-4">
-          <div className="space-y-2 mb-4 p-3 bg-gray-50 rounded-lg">
-            <div className="flex justify-between text-base font-semibold">
-              <span>Total Due:</span>
-              <span>Rs {Number(grandTotal).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-sm text-gray-600">
-              <span>Subtotal:</span>
-              <span>Rs {Number(subtotal).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-sm text-gray-600">
-              <span>Discount:</span>
-              <span>- Rs {discountAmount.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-sm text-gray-600">
-              <span>Tax ({taxRate}%):</span>
-              <span>Rs {(Number(subtotal) * (Number(taxRate) / 100)).toFixed(2)}</span>
-            </div>
-          </div>
+        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div className="sm:flex sm:items-start">
+              <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
+                  Payment Details
+                </h3>
 
-          <div className="space-y-4">
-            {/* Cash Payment Section */}
-            <div>
-              <label htmlFor="cash-amount-input" className="block text-sm font-medium text-gray-700 mb-1">
-                Cash Amount
-              </label>
-              <input
-                id="cash-amount-input"
-                type="number"
-                value={cashAmount}
-                onChange={(e) => setCashAmount(e.target.value)}
-                className={`w-full p-2 border rounded ${selectedInput === "cashAmount" ? "border-blue-500" : "border-gray-300"
-                  }`}
-                placeholder="0.00"
-                onFocus={() => setSelectedInput("cashAmount")}
-                min="0"
-              />
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {quickCashAmounts.map((amount, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleQuickCashAmount(amount)}
-                  className="p-2 text-sm border rounded hover:bg-gray-100 transition-colors"
-                >
-                  Rs {amount.toFixed(2)}
-                </button>
-              ))}
-              <button
-                onClick={() => setCashAmount(grandTotal.toFixed(2).toString())}
-                className="p-2 text-sm border rounded hover:bg-gray-100 transition-colors col-span-2 sm:col-span-1"
-              >
-                Exact Cash
-              </button>
-            </div>
+                {/* Payment Method Selection */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Payment Method
+                  </label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("cash")}
+                      className={`p-4 rounded-lg border-2 transition-colors ${
+                        paymentMethod === "cash"
+                          ? "border-green-500 bg-green-50"
+                          : "border-gray-300 hover:border-green-500"
+                      }`}
+                    >
+                      <div className="flex items-center justify-center space-x-2">
+                        <span className="text-2xl">💵</span>
+                        <span className="font-medium">Cash</span>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod("card")}
+                      className={`p-4 rounded-lg border-2 transition-colors ${
+                        paymentMethod === "card"
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-300 hover:border-blue-500"
+                      }`}
+                    >
+                      <div className="flex items-center justify-center space-x-2">
+                        <span className="text-2xl">💳</span>
+                        <span className="font-medium">Card</span>
+                      </div>
+                    </button>
+                  </div>
+                </div>
 
-            {/* Card Payment Section */}
-            <div>
-              <label htmlFor="card-amount-input" className="block text-sm font-medium text-gray-700 mb-1">
-                Card Amount
-              </label>
-              <input
-                id="card-amount-input"
-                type="number"
-                value={cardAmount}
-                onChange={(e) => setCardAmount(e.target.value)}
-                className={`w-full p-2 border rounded ${selectedInput === "cardAmount" ? "border-blue-500" : "border-gray-300"
-                  }`}
-                placeholder="0.00"
-                onFocus={() => setSelectedInput("cardAmount")}
-                min="0"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Card Number (Last 4 digits)
-              </label>
-              <input
-                type="text"
-                value={cardNumber}
-                onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                className="w-full p-2 border rounded border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="XXXX"
-                maxLength={4}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Card Preference (e.g., Visa, Mastercard)
-              </label>
-              <input
-                type="text"
-                value={cardPreference}
-                onChange={(e) => setCardPreference(e.target.value)}
-                className="w-full p-2 border rounded border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Optional"
-              />
-            </div>
-          </div>
+                {/* Cash Payment Section */}
+                {paymentMethod === "cash" && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Cash Amount
+                      </label>
+                      <input
+                        type="number"
+                        value={cashAmount}
+                        onChange={(e) => setCashAmount(e.target.value)}
+                        className="w-full p-2 border rounded border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        placeholder="0.00"
+                        min="0"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {quickCashAmounts.map((amount, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleQuickCashAmount(amount)}
+                          className="p-2 text-sm border rounded hover:bg-gray-50 transition-colors"
+                        >
+                          Rs {amount.toFixed(2)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-          {/* Payment Summary & Change/Balance Due */}
-          <div className="mt-4 p-3 rounded-lg border-t border-gray-200 pt-4">
-            <div className="flex justify-between text-base font-semibold mb-2">
-              <span>Total Paid:</span>
-              <span>Rs {totalPaid.toFixed(2)}</span>
-            </div>
-            {balanceDue > 0.01 ? ( // Check against a small epsilon for floating point issues
-              <div className="flex justify-between text-lg font-bold text-red-600">
-                <span>Balance Due:</span>
-                <span>Rs {balanceDue.toFixed(2)}</span>
+                {/* Card Payment Section */}
+                {paymentMethod === "card" && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Card Amount
+                      </label>
+                      <input
+                        type="number"
+                        value={cardAmount}
+                        onChange={(e) => setCardAmount(e.target.value)}
+                        className="w-full p-2 border rounded border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="0.00"
+                        min="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        last 4 digit Card Number
+                      </label>
+                      <input
+                        type="text"
+                        value={cardNumber}
+                        onChange={(e) => setCardNumber(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                        className="w-full p-2 border rounded border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="3456"
+                        maxLength={4}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Card Preference
+                      </label>
+                      <input
+                        type="text"
+                        value={cardHolderName}
+                        onChange={(e) => setCardHolderName(e.target.value)}
+                        className="w-full p-2 border rounded border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Unique"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Payment Summary */}
+                <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex justify-between text-base font-semibold mb-2">
+                    <span>Total Amount:</span>
+                    <span>Rs {grandTotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-base font-semibold mb-2">
+                    <span>Amount Paid:</span>
+                    <span>Rs {currentAmount.toFixed(2)}</span>
+                  </div>
+                  {balanceDue > 0 ? (
+                    <div className="flex justify-between text-lg font-bold text-red-600">
+                      <span>Balance Due:</span>
+                      <span>Rs {balanceDue.toFixed(2)}</span>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between text-lg font-bold text-green-600">
+                      <span>Change Due:</span>
+                      <span>Rs {changeDue.toFixed(2)}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="mt-6 flex gap-3">
+                  <button
+                    onClick={onClose}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleCompletePayment}
+                    disabled={isProcessing || currentAmount < grandTotal}
+                    className={`flex-1 px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2 ${
+                      isProcessing || currentAmount < grandTotal
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : paymentMethod === "cash"
+                        ? "bg-green-600 hover:bg-green-700 text-white"
+                        : "bg-blue-600 hover:bg-blue-700 text-white"
+                    }`}
+                  >
+                    {isProcessing ? (
+                      <FastSpinner />
+                    ) : (
+                      <>
+                        {paymentMethod === "cash" ? "💵 Complete Cash Payment" : "💳 Complete Card Payment"}
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
-            ) : (
-              <div className="flex justify-between text-lg font-bold text-green-600">
-                <span>Change Due:</span>
-                <span>Rs {changeDue.toFixed(2)}</span>
-              </div>
-            )}
-          </div>
-
-          <div className="flex gap-3 mt-6">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleCompletePayment}
-              disabled={isProcessing || totalPaid < grandTotal} // Disable if not enough paid
-              className={`flex-1 px-4 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors ${
-                isProcessing || totalPaid < grandTotal
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "btn-success"
-              }`}
-            >
-              {isProcessing ? <FastSpinner /> : "💰 Complete Payment"}
-            </button>
+            </div>
           </div>
         </div>
       </div>

@@ -3,42 +3,25 @@ const { COLLECTION_NAME, productData } = require("../models/Product");
 const { v4: uuidv4 } = require("uuid");
 const multer = require("multer");
 const stream = require("stream");
+const { uploadImageToStorage, deleteImageFromStorage } = require('../utils/storage');
 
-// Helper to upload image to Firebase Storage
-async function uploadImageToStorage(file) {
-  if (!file) return "";
-  const bucket = storage.bucket();
-  const filename = `products/${uuidv4()}_${file.originalname}`;
-  const fileRef = bucket.file(filename);
-  const passthroughStream = new stream.PassThrough();
-  passthroughStream.end(file.buffer);
-  await new Promise((resolve, reject) => {
-    passthroughStream.pipe(fileRef.createWriteStream({
-      metadata: { contentType: file.mimetype },
-    }))
-    .on("finish", resolve)
-    .on("error", reject);
-  });
-  await fileRef.makePublic();
-  return fileRef.publicUrl();
-}
+// Enhanced cache implementation
+const productCache = new Map();
+const CACHE_TTL = 300000; // 5 minutes cache TTL
+const CACHE_CLEANUP_INTERVAL = 60000; // Cleanup every minute
 
-// Helper to delete image from Firebase Storage by URL
-async function deleteImageFromStorage(imageUrl) {
-  if (!imageUrl) return;
-  try {
-    // Extract the file path after the bucket domain
-    const match = imageUrl.match(/\/products\/[^?]+/);
-    if (!match) return;
-    const filePath = match[0].replace(/^\//, "");
-    const bucket = storage.bucket();
-    const fileRef = bucket.file(filePath);
-    await fileRef.delete();
-  } catch (err) {
-    // Log but do not throw, so product update/delete can continue
-    console.error("Error deleting image from storage:", err.message);
+// Cache cleanup function
+const cleanupCache = () => {
+  const now = Date.now();
+  for (const [key, value] of productCache.entries()) {
+    if (now - value.timestamp > CACHE_TTL) {
+      productCache.delete(key);
+    }
   }
-}
+};
+
+// Start cache cleanup interval
+setInterval(cleanupCache, CACHE_CLEANUP_INTERVAL);
 
 // Multer middleware for multipart/form-data
 const upload = multer({ storage: multer.memoryStorage() });
@@ -61,29 +44,66 @@ exports.createProduct = [upload.single("image"), async (req, res) => {
       return res.status(409).json({ error: "A product with this SKU already exists." });
     }
     await db.collection(COLLECTION_NAME).doc(sku).set(data);
+    productCache.clear(); // Clear cache on new product
     res.status(201).json({ id: sku, ...data });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 }];
 
-// Get All Products
+// Get Products with caching
 exports.getProducts = async (req, res) => {
   try {
-    const snapshot = await db.collection(COLLECTION_NAME).get();
+    const cacheKey = 'all_products';
+    const cachedData = productCache.get(cacheKey);
+    
+    if (cachedData && Date.now() - cachedData.timestamp < CACHE_TTL) {
+      return res.json(cachedData.data);
+    }
+
+    const snapshot = await db.collection(COLLECTION_NAME)
+      .orderBy('createdAt', 'desc')
+      .get();
+    
     const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Update cache
+    productCache.set(cacheKey, {
+      data: products,
+      timestamp: Date.now()
+    });
+
     res.json(products);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// Get Single Product
+// Get Product by ID with caching
 exports.getProduct = async (req, res) => {
   try {
-    const doc = await db.collection(COLLECTION_NAME).doc(req.params.id).get();
-    if (!doc.exists) return res.status(404).json({ error: "Product not found" });
-    res.json({ id: doc.id, ...doc.data() });
+    const { id } = req.params;
+    const cacheKey = `product_${id}`;
+    const cachedData = productCache.get(cacheKey);
+    
+    if (cachedData && Date.now() - cachedData.timestamp < CACHE_TTL) {
+      return res.json(cachedData.data);
+    }
+
+    const doc = await db.collection(COLLECTION_NAME).doc(id).get();
+    if (!doc.exists) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    const product = { id: doc.id, ...doc.data() };
+    
+    // Update cache
+    productCache.set(cacheKey, {
+      data: product,
+      timestamp: Date.now()
+    });
+
+    res.json(product);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -95,18 +115,26 @@ exports.updateProduct = [upload.single("image"), async (req, res) => {
     const docRef = db.collection(COLLECTION_NAME).doc(req.params.id);
     const doc = await docRef.get();
     if (!doc.exists) return res.status(404).json({ error: "Product not found" });
+    
     let imageUrl = doc.data().imageUrl || "";
-    // If a new image is uploaded, delete the old one
     if (req.file) {
       if (imageUrl) {
         await deleteImageFromStorage(imageUrl);
       }
       imageUrl = await uploadImageToStorage(req.file);
     }
+    
     const updatedData = productData({ ...req.body, imageUrl });
     updatedData.updatedAt = new Date().toISOString();
+    
     await docRef.update(updatedData);
-    res.json({ id: doc.id, ...updatedData });
+    
+    // Update cache
+    const updatedProduct = { id: doc.id, ...updatedData };
+    productCache.set(doc.id, { data: updatedProduct, timestamp: Date.now() });
+    productCache.delete('all'); // Clear all products cache
+    
+    res.json(updatedProduct);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -118,22 +146,35 @@ exports.deleteProduct = async (req, res) => {
     const docRef = db.collection(COLLECTION_NAME).doc(req.params.id);
     const doc = await docRef.get();
     if (!doc.exists) return res.status(404).json({ error: "Product not found" });
-    // Delete image from storage if exists
+    
     const imageUrl = doc.data().imageUrl || "";
     if (imageUrl) {
       await deleteImageFromStorage(imageUrl);
     }
+    
     await docRef.delete();
+    
+    // Clear cache
+    productCache.delete(req.params.id);
+    productCache.delete('all');
+    
     res.json({ message: "Product deleted" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// Get Product by Barcode
+// Get Product by Barcode with caching
 exports.getProductByBarcode = async (req, res) => {
   try {
     const { barcode } = req.params;
+    const cacheKey = `barcode_${barcode}`;
+    const cachedData = productCache.get(cacheKey);
+    
+    if (cachedData && Date.now() - cachedData.timestamp < CACHE_TTL) {
+      return res.json(cachedData.data);
+    }
+
     const snapshot = await db.collection(COLLECTION_NAME)
       .where('barcode', '==', barcode)
       .limit(1)
@@ -144,9 +185,16 @@ exports.getProductByBarcode = async (req, res) => {
     }
 
     const doc = snapshot.docs[0];
-    res.json({ id: doc.id, ...doc.data() });
+    const product = { id: doc.id, ...doc.data() };
+    
+    // Update cache
+    productCache.set(cacheKey, {
+      data: product,
+      timestamp: Date.now()
+    });
+
+    res.json(product);
   } catch (err) {
-    console.error("Error fetching product by barcode:", err);
     res.status(500).json({ error: err.message });
   }
 };
