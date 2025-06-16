@@ -2,6 +2,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { backEndURL } from "../Backendurl"
 import { useNavigate } from "react-router-dom"
+import axios from "axios"
+import DotSpinner from "../loaders/Loader"
 // Enhanced Print Styles for both POS and A4 formats
 
 const printStyles = `
@@ -685,11 +687,10 @@ const FastTabComponent = ({ tabs, activeTab, onTabChange, onAddTab, heldBills, o
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className={`px-3 py-1.5 text-sm rounded-full transition-colors ${
-                activeTab === tab.id
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
+              className={`px-3 py-1.5 text-sm rounded-full transition-colors ${activeTab === tab.id
+                ? "bg-blue-500 text-white"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
               title={`Switch to ${String(tab.number).padStart(2, "0")} (Ctrl+${tab.number})`}
             >
               {String(tab.number).padStart(2, "0")}
@@ -862,7 +863,7 @@ const EnhancedBillingPOSSystem = () => {
   const [showCustomSearchModal, setShowCustomSearchModal] = useState(false)
   const [searchModalTerm, setSearchModalTerm] = useState("")
   const [searchModalSelectedIndex, setSearchModalSelectedIndex] = useState(0)
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
   // Multi-tab functionality with optimizations
   const [tabs, setTabs] = useState([{ id: 1, number: 1 }])
   const [activeTab, setActiveTab] = useState(1)
@@ -1155,6 +1156,10 @@ const EnhancedBillingPOSSystem = () => {
             e.stopPropagation()
             setActiveMainTab("pos")
             return false
+          case "c":
+            e.preventDefault();
+            setShowCashOutModal(true);
+            return false;
         }
       }
     }
@@ -1515,14 +1520,14 @@ const EnhancedBillingPOSSystem = () => {
           const response = await Promise.race([
             fetch(`${backEndURL}/api/invoices`, {
               method: "POST",
-              headers: { 
+              headers: {
                 "Content-Type": "application/json",
                 "X-Request-Type": "invoice-creation"
               },
               body: JSON.stringify(invoice),
               signal: controller.signal
             }),
-            new Promise((_, reject) => 
+            new Promise((_, reject) =>
               setTimeout(() => reject(new Error('Request timeout')), 3000)
             )
           ]);
@@ -1556,11 +1561,11 @@ const EnhancedBillingPOSSystem = () => {
                 }
 
                 const updatedInventory = await response.json();
-                
+
                 // Update local products state with new quantity
-                setProducts(prevProducts => 
-                  prevProducts.map(product => 
-                    product.id === item.id 
+                setProducts(prevProducts =>
+                  prevProducts.map(product =>
+                    product.id === item.id
                       ? { ...product, quantity: updatedInventory.quantity }
                       : product
                   )
@@ -1638,12 +1643,12 @@ const EnhancedBillingPOSSystem = () => {
     try {
       const inventoryResponse = await fetch(`${backEndURL}/api/inventory`);
       const inventoryData = await inventoryResponse.json();
-      
+
       // Create a map for O(1) lookup
       const inventoryMap = new Map(inventoryData.map(inv => [inv.productId, inv]));
-      
+
       // Update products with new quantities
-      setProducts(prevProducts => 
+      setProducts(prevProducts =>
         prevProducts.map(product => {
           const inventory = inventoryMap.get(product.id);
           return {
@@ -1652,7 +1657,7 @@ const EnhancedBillingPOSSystem = () => {
           };
         })
       );
-      
+
       setLastQuantityUpdate(Date.now());
     } catch (error) {
       console.error('Error updating quantities:', error);
@@ -1662,7 +1667,7 @@ const EnhancedBillingPOSSystem = () => {
   // Add interval for silent updates
   useEffect(() => {
     const intervalId = setInterval(updateProductQuantities, 100);
-    
+
     // Cleanup interval on unmount
     return () => clearInterval(intervalId);
   }, [updateProductQuantities]);
@@ -1693,8 +1698,8 @@ const EnhancedBillingPOSSystem = () => {
           try {
             const controller = new AbortController()
             const timeoutId = setTimeout(() => controller.abort(), 10000) // Increased to 10 seconds
-            
-            const response = await fetch(url, { 
+
+            const response = await fetch(url, {
               signal: controller.signal,
               headers: {
                 'Cache-Control': 'no-cache',
@@ -1702,7 +1707,7 @@ const EnhancedBillingPOSSystem = () => {
               }
             })
             clearTimeout(timeoutId)
-            
+
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
             return await response.json()
           } catch (err) {
@@ -1723,7 +1728,7 @@ const EnhancedBillingPOSSystem = () => {
 
       // Combine products with inventory data using Map for O(1) lookup
       const inventoryMap = new Map(inventoryData.map(inv => [inv.productId, inv]))
-      
+
       const combinedProducts = productsData.map((product) => {
         const inventory = inventoryMap.get(product.id)
         return {
@@ -1873,10 +1878,70 @@ const EnhancedBillingPOSSystem = () => {
     }
   }, [])
 
+  const [showCashOutModal, setShowCashOutModal] = useState(false);
+  const [cashOutData, setCashOutData] = useState({
+    title: '',
+    amount: '',
+    date: new Date().toLocaleDateString('en-US'),
+    paidBy: sessionStorage.getItem('email') || '',
+    to: '',
+    paymentMethod: '',
+    status: 'Approved',
+    description: ''
+  });
+
+  const handleCashOutSubmit = async (e) => {
+    e.preventDefault();
+    if (isSubmitting) return; // Prevent multiple submissions
+
+    setIsSubmitting(true);
+    try {
+      const expenseData = {
+        title: cashOutData.title,
+        amount: Number(cashOutData.amount),
+        date: cashOutData.date,
+        paidBy: cashOutData.paidBy,
+        to: cashOutData.to,
+        paymentMethod: cashOutData.paymentMethod,
+        status: cashOutData.status,
+        description: cashOutData.description
+      };
+
+      const response = await axios.post(`${backEndURL}/api/finance/expense`, expenseData, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+      });
+
+      if (response.data.success) {
+        showToast('Cash out recorded successfully', 'success');
+        setShowCashOutModal(false);
+        setCashOutData({
+          title: '',
+          amount: '',
+          date: new Date().toLocaleDateString('en-US'),
+          paidBy: sessionStorage.getItem('email') || '',
+          to: '',
+          paymentMethod: '',
+          status: 'Approved',
+          description: ''
+        });
+      } else {
+        throw new Error(response.data.message || 'Failed to record cash out');
+      }
+    } catch (error) {
+      console.error('Error recording cash out:', error);
+      showToast(error.message || 'Failed to record cash out', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
         <div className="flex flex-col items-center">
+          <DotSpinner />
         </div>
       </div>
     )
@@ -1938,13 +2003,22 @@ const EnhancedBillingPOSSystem = () => {
         >
           ✅
         </button>
+        <button
+          onClick={() => setShowCashOutModal(true)}
+          className="bg-red-500 hover:bg-green-600 text-white rounded-full p-3 card-shadow transition-all duration-150 hover:scale-105"
+          title="Cash Out (Shift + Q)"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+        </button>
 
         {/* POS System */}
         <button
           onClick={() => setActiveMainTab("pos")}
           className={`rounded-full p-3 card-shadow transition-all duration-150 hover:scale-105 ${activeMainTab === "pos"
-              ? "bg-blue-500 text-white shadow"
-              : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+            ? "bg-blue-500 text-white shadow"
+            : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
             }`}
           title="POS System"
         >
@@ -1955,8 +2029,8 @@ const EnhancedBillingPOSSystem = () => {
         <button
           onClick={() => setActiveMainTab("invoices")}
           className={`rounded-full p-3 card-shadow transition-all duration-150 hover:scale-105 ${activeMainTab === "invoices"
-              ? "bg-blue-500 text-white shadow"
-              : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+            ? "bg-blue-500 text-white shadow"
+            : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
             }`}
           title="Invoices"
         >
@@ -2014,6 +2088,10 @@ const EnhancedBillingPOSSystem = () => {
                   <div className="flex justify-between">
                     <span>Unhold Bill:</span>
                     <kbd className="px-2 py-1 bg-gray-100 rounded">Shift + U</kbd>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Cash Out:</span>
+                    <kbd className="px-2 py-1 bg-gray-100 rounded">Shift + C</kbd>
                   </div>
                 </div>
               </div>
@@ -2255,11 +2333,10 @@ const EnhancedBillingPOSSystem = () => {
                 <button
                   onClick={() => setShowPayment(true)}
                   disabled={cart.length === 0}
-                  className={`w-full mt-4 py-3 rounded-lg font-semibold text-white transition-colors ${
-                    cart.length === 0
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-green-500 hover:bg-green-600"
-                  }`}
+                  className={`w-full mt-4 py-3 rounded-lg font-semibold text-white transition-colors ${cart.length === 0
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-green-500 hover:bg-green-600"
+                    }`}
                 >
                   💰 Complete Payment
                 </button>
@@ -2344,6 +2421,123 @@ const EnhancedBillingPOSSystem = () => {
           onClose={() => setShowCustomerModal(false)}
         />
       )}
+
+
+      {/* Cash Out Modal */}
+      {showCashOutModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
+            <form onSubmit={handleCashOutSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <input
+                  type="text"
+                  value={cashOutData.title}
+                  onChange={(e) => setCashOutData({ ...cashOutData, title: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                <input
+                  type="number"
+                  value={cashOutData.amount}
+                  onChange={(e) => setCashOutData({ ...cashOutData, amount: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                <input
+                  type="text"
+                  value={cashOutData.date}
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Paid By</label>
+                <input
+                  type="text"
+                  value={cashOutData.paidBy}
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
+                <input
+                  type="text"
+                  value={cashOutData.Department}
+                  onChange={(e) => setCashOutData({ ...cashOutData, to: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                <select
+                  value={cashOutData.paymentMethod}
+                  onChange={(e) => setCashOutData({ ...cashOutData, paymentMethod: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="">Select Payment Method</option>
+                  <option value="cash">Cash</option>
+                  <option value="card">Card</option>
+                  <option value="bank">Bank Transfer</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <input
+                  type="text"
+                  value={cashOutData.status}
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={cashOutData.description}
+                  onChange={(e) => setCashOutData({ ...cashOutData, description: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows="3"
+                />
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowCashOutModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`px-4 py-2 text-sm font-medium text-white rounded-md flex items-center gap-2 ${isSubmitting
+                      ? 'bg-red-400 cursor-not-allowed'
+                      : 'bg-red-600 hover:bg-red-700'
+                    }`}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <DotSpinner />
+                      <span>Processing...</span>
+                    </>
+                  ) : (
+                    'Submit'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -2368,11 +2562,10 @@ const EnhancedProductCard = ({ product, onAddToCart, selectedPriceType, isSelect
   return (
     <div
       ref={cardRef}
-      className={`product-card border rounded p-1.5 transition-all duration-150 hover:shadow-md cursor-pointer h-[85px] ${
-        isSelected
-          ? "ring-1 ring-blue-500 bg-blue-50 border-blue-300"
-          : "border-gray-200 hover:border-blue-300"
-      }`}
+      className={`product-card border rounded p-1.5 transition-all duration-150 hover:shadow-md cursor-pointer h-[85px] ${isSelected
+        ? "ring-1 ring-blue-500 bg-blue-50 border-blue-300"
+        : "border-gray-200 hover:border-blue-300"
+        }`}
       onClick={() => onAddToCart(product)}
       tabIndex={0}
     >
@@ -2380,9 +2573,8 @@ const EnhancedProductCard = ({ product, onAddToCart, selectedPriceType, isSelect
         <div className="flex justify-between items-start gap-1">
           <h3 className="font-medium text-gray-800 text-[11px] leading-tight line-clamp-1 flex-1">{product.name}</h3>
           <div className="flex flex-col items-end">
-            <span className={`px-1 py-0.5 rounded-full text-[9px] font-medium ${
-              isLowStock ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
-            }`}>
+            <span className={`px-1 py-0.5 rounded-full text-[9px] font-medium ${isLowStock ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
+              }`}>
               {product.stock}
             </span>
             {isLowStock && (
@@ -2403,11 +2595,10 @@ const EnhancedProductCard = ({ product, onAddToCart, selectedPriceType, isSelect
               onAddToCart(product)
             }}
             disabled={product.stock === 0}
-            className={`px-1 py-0.5 rounded text-[9px] font-medium transition-all ${
-              product.stock === 0
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                : "btn-primary hover:scale-105"
-            }`}
+            className={`px-1 py-0.5 rounded text-[9px] font-medium transition-all ${product.stock === 0
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "btn-primary hover:scale-105"
+              }`}
           >
             {product.stock === 0 ? "❌" : "➕"}
           </button>
@@ -2720,11 +2911,10 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
                     <button
                       type="button"
                       onClick={() => setPaymentMethod("cash")}
-                      className={`p-4 rounded-lg border-2 transition-colors ${
-                        paymentMethod === "cash"
-                          ? "border-green-500 bg-green-50"
-                          : "border-gray-300 hover:border-green-500"
-                      }`}
+                      className={`p-4 rounded-lg border-2 transition-colors ${paymentMethod === "cash"
+                        ? "border-green-500 bg-green-50"
+                        : "border-gray-300 hover:border-green-500"
+                        }`}
                     >
                       <div className="flex items-center justify-center space-x-2">
                         <span className="text-2xl">💵</span>
@@ -2734,11 +2924,10 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
                     <button
                       type="button"
                       onClick={() => setPaymentMethod("card")}
-                      className={`p-4 rounded-lg border-2 transition-colors ${
-                        paymentMethod === "card"
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-300 hover:border-blue-500"
-                      }`}
+                      className={`p-4 rounded-lg border-2 transition-colors ${paymentMethod === "card"
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-300 hover:border-blue-500"
+                        }`}
                     >
                       <div className="flex items-center justify-center space-x-2">
                         <span className="text-2xl">💳</span>
@@ -2856,13 +3045,12 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
                   <button
                     onClick={handleCompletePayment}
                     disabled={isProcessing || currentAmount < grandTotal}
-                    className={`flex-1 px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2 ${
-                      isProcessing || currentAmount < grandTotal
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : paymentMethod === "cash"
+                    className={`flex-1 px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2 ${isProcessing || currentAmount < grandTotal
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : paymentMethod === "cash"
                         ? "bg-green-600 hover:bg-green-700 text-white"
                         : "bg-blue-600 hover:bg-blue-700 text-white"
-                    }`}
+                      }`}
                   >
                     {isProcessing ? (
                       <FastSpinner />
