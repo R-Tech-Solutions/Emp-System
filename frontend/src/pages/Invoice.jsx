@@ -637,8 +637,6 @@ const FastSpinner = () => (
     <span className="ml-2 text-sm text-gray-600">Loading...</span>
   </div>
 )
-
-// Optimized Toast Component
 const OptimizedToast = ({ message, type, isVisible, onClose }) => {
   useEffect(() => {
     if (isVisible) {
@@ -678,68 +676,33 @@ const OptimizedToast = ({ message, type, isVisible, onClose }) => {
     </div>
   )
 }
-
-// Enhanced Tab Component with faster switching
 const FastTabComponent = ({ tabs, activeTab, onTabChange, onAddTab, heldBills, onHoldBill, onUnholdBill }) => {
   return (
-    <div className="mb-6">
-      <div className="flex flex-col space-y-4">
-        {/* POS System Box and Hold/Unhold Buttons */}
-        <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center space-x-4">
-            <h2 className="text-xl font-semibold text-gray-800">POS System</h2>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => onHoldBill(activeTab)}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                title="Hold Current Bill (Shift+H)"
-              >
-                Hold Bill
-              </button>
-              <button
-                onClick={() => onUnholdBill(activeTab)}
-                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                title="Unhold Current Bill (Shift+U)"
-              >
-                Unhold Bill
-              </button>
-            </div>
-          </div>
-          <button
-            onClick={onAddTab}
-            className="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors"
-            title="Add New Tab (Shift+N)"
-          >
-            New Tab
-          </button>
-        </div>
-
-        {/* Tabs Container with Wrapping */}
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex flex-wrap gap-2">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => onTabChange(tab.id)}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  activeTab === tab.id
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-                title={`Switch to Tab ${String(tab.number).padStart(2, "0")} (Ctrl+${tab.number})`}
-              >
-                Tab {String(tab.number).padStart(2, "0")}
-                {heldBills.includes(tab.id) && (
-                  <span className="ml-2 text-yellow-500">🔒</span>
-                )}
-              </button>
-            ))}
-          </div>
+    <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+      <div className="bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-lg border border-gray-200">
+        <div className="flex gap-1.5">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => onTabChange(tab.id)}
+              className={`px-3 py-1.5 text-sm rounded-full transition-colors ${
+                activeTab === tab.id
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+              title={`Switch to Tab ${String(tab.number).padStart(2, "0")} (Ctrl+${tab.number})`}
+            >
+              Tab {String(tab.number).padStart(2, "0")}
+              {heldBills.includes(tab.id) && (
+                <span className="ml-1 text-yellow-500">🔒</span>
+              )}
+            </button>
+          ))}
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 // Enhanced Print Selection Modal with better UI
 const EnhancedPrintSelectionModal = ({ onClose, onPrintSelection, invoice }) => {
@@ -865,148 +828,6 @@ const EnhancedPrintSelectionModal = ({ onClose, onPrintSelection, invoice }) => 
   )
 }
 
-// Custom Search Modal Component
-const CustomSearchModal = ({
-  isOpen,
-  onClose,
-  products,
-  searchTerm,
-  setSearchTerm,
-  selectedIndex,
-  setSelectedIndex,
-  onProductSelect,
-  onQuantityAdd,
-}) => {
-  const searchInputRef = useRef(null)
-
-  const filteredProducts = useMemo(() => {
-    return products.filter(
-      (product) =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.barcode.includes(searchTerm) ||
-        product.category.toLowerCase().includes(searchTerm.toLowerCase()),
-    )
-  }, [products, searchTerm])
-
-  useEffect(() => {
-    if (isOpen && searchInputRef.current) {
-      searchInputRef.current.focus()
-      setSelectedIndex(0)
-    }
-  }, [isOpen, setSelectedIndex])
-
-  useEffect(() => {
-    if (!isOpen) return
-
-    const handleKeyDown = (e) => {
-      switch (e.key) {
-        case "ArrowDown":
-          e.preventDefault()
-          setSelectedIndex((prev) => (prev < filteredProducts.length - 1 ? prev + 1 : 0))
-          break
-        case "ArrowUp":
-          e.preventDefault()
-          setSelectedIndex((prev) => (prev > 0 ? prev - 1 : filteredProducts.length - 1))
-          break
-        case "Enter":
-          e.preventDefault()
-          if (filteredProducts[selectedIndex]) {
-            const product = filteredProducts[selectedIndex]
-            onProductSelect(product)
-            onQuantityAdd(product.id)
-          }
-          break
-        case "Escape":
-          e.preventDefault()
-          onClose()
-          break
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown)
-    return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [isOpen, selectedIndex, filteredProducts, onProductSelect, onQuantityAdd, onClose, setSelectedIndex])
-
-  if (!isOpen) return null
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center pt-20 z-50">
-      <div className="bg-white rounded-lg w-full max-w-2xl max-h-96 card-shadow fade-in">
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-medium text-gray-900">🔍 Search Products</h3>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">
-              ×
-            </button>
-          </div>
-          <input
-            ref={searchInputRef}
-            type="text"
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value)
-              setSelectedIndex(0)
-            }}
-            placeholder="Type to search products..."
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </div>
-        <div className="max-h-64 overflow-y-auto virtual-scroll">
-          {filteredProducts.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <div className="text-4xl mb-2">🔍</div>
-              <p>No products found</p>
-            </div>
-          ) : (
-            filteredProducts.map((product, index) => (
-              <div
-                key={product.id}
-                className={`px-4 py-3 cursor-pointer transition-colors ${index === selectedIndex ? "bg-blue-50 border-l-4 border-blue-500" : "hover:bg-gray-50"
-                  }`}
-                onClick={() => {
-                  onProductSelect(product)
-                  onQuantityAdd(product.id)
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-12 h-12 rounded-lg bg-gray-100 flex-shrink-0"
-                      style={{
-                        backgroundImage: product.image ? `url(${product.image})` : "none",
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                      }}
-                    >
-                      {!product.image && (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400">📦</div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">{product.name}</div>
-                      <div className="text-sm text-gray-500">
-                        🏷️ {product.category} • 📊 {product.barcode} • 📦 {product.stock} in stock
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-medium text-blue-600">Rs {product.standardPrice.toFixed(2)}</div>
-                    <div className="text-xs text-gray-500">Standard Price</div>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-        <div className="p-3 bg-gray-50 border-t border-gray-200 text-xs text-gray-500">
-          Use ↑↓ arrow keys to navigate, Enter to select (multiple Enter adds quantity), Esc to close
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Main Enhanced POS Component with Performance Optimizations
 const EnhancedBillingPOSSystem = () => {
   const navigate = useNavigate()
   // State management with performance optimizations
@@ -1060,6 +881,9 @@ const EnhancedBillingPOSSystem = () => {
   // Performance state
   const [selectedProductIndex, setSelectedProductIndex] = useState(-1)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isSearchActive, setIsSearchActive] = useState(false)
+  const searchInputRef = useRef(null)
+  const productGridRef = useRef(null)
 
   // Toast state
   const [toast, setToast] = useState({
@@ -1073,7 +897,6 @@ const EnhancedBillingPOSSystem = () => {
   const ctrlFTimeoutRef = useRef(null)
 
   const barcodeRef = useRef(null)
-  const searchInputRef = useRef(null)
 
   // Get current tab data with memoization
   const currentTabData = useMemo(() => {
@@ -1106,7 +929,7 @@ const EnhancedBillingPOSSystem = () => {
 
       const newBuffer = prev + number
       const tabNum = parseInt(newBuffer)
-      
+
       // Calculate target tab number based on Alt key
       let targetTabNum
       if (isAlt) {
@@ -1122,13 +945,13 @@ const EnhancedBillingPOSSystem = () => {
 
       // Find matching tab
       const matchingTab = tabs.find(t => t.number === targetTabNum)
-      
+
       if (matchingTab) {
         setActiveTab(matchingTab.id)
         showToast(`Switched to tab ${String(targetTabNum).padStart(2, "0")}`, "info")
         return "" // Clear buffer after successful switch
       }
-      
+
       return newBuffer
     })
   }
@@ -1242,7 +1065,7 @@ const EnhancedBillingPOSSystem = () => {
       // Handle other Shift-based shortcuts
       if (e.shiftKey) {
         const key = e.key.toLowerCase()
-        
+
         switch (key) {
           case "enter":
             e.preventDefault()
@@ -1336,11 +1159,9 @@ const EnhancedBillingPOSSystem = () => {
     }
 
     window.addEventListener("keydown", handleKeyPress, true)
-    window.addEventListener("keyup", handleKeyPress, true)
-    
+
     return () => {
       window.removeEventListener("keydown", handleKeyPress, true)
-      window.removeEventListener("keyup", handleKeyPress, true)
       if (tabNumberTimeoutRef.current) {
         clearTimeout(tabNumberTimeoutRef.current)
       }
@@ -1753,7 +1574,7 @@ const EnhancedBillingPOSSystem = () => {
       const cachedData = sessionStorage.getItem('invoiceData')
       const cacheTimestamp = sessionStorage.getItem('invoiceDataTimestamp')
       const now = Date.now()
-      
+
       // Use cached data if it's less than 5 minutes old
       if (cachedData && cacheTimestamp && (now - parseInt(cacheTimestamp)) < 300000) {
         const { products: cachedProducts, customers: cachedCustomers, categories: cachedCategories } = JSON.parse(cachedData)
@@ -1797,7 +1618,7 @@ const EnhancedBillingPOSSystem = () => {
 
       // Filter customers
       const customerContacts = contactsData.filter((c) => c.categoryType === "Customer")
-      
+
       // Set categories
       const uniqueCategories = Array.from(new Set(productsData.map((p) => p.category).filter(Boolean)))
       const categories = ["All", ...uniqueCategories]
@@ -1837,16 +1658,20 @@ const EnhancedBillingPOSSystem = () => {
     }
   }, [])
 
-  // Add keyboard navigation effect
+  // Remove the duplicate keyboard navigation effect
   useEffect(() => {
     const handleProductNavigation = (e) => {
-      if (showCustomSearchModal || showProductsModal) return
+      // Only handle navigation if search is active or products modal is open
+      if (!isSearchActive && !showProductsModal) return
+
+      const totalProducts = filteredProducts.length
+      if (totalProducts === 0) return
 
       switch (e.key) {
         case "ArrowRight":
           e.preventDefault()
           setSelectedProductIndex((prev) =>
-            prev < filteredProducts.length - 1 ? prev + 1 : prev
+            prev < totalProducts - 1 ? prev + 1 : prev
           )
           break
         case "ArrowLeft":
@@ -1858,34 +1683,78 @@ const EnhancedBillingPOSSystem = () => {
         case "ArrowDown":
           e.preventDefault()
           setSelectedProductIndex((prev) =>
-            prev < filteredProducts.length - 2 ? prev + 2 : prev
+            prev + 4 < totalProducts ? prev + 4 : prev
           )
           break
         case "ArrowUp":
           e.preventDefault()
           setSelectedProductIndex((prev) =>
-            prev > 1 ? prev - 2 : prev
+            prev >= 4 ? prev - 4 : prev
           )
           break
         case "Enter":
           e.preventDefault()
-          if (filteredProducts[selectedProductIndex]) {
+          if (selectedProductIndex >= 0 && selectedProductIndex < totalProducts) {
             addToCart(filteredProducts[selectedProductIndex])
+            // Keep focus on search input after adding to cart
+            searchInputRef.current?.focus()
           }
+          break
+        case "Escape":
+          e.preventDefault()
+          setIsSearchActive(false)
+          setSelectedProductIndex(-1)
           break
       }
     }
 
-    window.addEventListener("keydown", handleProductNavigation)
-    return () => window.removeEventListener("keydown", handleProductNavigation)
-  }, [filteredProducts, selectedProductIndex, showCustomSearchModal, showProductsModal, addToCart])
+    // Add event listener to the search input instead of window
+    const searchInput = searchInputRef.current
+    if (searchInput) {
+      searchInput.addEventListener("keydown", handleProductNavigation)
+    }
+
+    return () => {
+      if (searchInput) {
+        searchInput.removeEventListener("keydown", handleProductNavigation)
+      }
+    }
+  }, [isSearchActive, showProductsModal, filteredProducts, selectedProductIndex, addToCart])
+
+  // Update the search input focus effect
+  useEffect(() => {
+    const handleSearchFocus = () => {
+      setIsSearchActive(true)
+      setSelectedProductIndex(0)
+    }
+
+    const handleSearchBlur = (e) => {
+      // Only blur if we're not clicking on a product
+      if (!e.relatedTarget?.closest('.product-grid')) {
+        setIsSearchActive(false)
+        setSelectedProductIndex(-1)
+      }
+    }
+
+    const searchInput = searchInputRef.current
+    if (searchInput) {
+      searchInput.addEventListener('focus', handleSearchFocus)
+      searchInput.addEventListener('blur', handleSearchBlur)
+    }
+
+    return () => {
+      if (searchInput) {
+        searchInput.removeEventListener('focus', handleSearchFocus)
+        searchInput.removeEventListener('blur', handleSearchBlur)
+      }
+    }
+  }, [])
 
   if (isLoading) {
     return (
       <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
         <div className="flex flex-col items-center">
           <Dotspinner />
-          <p className="mt-4 text-white text-lg">Loading Invoice System...</p>
         </div>
       </div>
     )
@@ -1919,16 +1788,60 @@ const EnhancedBillingPOSSystem = () => {
       {/* Optimized Toast Notification */}
       <OptimizedToast message={toast.message} type={toast.type} isVisible={toast.isVisible} onClose={hideToast} />
 
-      {/* Keyboard Shortcuts Help */}
-      <button
-        onClick={() => setShowKeyboardShortcuts(true)}
-        className="fixed bottom-4 right-4 z-40 bg-blue-500 hover:bg-blue-600 text-white rounded-full p-3 card-shadow transition-all duration-150 hover:scale-105"
-        title="Keyboard Shortcuts (Shift+Enter)"
-      >
-        ⌨️
-      </button>
+      <div className="fixed bottom-4 right-4 z-40 flex flex-col-reverse space-y-reverse space-y-3">
 
-      {/* Enhanced Keyboard Shortcuts Modal */}
+        {/* Keyboard Shortcuts Help */}
+        <button
+          onClick={() => setShowKeyboardShortcuts(true)}
+          className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-3 card-shadow transition-all duration-150 hover:scale-105"
+          title="Keyboard Shortcuts (Shift+Enter)"
+        >
+          ⌨️
+        </button>
+
+        {/* Hold Bill */}
+        <button
+          onClick={() => handleHoldBill(activeTab)}
+          className="bg-yellow-500 hover:bg-yellow-600 text-white rounded-full p-3 card-shadow transition-all duration-150 hover:scale-105"
+          title="Hold Current Bill (Shift+H)"
+        >
+          🧾
+        </button>
+
+        {/* Unhold Bill */}
+        <button
+          onClick={() => handleUnholdBill(activeTab)}
+          className="bg-green-500 hover:bg-green-600 text-white rounded-full p-3 card-shadow transition-all duration-150 hover:scale-105"
+          title="Unhold Current Bill (Shift+U)"
+        >
+          ✅
+        </button>
+
+        {/* POS System */}
+        <button
+          onClick={() => setActiveMainTab("pos")}
+          className={`rounded-full p-3 card-shadow transition-all duration-150 hover:scale-105 ${activeMainTab === "pos"
+              ? "bg-blue-500 text-white shadow"
+              : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+            }`}
+          title="POS System"
+        >
+          🛒
+        </button>
+
+        {/* Invoices */}
+        <button
+          onClick={() => setActiveMainTab("invoices")}
+          className={`rounded-full p-3 card-shadow transition-all duration-150 hover:scale-105 ${activeMainTab === "invoices"
+              ? "bg-blue-500 text-white shadow"
+              : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
+            }`}
+          title="Invoices"
+        >
+          📄
+        </button>
+      </div>
+
       {showKeyboardShortcuts && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
@@ -1943,7 +1856,7 @@ const EnhancedBillingPOSSystem = () => {
                 </svg>
               </button>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <h3 className="font-semibold mb-2">Tab Management</h3>
@@ -1982,7 +1895,7 @@ const EnhancedBillingPOSSystem = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div>
                 <h3 className="font-semibold mb-2">Navigation & Actions</h3>
                 <div className="space-y-2">
@@ -2025,7 +1938,7 @@ const EnhancedBillingPOSSystem = () => {
         </div>
       )}
 
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-6 h-screen overflow-hidden">
         {activeMainTab === "pos" && (
           <FastTabComponent
             tabs={tabs}
@@ -2038,45 +1951,21 @@ const EnhancedBillingPOSSystem = () => {
           />
         )}
 
-        {/* Main Tab Navigation */}
-        <div className="flex space-x-4 mb-6">
-          <button
-            onClick={() => setActiveMainTab("pos")}
-            className={`px-6 py-3 rounded-lg font-medium transition-all duration-150 ${activeMainTab === "pos"
-              ? "bg-blue-500 text-white shadow-lg"
-              : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-              }`}
-          >
-            🏪 POS System
-          </button>
-          <button
-            onClick={() => setActiveMainTab("invoices")}
-            className={`px-6 py-3 rounded-lg font-medium transition-all duration-150 ${activeMainTab === "invoices"
-              ? "bg-blue-500 text-white shadow-lg"
-              : "bg-white text-gray-600 hover:bg-gray-50 border border-gray-200"
-              }`}
-          >
-            📄 Invoices
-          </button>
-        </div>
-
         {activeMainTab === "pos" ? (
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Enhanced Left: Products Section */}
-            <div className="flex-1 bg-white rounded-lg p-6 card-shadow">
+          <div className="grid grid-cols-2 gap-6 h-[calc(100vh-8rem)] mt-16">
+            {/* Products Section */}
+            <div className="bg-white rounded-lg p-6 card-shadow flex flex-col">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-800">🛍️ Products</h2>
+                <h2 className="text-lg font-semibold text-gray-800">Products</h2>
                 <button
                   onClick={() => setShowProductsModal(true)}
                   className="btn-primary px-4 py-2 rounded-lg flex items-center gap-2"
                 >
-                  📦 All Products
+                  All Products
                 </button>
               </div>
-
-              {/* Enhanced Barcode Scanner */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">📱 Barcode Scanner</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Barcode Scanner</label>
                 <input
                   ref={barcodeRef}
                   type="text"
@@ -2087,8 +1976,6 @@ const EnhancedBillingPOSSystem = () => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-
-              {/* Enhanced Search and Filters */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4">
                 <input
                   ref={searchInputRef}
@@ -2099,6 +1986,33 @@ const EnhancedBillingPOSSystem = () => {
                     setShowCustomSearchModal(true)
                     setSearchModalTerm(searchTerm)
                     setSearchModalSelectedIndex(0)
+                  }}
+                  onKeyDown={(e) => {
+                    const totalProducts = filteredProducts.length
+                    if (totalProducts === 0) return
+                    let handled = false
+                    if (e.key === "ArrowRight") {
+                      setSelectedProductIndex((prev) => (prev < totalProducts - 1 ? prev + 1 : prev))
+                      handled = true
+                    } else if (e.key === "ArrowLeft") {
+                      setSelectedProductIndex((prev) => (prev > 0 ? prev - 1 : prev))
+                      handled = true
+                    } else if (e.key === "ArrowDown") {
+                      setSelectedProductIndex((prev) => (prev + 4 < totalProducts ? prev + 4 : prev))
+                      handled = true
+                    } else if (e.key === "ArrowUp") {
+                      setSelectedProductIndex((prev) => (prev >= 4 ? prev - 4 : prev))
+                      handled = true
+                    } else if (e.key === "Enter") {
+                      if (selectedProductIndex >= 0 && selectedProductIndex < totalProducts) {
+                        addToCart(filteredProducts[selectedProductIndex])
+                        handled = true
+                      }
+                    }
+                    if (handled) {
+                      e.preventDefault()
+                      e.stopPropagation()
+                    }
                   }}
                   placeholder="🔍 Search products... (Ctrl+F, Ctrl+F+F for all products)"
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -2124,22 +2038,25 @@ const EnhancedBillingPOSSystem = () => {
                   <option value="retail">🏪 Retail</option>
                 </select>
               </div>
-
-              {/* Enhanced Product Grid */}
-              <div className="optimized-grid virtual-scroll">
-                {filteredProducts.map((product) => (
+              <div
+                ref={productGridRef}
+                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1.5 flex-1 overflow-y-auto"
+                tabIndex={0}
+              >
+                {filteredProducts.map((product, index) => (
                   <EnhancedProductCard
                     key={product.id}
                     product={product}
                     onAddToCart={addToCart}
                     selectedPriceType={selectedPriceType}
+                    isSelected={index === selectedProductIndex}
                   />
                 ))}
               </div>
             </div>
 
-            {/* Enhanced Right: Shopping Cart Section */}
-            <div className="flex-1 bg-white rounded-lg p-6 card-shadow flex flex-col">
+            {/* Cart Section */}
+            <div className="bg-white rounded-lg p-6 card-shadow flex flex-col">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold text-gray-800">🛒 Cart ({cart.length} items)</h2>
                 <div className="flex gap-2">
@@ -2172,8 +2089,8 @@ const EnhancedBillingPOSSystem = () => {
                 </div>
               )}
 
-              {/* Enhanced Cart Items */}
-              <div className="flex-1 min-h-0 overflow-y-auto mb-4 space-y-2 virtual-scroll">
+              {/* Cart Items with Scroll */}
+              <div className="flex-1 overflow-y-auto mb-4 space-y-2 virtual-scroll">
                 {cart.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <div className="text-4xl mb-2">🛒</div>
@@ -2193,89 +2110,38 @@ const EnhancedBillingPOSSystem = () => {
                 )}
               </div>
 
-              {/* Enhanced Cart Summary */}
-              {cart.length > 0 && (
-                <div className="space-y-4 border-t border-gray-200 pt-4">
-                  {/* Tax and Discount Controls */}
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <h3 className="font-medium text-gray-800 mb-3">💰 Tax & Discount</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">Tax Rate (%)</label>
-                        <input
-                          type="number"
-                          value={currentTaxRate}
-                          onChange={(e) => updateTabData(activeTab, { taxRate: Number(e.target.value) })}
-                          min="0"
-                          max="100"
-                          step="0.1"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">Discount</label>
-                        <div className="flex gap-1">
-                          <select
-                            value={currentDiscount.type}
-                            onChange={(e) =>
-                              updateTabData(activeTab, {
-                                discount: { ...currentDiscount, type: e.target.value },
-                              })
-                            }
-                            className="w-1/3 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
-                          >
-                            <option value="amount">$</option>
-                            <option value="percentage">%</option>
-                          </select>
-                          <input
-                            type="number"
-                            value={currentDiscount.value}
-                            onChange={(e) =>
-                              updateTabData(activeTab, {
-                                discount: { ...currentDiscount, value: Number(e.target.value) },
-                              })
-                            }
-                            min="0"
-                            step="0.01"
-                            className="w-2/3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                      </div>
-                    </div>
+              {/* Cart Summary - Fixed at bottom */}
+              <div className="mt-auto pt-4 border-t border-gray-200">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-gray-600">
+                    <span>Subtotal:</span>
+                    <span>Rs {calculatedSubtotal.toFixed(2)}</span>
                   </div>
-
-                  {/* Summary */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-gray-600">
-                      <span>Subtotal:</span>
-                      <span className="font-medium">Rs {calculatedSubtotal.toFixed(2)}</span>
-                    </div>
-                    {discountAmount > 0 && (
-                      <div className="flex justify-between text-red-600">
-                        <span>Discount:</span>
-                        <span>-Rs {discountAmount.toFixed(2)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-gray-600">
-                      <span>Tax ({currentTaxRate}%):</span>
-                      <span className="font-medium">Rs {taxAmount.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between font-bold text-lg text-blue-600 border-t border-gray-200 pt-2">
-                      <span>Total:</span>
-                      <span>Rs {grandTotal.toFixed(2)}</span>
-                    </div>
+                  <div className="flex justify-between text-gray-600">
+                    <span>Discount:</span>
+                    <span>- Rs {discountAmount.toFixed(2)}</span>
                   </div>
-
-                  {/* Checkout Button */}
-                  <button
-                    onClick={() => setShowPayment(true)}
-                    disabled={isProcessing}
-                    className="w-full btn-success py-4 px-4 rounded-lg font-semibold text-lg flex items-center justify-center gap-2 hover:scale-105 transition-transform disabled:opacity-50"
-                  >
-                    {isProcessing ? <FastSpinner /> : `💳 Complete Payment - Rs ${grandTotal.toFixed(2)}`}
-                  </button>
+                  <div className="flex justify-between text-gray-600">
+                    <span>Tax ({currentTaxRate}%):</span>
+                    <span>Rs {taxAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-semibold text-gray-800">
+                    <span>Total:</span>
+                    <span>Rs {grandTotal.toFixed(2)}</span>
+                  </div>
                 </div>
-              )}
+                <button
+                  onClick={() => setShowPayment(true)}
+                  disabled={cart.length === 0}
+                  className={`w-full mt-4 py-3 rounded-lg font-semibold text-white transition-colors ${
+                    cart.length === 0
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-green-500 hover:bg-green-600"
+                  }`}
+                >
+                  💰 Complete Payment
+                </button>
+              </div>
             </div>
           </div>
         ) : (
@@ -2291,22 +2157,7 @@ const EnhancedBillingPOSSystem = () => {
             }}
           />
         )}
-      </div>
-
-      {/* Custom Search Modal */}
-      <CustomSearchModal
-        isOpen={showCustomSearchModal}
-        onClose={() => setShowCustomSearchModal(false)}
-        products={products}
-        searchTerm={searchModalTerm}
-        setSearchTerm={setSearchModalTerm}
-        selectedIndex={searchModalSelectedIndex}
-        setSelectedIndex={setSearchModalSelectedIndex}
-        onProductSelect={addToCart}
-        onQuantityAdd={handleQuantityAdd}
-      />
-
-      {/* Enhanced Payment Modal */}
+      </div>      {/* Custom Search Modal */}
       {showPayment && (
         <EnhancedPaymentModal
           grandTotal={grandTotal}
@@ -2376,48 +2227,67 @@ const EnhancedBillingPOSSystem = () => {
 }
 
 // Enhanced Product Card Component
-const EnhancedProductCard = ({ product, onAddToCart, selectedPriceType }) => {
+const EnhancedProductCard = ({ product, onAddToCart, selectedPriceType, isSelected }) => {
   const priceKey = `${selectedPriceType}Price`
   const currentPrice = product[priceKey] || 0
   const isLowStock = product.stock <= 5
+  const cardRef = useRef(null)
+
+  useEffect(() => {
+    if (isSelected && cardRef.current) {
+      cardRef.current.scrollIntoView({
+        block: "nearest",
+        behavior: "smooth",
+        inline: "center"
+      })
+    }
+  }, [isSelected])
 
   return (
     <div
-      className={`product-card border rounded-lg p-4 transition-all duration-150 hover:shadow-md cursor-pointer ${isLowStock ? "product-selected" : "border-gray-200 hover:border-blue-300"}`}
-      style={{
-        backgroundImage: product.image ? `url(${product.image})` : "none",
-      }}
+      ref={cardRef}
+      className={`product-card border rounded p-1.5 transition-all duration-150 hover:shadow-md cursor-pointer h-[85px] ${
+        isSelected
+          ? "ring-1 ring-blue-500 bg-blue-50 border-blue-300"
+          : "border-gray-200 hover:border-blue-300"
+      }`}
       onClick={() => onAddToCart(product)}
+      tabIndex={0}
     >
-      <div className="product-card-content space-y-3">
-        <div className="flex justify-between items-start">
-          <h3 className="font-medium text-gray-800 text-sm leading-tight line-clamp-2">{product.name}</h3>
-          <div className="flex flex-col items-end gap-1">
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${isLowStock ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"}`}>
-              📦 {product.stock}
+      <div className="product-card-content h-full flex flex-col justify-between">
+        <div className="flex justify-between items-start gap-1">
+          <h3 className="font-medium text-gray-800 text-[11px] leading-tight line-clamp-1 flex-1">{product.name}</h3>
+          <div className="flex flex-col items-end">
+            <span className={`px-1 py-0.5 rounded-full text-[9px] font-medium ${
+              isLowStock ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800"
+            }`}>
+              {product.stock}
             </span>
             {isLowStock && (
-              <span className="px-2 py-1 bg-red-500 text-white text-xs rounded-full animate-pulse">⚠️ Low</span>
+              <span className="px-1 py-0.5 bg-red-500 text-white text-[9px] rounded-full animate-pulse">⚠️</span>
             )}
           </div>
         </div>
 
-        <div className="text-xs text-gray-500 space-y-1">
-          <div>🏷️ {product.category}</div>
-          <div>📊 SKU: {product.barcode}</div>
+        <div className="text-[9px] text-gray-500 truncate">
+          {product.category}
         </div>
 
         <div className="flex justify-between items-center">
-          <div className="text-lg font-bold text-blue-600">Rs {currentPrice.toFixed(2)}</div>
+          <div className="text-xs font-bold text-blue-600">₹{currentPrice.toFixed(2)}</div>
           <button
             onClick={(e) => {
               e.stopPropagation()
               onAddToCart(product)
             }}
             disabled={product.stock === 0}
-            className={`px-3 py-1 rounded-lg text-sm font-medium transition-all ${product.stock === 0 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "btn-primary hover:scale-105"}`}
+            className={`px-1 py-0.5 rounded text-[9px] font-medium transition-all ${
+              product.stock === 0
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                : "btn-primary hover:scale-105"
+            }`}
           >
-            {product.stock === 0 ? "❌ Out of Stock" : "➕ Add"}
+            {product.stock === 0 ? "❌" : "➕"}
           </button>
         </div>
       </div>
@@ -2707,7 +2577,7 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
     try {
       setIsProcessing(true)
       const totalAmount = parseFloat(cashAmount || 0) + parseFloat(cardAmount || 0)
-      
+
       if (totalAmount < grandTotal) {
         showToast("Total payment amount is less than the grand total", "error")
         return
@@ -2750,11 +2620,10 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
         <div className="space-y-4">
           <div className="flex space-x-4 mb-4">
             <button
-              className={`flex-1 p-3 rounded-lg border ${
-                paymentMethod === "cash"
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-300"
-              }`}
+              className={`flex-1 p-3 rounded-lg border ${paymentMethod === "cash"
+                ? "border-blue-500 bg-blue-50"
+                : "border-gray-300"
+                }`}
               onClick={() => {
                 setPaymentMethod("cash")
                 setSelectedInput("cash")
@@ -2763,11 +2632,10 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
               Cash
             </button>
             <button
-              className={`flex-1 p-3 rounded-lg border ${
-                paymentMethod === "card"
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-300"
-              }`}
+              className={`flex-1 p-3 rounded-lg border ${paymentMethod === "card"
+                ? "border-blue-500 bg-blue-50"
+                : "border-gray-300"
+                }`}
               onClick={() => {
                 setPaymentMethod("card")
                 setSelectedInput("card")
@@ -2806,9 +2674,8 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
                   type="number"
                   value={cashAmount}
                   onChange={(e) => setCashAmount(e.target.value)}
-                  className={`w-full p-2 border rounded ${
-                    selectedInput === "cashAmount" ? "border-blue-500" : "border-gray-300"
-                  }`}
+                  className={`w-full p-2 border rounded ${selectedInput === "cashAmount" ? "border-blue-500" : "border-gray-300"
+                    }`}
                   placeholder="Enter cash amount"
                   onFocus={() => setSelectedInput("cashAmount")}
                 />
@@ -2848,9 +2715,8 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
                   type="number"
                   value={cardAmount}
                   onChange={(e) => setCardAmount(e.target.value)}
-                  className={`w-full p-2 border rounded ${
-                    selectedInput === "cardAmount" ? "border-blue-500" : "border-gray-300"
-                  }`}
+                  className={`w-full p-2 border rounded ${selectedInput === "cardAmount" ? "border-blue-500" : "border-gray-300"
+                    }`}
                   placeholder="Enter card amount"
                   onFocus={() => setSelectedInput("cardAmount")}
                 />
@@ -2939,8 +2805,8 @@ const EnhancedInvoiceModal = ({ invoice, onClose, onPrintSelection }) => {
       <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto card-shadow fade-in">
         <div className="flex justify-between items-center mb-6 no-print">
           <h2 className="text-2xl font-bold text-gray-800">🧾 Invoice Details</h2>
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="text-gray-500 hover:text-gray-700 text-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 rounded group relative"
           >
             ×

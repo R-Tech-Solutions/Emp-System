@@ -31,6 +31,7 @@ export default function ProductManagement() {
     marginPricePercent: 0,
     retailPrice: 0,
     retailPricePercent: 0,
+    quantity: 0,
   });
 
   // Modal and edit states
@@ -160,7 +161,9 @@ export default function ProductManagement() {
       let price, percent;
 
       if (isPercent) {
+        // When percentage is changed
         percent = value;
+        // Calculate price based on margin (selling price)
         if (type === 'marginPrice' || type === 'salesPrice' || type === 'retailPrice') {
           price = cost / (1 - percent / 100);
         } else {
@@ -178,7 +181,7 @@ export default function ProductManagement() {
       }
       return {
         ...prev,
-        [type]: parseFloat(price), // Round DOWN to nearest whole number
+        [type]: Math.floor(price), // Round DOWN to nearest whole number
         [`${type}Percent`]: parseFloat(percent.toFixed(2)), // Keep percentage as float with 2 decimals
       };
     });
@@ -202,19 +205,18 @@ export default function ProductManagement() {
       }
 
       if (field === 'marginPrice') {
-        updated.marginPrice = parseFloat(price);
+        updated.marginPrice = Math.floor(price);
         updated.marginPricePercent = parseFloat(percent.toFixed(2));
       } else if (field === 'retailPrice') {
-        updated.retailPrice = parseFloat(price);
+        updated.retailPrice = Math.floor(price);
         updated.retailPricePercent = parseFloat(percent.toFixed(2));
       } else if (field === 'salesPrice') {
-        updated.salesPrice = parseFloat(price);
+        updated.salesPrice = Math.floor(price);
         updated.salesPricePercent = parseFloat(percent.toFixed(2));
       }
       return updated;
     });
   }
-
   const handleNewProductChange = (field, value) => {
     if (field === "marginPrice") {
       setNewProduct(prev => ({
@@ -342,6 +344,7 @@ export default function ProductManagement() {
         marginPricePercent: 0,
         retailPrice: 0,
         retailPricePercent: 0,
+        quantity: 0,
       });
       setErrors({});
     } catch (err) {
@@ -662,6 +665,16 @@ export default function ProductManagement() {
                       />
                     </div>
                     <div>
+                      <label className="block text-sm font-medium mb-1">Quantity</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={newProduct.quantity}
+                        onChange={e => handleNewProductChange("quantity", parseInt(e.target.value) || 0)}
+                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
                       <label className="block text-sm font-medium mb-1">Category</label>
                       <select
                         value={newProduct.category}
@@ -725,6 +738,7 @@ export default function ProductManagement() {
                     marginPricePercent: 0,
                     retailPrice: 0,
                     retailPricePercent: 0,
+                    quantity: 0,
                   });
                   setErrors({});
                 }}
@@ -1208,6 +1222,16 @@ export default function ProductManagement() {
                         type="text"
                         value={editProduct.sku}
                         onChange={e => handleEditProductChange("sku", e.target.value)}
+                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Quantity</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={editProduct.quantity}
+                        onChange={e => handleEditProductChange("quantity", parseInt(e.target.value) || 0)}
                         className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>
