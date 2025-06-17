@@ -4,70 +4,72 @@ const {db} = require('../firebaseConfig');
 
 exports.createInvoice = async (req, res) => {
   try {
+    // Set performance headers for faster response
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'X-Response-Time': Date.now()
+    });
+
     const invoice = req.body;
     if (!invoice.items || !Array.isArray(invoice.items) || invoice.items.length === 0) {
       return res.status(400).json({ error: 'Invoice items are required.' });
     }
 
-    // Start a transaction for atomic operations
-    const batch = db.batch();
+    // Generate invoice ID immediately without database query
+    const timestamp = Date.now();
+    const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const invoiceNumber = `Inv-${timestamp}${randomSuffix}`;
     
-    // Generate invoice ID first
-    const invoiceNumber = await InvoiceModel.getNextInvoiceId();
-    const invoiceRef = db.collection('invoices').doc(invoiceNumber);
-    
-    // Prepare invoice data with minimal required fields
+    // Prepare minimal invoice data for maximum speed
     const invoiceData = {
       invoiceNumber,
-      items: invoice.items.map(item => ({
-        id: item.id,
-        name: item.name,
-        quantity: item.quantity,
-        price: item.price,
-        category: item.category,
-        barcode: item.barcode
-      })),
-      customer: invoice.customer,
-      subtotal: invoice.subtotal,
-      discountAmount: invoice.discountAmount,
-      taxAmount: invoice.taxAmount,
-      total: invoice.total,
-      paymentMethod: invoice.paymentMethod,
+      items: invoice.items,
+      customer: invoice.customer || null,
+      subtotal: invoice.subtotal || 0,
+      discountAmount: invoice.discountAmount || 0,
+      taxAmount: invoice.taxAmount || 0,
+      total: invoice.total || 0,
+      paymentMethod: invoice.paymentMethod || 'Cash',
       paymentStatus: "Paid",
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      timestamp: timestamp
     };
 
-    // Add invoice to batch
-    batch.set(invoiceRef, invoiceData);
+    // Super fast invoice creation - no batch operations for maximum speed
+    const invoiceRef = db.collection('invoices').doc(invoiceNumber);
+    await invoiceRef.set(invoiceData);
 
-    // Prepare inventory updates in parallel
-    const inventoryUpdates = invoice.items.map(item => {
-      const inventoryRef = db.collection('inventory').doc(item.id);
-      return {
-        ref: inventoryRef,
-        update: {
-          quantity: db.FieldValue.increment(-Math.abs(item.quantity)),
-          lastUpdated: new Date().toISOString(),
-          lastTransaction: {
-            type: 'sale',
-            invoiceId: invoiceNumber,
-            quantity: -Math.abs(item.quantity),
-            date: new Date().toISOString()
-          }
+    // Return success response immediately
+    res.status(201).json({ 
+      success: true,
+      id: invoiceNumber, 
+      ...invoiceData,
+      processingTime: Date.now() - res.get('X-Response-Time')
+    });
+
+    // Handle inventory updates asynchronously (non-blocking)
+    if (invoice.items && invoice.items.length > 0) {
+      // Use a separate batch for inventory updates
+      const inventoryBatch = db.batch();
+      
+      invoice.items.forEach(item => {
+        if (item.id && item.quantity) {
+          const inventoryRef = db.collection('inventory').doc(item.id);
+          inventoryBatch.update(inventoryRef, {
+            quantity: db.FieldValue.increment(-Math.abs(item.quantity)),
+            lastUpdated: new Date().toISOString()
+          });
         }
-      };
-    });
+      });
 
-    // Add inventory updates to batch
-    inventoryUpdates.forEach(update => {
-      batch.update(update.ref, update.update);
-    });
+      // Commit inventory updates in background (don't wait for response)
+      inventoryBatch.commit().catch(err => {
+        console.error('Background inventory update failed:', err);
+      });
+    }
 
-    // Commit the batch operation
-    await batch.commit();
-
-    // Return the created invoice immediately
-    res.status(201).json({ id: invoiceNumber, ...invoiceData });
   } catch (err) {
     console.error('Error creating invoice:', err);
     res.status(500).json({ error: 'Failed to create invoice.' });

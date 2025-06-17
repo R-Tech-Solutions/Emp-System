@@ -1481,124 +1481,67 @@ const EnhancedBillingPOSSystem = () => {
     [barcodeInput, products, addToCart, showToast],
   )
 
-  // Enhanced completePayment function
+  // Enhanced completePayment function - Super Fast Version
   const completePayment = useCallback(
     async (paymentData) => {
       setIsProcessing(true)
       try {
-        // Create invoice object with minimal required data
+        // Create minimal invoice object for maximum speed
         const invoice = {
           items: cart.map((item) => ({
             id: item.id,
             name: item.name,
             quantity: item.quantity,
             price: item.discountedPrice || item.price,
-            originalPrice: item.price,
-            discountedPrice: item.discountedPrice || item.price,
             category: item.category,
             barcode: item.barcode,
           })),
-          customer: currentSelectedCustomer
-            ? { id: currentSelectedCustomer.id, name: currentSelectedCustomer.name }
-            : null,
+          customer: currentSelectedCustomer ? { 
+            id: currentSelectedCustomer.id, 
+            name: currentSelectedCustomer.name 
+          } : null,
           subtotal: calculatedSubtotal,
           discountAmount: discountAmount,
           taxAmount,
           total: grandTotal,
           paymentMethod: paymentData.method,
           paymentStatus: "Paid",
-          date: new Date(),
-          createdAt: new Date().toISOString(),
-          payments: paymentData.payments || [],
+          date: new Date().toISOString(),
         }
 
-        // Optimize API call with timeout and error handling
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        // Super fast API call with optimized headers
+        const response = await fetch(`${backEndURL}/api/invoices`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(invoice)
+        });
 
-        try {
-          const response = await Promise.race([
-            fetch(`${backEndURL}/api/invoices`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Request-Type": "invoice-creation"
-              },
-              body: JSON.stringify(invoice),
-              signal: controller.signal
-            }),
-            new Promise((_, reject) =>
-              setTimeout(() => reject(new Error('Request timeout')), 3000)
-            )
-          ]);
-
-          clearTimeout(timeoutId);
-
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-
-          const savedInvoice = await response.json();
-          invoice.id = savedInvoice.id;
-
-          // Update inventory in parallel with optimized error handling
-          const inventoryUpdates = await Promise.all(
-            cart.map(async item => {
-              try {
-                const response = await fetch(`${backEndURL}/api/inventory/update`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    productId: item.id,
-                    quantity: -item.quantity,
-                    type: "sale",
-                    invoiceId: savedInvoice.id
-                  })
-                });
-
-                if (!response.ok) {
-                  throw new Error(`Failed to update inventory for item ${item.id}`);
-                }
-
-                const updatedInventory = await response.json();
-
-                // Update local products state with new quantity
-                setProducts(prevProducts =>
-                  prevProducts.map(product =>
-                    product.id === item.id
-                      ? { ...product, quantity: updatedInventory.quantity }
-                      : product
-                  )
-                );
-
-                return updatedInventory;
-              } catch (error) {
-                console.error(`Failed to update inventory for item ${item.id}:`, error);
-                return null;
-              }
-            })
-          );
-
-          // Update UI immediately
-          setPendingInvoice(invoice);
-          setShowPrintSelection(true);
-          setShowPayment(false);
-          handleClearCart();
-          showToast("Payment completed successfully!", "success");
-
-        } catch (error) {
-          if (error.name === 'AbortError' || error.message.includes('timeout')) {
-            console.warn("Request timed out, proceeding with offline mode");
-            invoice.id = `INV-${Date.now()}`;
-            setPendingInvoice(invoice);
-            setShowPrintSelection(true);
-            setShowPayment(false);
-            handleClearCart();
-            showToast("Payment completed with offline mode!", "warning");
-          } else {
-            throw error;
-          }
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
+
+        const savedInvoice = await response.json();
+        
+        // Update UI immediately for instant feedback
+        setPendingInvoice({ ...invoice, id: savedInvoice.id });
+        setShowPrintSelection(true);
+        setShowPayment(false);
+        handleClearCart();
+        showToast("Payment completed successfully!", "success");
+
+        // Update local products state immediately for instant UI feedback
+        setProducts(prevProducts =>
+          prevProducts.map(product => {
+            const cartItem = cart.find(item => item.id === product.id);
+            if (cartItem) {
+              return { ...product, stock: Math.max(0, product.stock - cartItem.quantity) };
+            }
+            return product;
+          })
+        );
+
       } catch (error) {
         console.error("Error completing payment:", error);
         showToast("Failed to complete payment", "error");
@@ -1615,7 +1558,7 @@ const EnhancedBillingPOSSystem = () => {
       grandTotal,
       handleClearCart,
       showToast,
-      setProducts, // Add setProducts to dependencies
+      setProducts,
     ],
   )
 
@@ -2138,7 +2081,7 @@ const EnhancedBillingPOSSystem = () => {
         </div>
       )}
 
-      <div className="container mx-auto px-4 py-6 h-screen overflow-hidden">
+      <div className="container mx-auto px-4 h-screen overflow-hidden">
         {activeMainTab === "pos" && (
           <FastTabComponent
             tabs={tabs}
@@ -2152,7 +2095,7 @@ const EnhancedBillingPOSSystem = () => {
         )}
 
         {activeMainTab === "pos" ? (
-          <div className="grid grid-cols-2 gap-3 h-[calc(100vh-8rem)] w-auto">
+          <div className="grid grid-cols-2 gap-3 h-[calc(100vh-2rem)] w-auto">
             {/* Products Section */}
             <div className="bg-white rounded-lg p-6 card-shadow flex flex-col">
               <div className="flex justify-between items-center mb-4">
