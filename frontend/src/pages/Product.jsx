@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { Plus, Search, X, Edit, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Search, X, Edit, Trash2, ChevronDown, ChevronUp, Eye } from "lucide-react";
 import { backEndURL } from "../Backendurl";
 
 export default function ProductManagement() {
@@ -48,6 +48,11 @@ export default function ProductManagement() {
   // Constants
   const productCategories = ["General", "Electronics", "Office", "Services", "Hardware", "Software"];
   const productTypes = ["Goods", "Service"];
+
+  // New state for identifiers modal
+  const [identifiersModalOpen, setIdentifiersModalOpen] = useState(false);
+  const [selectedProductIdentifiers, setSelectedProductIdentifiers] = useState(null);
+  const [isLoadingIdentifiers, setIsLoadingIdentifiers] = useState(false);
 
   // Helper to calculate margin percentage
   const getMarginPercent = (price, cost) => {
@@ -131,30 +136,6 @@ export default function ProductManagement() {
   };
 
   // Helper to sync price and percent for all price types
-  // const syncPricePercent = (type, value, isPercent) => {
-  //   setNewProduct(prev => {
-  //     const cost = parseFloat(prev.costPrice) || 0;
-
-  //     let price = prev[type];
-  //     let percent = prev[`${type}Percent`];
-
-  //     if (isPercent) {
-  //       // Update from % -> calculate price using margin formula
-  //       percent = value;
-  //       price = cost > 0 ? (cost / (1 - percent / 100)).toFixed(2) : 0;
-  //     } else {
-  //       // Update from price -> calculate margin %
-  //       price = value;
-  //       percent = cost > 0 && price > 0 ? (((price - cost) / price) * 100).toFixed(2) : 0;
-  //     }
-
-  //     return {
-  //       ...prev,
-  //       [type]: parseFloat(price),
-  //       [`${type}Percent`]: parseFloat(percent),
-  //     };
-  //   });
-  // };
   const syncPricePercent = (type, value, isPercent) => {
     setNewProduct(prev => {
       const cost = parseFloat(prev.costPrice) || 0;
@@ -187,7 +168,6 @@ export default function ProductManagement() {
     });
   };
 
-  
   function syncEditPricePercent(field, value, isPercent) {
     setEditProduct(prev => {
       let updated = { ...prev };
@@ -413,6 +393,31 @@ export default function ProductManagement() {
   const renderSortIcon = (key) => {
     if (sortConfig.key !== key) return null;
     return sortConfig.direction === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />;
+  };
+
+  const handleViewIdentifiers = async (product) => {
+    setIsLoadingIdentifiers(true);
+    try {
+      const [imeiResponse, serialResponse] = await Promise.all([
+        axios.get(`${backEndURL}/api/identifiers/imei/${product.id}`),
+        axios.get(`${backEndURL}/api/identifiers/serial/${product.id}`)
+      ]);
+
+      // Debug logs
+      console.log('IMEI Response:', imeiResponse.data);
+      console.log('Serial Response:', serialResponse.data);
+
+      setSelectedProductIdentifiers({
+        product,
+        imei: imeiResponse.data,
+        serial: serialResponse.data
+      });
+      setIdentifiersModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching identifiers:', error);
+    } finally {
+      setIsLoadingIdentifiers(false);
+    }
   };
 
   return (
@@ -929,9 +934,15 @@ export default function ProductManagement() {
                         <td className="py-4">
                           {product.productType === "Goods" ? (product.toWeighWithScale ? "Yes" : "No") : "-"}
                         </td>
-
                         <td className="py-4">
                           <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleViewIdentifiers(product)}
+                            className="text-blue-400 hover:text-blue-300"
+                            title="View Identifiers"
+                          >
+                            <Eye size={16} />
+                          </button>
                             <button
                               onClick={() => handleEditProduct(product)}
                               className="text-blue-400 hover:text-blue-300"
@@ -1367,6 +1378,165 @@ export default function ProductManagement() {
                 {isLoading ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Identifiers Modal */}
+      {identifiersModalOpen && selectedProductIdentifiers && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold">
+                Identifiers for {selectedProductIdentifiers.product.name}
+              </h2>
+              <button
+                onClick={() => setIdentifiersModalOpen(false)}
+                className="text-gray-400 hover:text-gray-200"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {isLoadingIdentifiers ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* IMEI Numbers */}
+                {selectedProductIdentifiers.imei && (
+                  <div>
+                    <h3 className="text-md font-medium mb-3">IMEI Numbers</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="text-left text-gray-400 border-b border-gray-700">
+                            <th className="pb-2">IMEI</th>
+                            <th className="pb-2">Status</th>
+                            <th className="pb-2">Purchase ID</th>
+                            <th className="pb-2">Created At</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedProductIdentifiers.imei.identifiers?.map((item, index) => {
+                            // Debug log for each item's createdAt
+                            console.log('Item createdAt:', item.createdAt);
+                            return (
+                              <tr key={index} className="border-b border-gray-700">
+                                <td className="py-2">{item.imei}</td>
+                                <td className="py-2">
+                                  <span className={`px-2 py-1 rounded-full text-xs ${
+                                    item.sold ? 'bg-red-900 text-red-200' : 'bg-green-900 text-green-200'
+                                  }`}>
+                                    {item.sold ? 'Sold' : 'Available'}
+                                  </span>
+                                </td>
+                                <td className="py-2">{item.purchaseId || '-'}</td>
+                                <td className="py-2">
+                                  {item.createdAt ? (
+                                    typeof item.createdAt === 'string' 
+                                      ? item.createdAt
+                                      : typeof item.createdAt.toDate === 'function'
+                                        ? item.createdAt.toDate().toLocaleString('en-US', {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            second: '2-digit',
+                                            hour12: false
+                                          })
+                                        : new Date(item.createdAt).toLocaleString('en-US', {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            second: '2-digit',
+                                            hour12: false
+                                          })
+                                  ) : '-'}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Serial Numbers */}
+                {selectedProductIdentifiers.serial && (
+                  <div>
+                    <h3 className="text-md font-medium mb-3">Serial Numbers</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="text-left text-gray-400 border-b border-gray-700">
+                            <th className="pb-2">Serial</th>
+                            <th className="pb-2">Status</th>
+                            <th className="pb-2">Purchase ID</th>
+                            <th className="pb-2">Created At</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedProductIdentifiers.serial.identifiers?.map((item, index) => {
+                            // Debug log for each item's createdAt
+                            console.log('Item createdAt:', item.createdAt);
+                            return (
+                              <tr key={index} className="border-b border-gray-700">
+                                <td className="py-2">{item.serial}</td>
+                                <td className="py-2">
+                                  <span className={`px-2 py-1 rounded-full text-xs ${
+                                    item.sold ? 'bg-red-900 text-red-200' : 'bg-green-900 text-green-200'
+                                  }`}>
+                                    {item.sold ? 'Sold' : 'Available'}
+                                  </span>
+                                </td>
+                                <td className="py-2">{item.purchaseId || '-'}</td>
+                                <td className="py-2">
+                                  {item.createdAt ? (
+                                    typeof item.createdAt === 'string' 
+                                      ? item.createdAt
+                                      : typeof item.createdAt.toDate === 'function'
+                                        ? item.createdAt.toDate().toLocaleString('en-US', {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            second: '2-digit',
+                                            hour12: false
+                                          })
+                                        : new Date(item.createdAt).toLocaleString('en-US', {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            second: '2-digit',
+                                            hour12: false
+                                          })
+                                  ) : '-'}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {(!selectedProductIdentifiers.imei && !selectedProductIdentifiers.serial) && (
+                  <div className="text-center py-8 text-gray-400">
+                    No identifiers found for this product
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
