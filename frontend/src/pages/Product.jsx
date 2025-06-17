@@ -31,7 +31,7 @@ export default function ProductManagement() {
     marginPricePercent: 0,
     retailPrice: 0,
     retailPricePercent: 0,
-    quantity: 0,
+    productIdentifierType: "none",
   });
 
   // Modal and edit states
@@ -344,7 +344,7 @@ export default function ProductManagement() {
         marginPricePercent: 0,
         retailPrice: 0,
         retailPricePercent: 0,
-        quantity: 0,
+        productIdentifierType: "none",
       });
       setErrors({});
     } catch (err) {
@@ -517,6 +517,53 @@ export default function ProductManagement() {
                           />
                           {errors.barcode && <p className="mt-1 text-sm text-red-400">{errors.barcode}</p>}
                         </div>
+                        <div className="mt-4">
+                          <label className="block text-sm font-medium mb-2">Additional Product Identifier</label>
+                          <div className="space-y-2">
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id="none"
+                                name="productIdentifierType"
+                                value="none"
+                                checked={newProduct.productIdentifierType === "none"}
+                                onChange={e => handleNewProductChange("productIdentifierType", e.target.value)}
+                                className="h-4 w-4 text-blue-600"
+                              />
+                              <label htmlFor="none" className="ml-2 text-sm">
+                                None
+                              </label>
+                            </div>
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id="serial"
+                                name="productIdentifierType"
+                                value="serial"
+                                checked={newProduct.productIdentifierType === "serial"}
+                                onChange={e => handleNewProductChange("productIdentifierType", e.target.value)}
+                                className="h-4 w-4 text-blue-600"
+                              />
+                              <label htmlFor="serial" className="ml-2 text-sm">
+                                Product with Serial Number
+                              </label>
+                            </div>
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id="imei"
+                                name="productIdentifierType"
+                                value="imei"
+                                checked={newProduct.productIdentifierType === "imei"}
+                                onChange={e => handleNewProductChange("productIdentifierType", e.target.value)}
+                                className="h-4 w-4 text-blue-600"
+                              />
+                              <label htmlFor="imei" className="ml-2 text-sm">
+                                Product with IMEI Number
+                              </label>
+                            </div>
+                          </div>
+                        </div>
                       </>
                     )}
                     <div>
@@ -665,16 +712,6 @@ export default function ProductManagement() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Quantity</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={newProduct.quantity}
-                        onChange={e => handleNewProductChange("quantity", parseInt(e.target.value) || 0)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
                       <label className="block text-sm font-medium mb-1">Category</label>
                       <select
                         value={newProduct.category}
@@ -738,7 +775,7 @@ export default function ProductManagement() {
                     marginPricePercent: 0,
                     retailPrice: 0,
                     retailPricePercent: 0,
-                    quantity: 0,
+                    productIdentifierType: "none",
                   });
                   setErrors({});
                 }}
@@ -1079,6 +1116,53 @@ export default function ProductManagement() {
                           />
                           {errors.barcode && <p className="mt-1 text-sm text-red-400">{errors.barcode}</p>}
                         </div>
+                        <div className="mt-4">
+                          <label className="block text-sm font-medium mb-2">Additional Product Identifier</label>
+                          <div className="space-y-2">
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id="editNone"
+                                name="editProductIdentifierType"
+                                value="none"
+                                checked={editProduct.productIdentifierType === "none"}
+                                onChange={e => handleEditProductChange("productIdentifierType", e.target.value)}
+                                className="h-4 w-4 text-blue-600"
+                              />
+                              <label htmlFor="editNone" className="ml-2 text-sm">
+                                None
+                              </label>
+                            </div>
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id="editSerial"
+                                name="editProductIdentifierType"
+                                value="serial"
+                                checked={editProduct.productIdentifierType === "serial"}
+                                onChange={e => handleEditProductChange("productIdentifierType", e.target.value)}
+                                className="h-4 w-4 text-blue-600"
+                              />
+                              <label htmlFor="editSerial" className="ml-2 text-sm">
+                                Product with Serial Number
+                              </label>
+                            </div>
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id="editImei"
+                                name="editProductIdentifierType"
+                                value="imei"
+                                checked={editProduct.productIdentifierType === "imei"}
+                                onChange={e => handleEditProductChange("productIdentifierType", e.target.value)}
+                                className="h-4 w-4 text-blue-600"
+                              />
+                              <label htmlFor="editImei" className="ml-2 text-sm">
+                                Product with IMEI Number
+                              </label>
+                            </div>
+                          </div>
+                        </div>
                       </>
                     )}
                     <div>
@@ -1222,16 +1306,6 @@ export default function ProductManagement() {
                         type="text"
                         value={editProduct.sku}
                         onChange={e => handleEditProductChange("sku", e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Quantity</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={editProduct.quantity}
-                        onChange={e => handleEditProductChange("quantity", parseInt(e.target.value) || 0)}
                         className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                     </div>

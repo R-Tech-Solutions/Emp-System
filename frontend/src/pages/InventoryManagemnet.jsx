@@ -16,7 +16,7 @@ export default function InventoryManagement() {
     const [formData, setFormData] = useState({
         name: "",
         category: "",
-        quantity: "",
+        totalQuantity: "",
         costPrice: "",
         marginPrice: "",
         retailPrice: "",
@@ -79,15 +79,15 @@ export default function InventoryManagement() {
         }
     }
 
-    const getStatus = (quantity) => {
-        if (quantity === 0) return "Out of Stock"
-        if (quantity <= 5) return "Low Stock"
+    const getStatus = (totalQuantity) => {
+        if (totalQuantity === 0) return "Out of Stock"
+        if (totalQuantity <= 5) return "Low Stock"
         return "In Stock"
     }
 
     const handleSubmit = (e) => {
         e.preventDefault()
-        const quantity = Number.parseInt(formData.quantity)
+        const totalQuantity = Number.parseInt(formData.totalQuantity)
         const costPrice = Number.parseFloat(formData.costPrice)
         const wholesalePrice = Number.parseFloat(formData.wholesalePrice)
         const retailPrice = Number.parseFloat(formData.retailPrice)
@@ -100,12 +100,12 @@ export default function InventoryManagement() {
                         ? {
                             ...item,
                             ...formData,
-                            quantity,
+                            totalQuantity,
                             costPrice,
                             wholesalePrice,
                             retailPrice,
                             salesPrice,
-                            status: getStatus(quantity),
+                            status: getStatus(totalQuantity),
                         }
                         : item,
                 ),
@@ -115,17 +115,17 @@ export default function InventoryManagement() {
             const newItem = {
                 id: Date.now(),
                 ...formData,
-                quantity,
+                totalQuantity,
                 costPrice,
                 wholesalePrice,
                 retailPrice,
                 salesPrice,
-                status: getStatus(quantity),
+                status: getStatus(totalQuantity),
             }
             setItems([...items, newItem])
         }
 
-        setFormData({ name: "", category: "", quantity: "", costPrice: "", wholesalePrice: "", retailPrice: "", salesPrice: "" })
+        setFormData({ name: "", category: "", totalQuantity: "", costPrice: "", wholesalePrice: "", retailPrice: "", salesPrice: "" })
         setShowAddForm(false)
     }
 
@@ -134,7 +134,7 @@ export default function InventoryManagement() {
         setFormData({
             name: item.name,
             category: item.category,
-            quantity: item.quantity.toString(),
+            totalQuantity: item.totalQuantity.toString(),
             costPrice: item.costPrice.toString(),
             wholesalePrice: item.wholesalePrice.toString(),
             retailPrice: item.retailPrice.toString(),
@@ -148,15 +148,15 @@ export default function InventoryManagement() {
     }
 
     const resetForm = () => {
-        setFormData({ name: "", category: "", quantity: "", costPrice: "", wholesalePrice: "", retailPrice: "", salesPrice: "" })
+        setFormData({ name: "", category: "", totalQuantity: "", costPrice: "", wholesalePrice: "", retailPrice: "", salesPrice: "" })
         setEditingItem(null)
         setShowAddForm(false)
     }
 
-    const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
-    const totalValue = items.reduce((sum, item) => sum + item.quantity * item.retailPrice, 0)
-    const lowStockItems = items.filter((item) => item.quantity <= 5 && item.quantity > 0).length
-    const outOfStockItems = items.filter((item) => item.quantity === 0).length
+    const totalItems = items.reduce((sum, item) => sum + item.totalQuantity, 0)
+    const totalValue = items.reduce((sum, item) => sum + item.totalQuantity * item.retailPrice, 0)
+    const lowStockItems = items.filter((item) => item.totalQuantity <= 5 && item.totalQuantity > 0).length
+    const outOfStockItems = items.filter((item) => item.totalQuantity === 0).length
 
     // Fetch supplier details for each history entry
     const fetchSuppliersForHistory = async (history) => {
@@ -192,7 +192,7 @@ export default function InventoryManagement() {
     const calculateValuations = () => {
         return items.map(item => {
             const inv = inventory.find(i => (i.productId === item.sku || i.productId === item.id));
-            const quantity = inv ? inv.quantity : 0;
+            const totalQuantity = inv ? inv.totalQuantity : 0;
             const costPrice = Number(item.costPrice || 0);
             const wholesalePrice = Number(item.marginPrice || 0);
             const retailPrice = Number(item.retailPrice || 0);
@@ -201,11 +201,11 @@ export default function InventoryManagement() {
             return {
                 id: item.sku || item.id,
                 name: item.name,
-                quantity,
-                costValuation: quantity * costPrice,
-                wholesaleValuation: quantity * wholesalePrice,
-                retailValuation: quantity * retailPrice,
-                salesValuation: quantity * salesPrice
+                totalQuantity,
+                costValuation: totalQuantity * costPrice,
+                wholesaleValuation: totalQuantity * wholesalePrice,
+                retailValuation: totalQuantity * retailPrice,
+                salesValuation: totalQuantity * salesPrice
             };
         });
     };
@@ -235,7 +235,7 @@ export default function InventoryManagement() {
             ...valuations.map(v => ({
                 'Product ID': v.id,
                 'Product Name': v.name,
-                'Quantity': v.quantity,
+                'Quantity': v.totalQuantity,
                 'Cost Valuation': `Rs ${v.costValuation.toFixed(2)}`,
                 'Wholesale Valuation': `Rs ${v.wholesaleValuation.toFixed(2)}`,
                 'Retail Valuation': `Rs ${v.retailValuation.toFixed(2)}`,
@@ -280,7 +280,7 @@ export default function InventoryManagement() {
                 ...valuations.map(v => [
                     v.id,
                     v.name,
-                    v.quantity,
+                    v.totalQuantity,
                     `Rs ${v.costValuation.toFixed(2)}`,
                     `Rs ${v.wholesaleValuation.toFixed(2)}`,
                     `Rs ${v.retailValuation.toFixed(2)}`,
@@ -381,7 +381,7 @@ export default function InventoryManagement() {
                                 <tr>
                                     <td>${v.id}</td>
                                     <td>${v.name}</td>
-                                    <td>${v.quantity}</td>
+                                    <td>${v.totalQuantity}</td>
                                     <td>Rs ${v.costValuation.toFixed(2)}</td>
                                     <td>Rs ${v.wholesaleValuation.toFixed(2)}</td>
                                     <td>Rs ${v.retailValuation.toFixed(2)}</td>
@@ -506,7 +506,7 @@ export default function InventoryManagement() {
                                             Sales Price
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                            quantity
+                                            totalQuantity
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                                             Status
@@ -523,9 +523,9 @@ export default function InventoryManagement() {
                                     {filteredItems.map((item) => {
                                         // Find the matching inventory item
                                         const inv = inventory.find(i => (i.productId === item.sku || i.productId === item.id));
-                                        const quantity = inv ? inv.quantity : 0;
+                                        const totalQuantity = inv ? inv.totalQuantity : 0;
                                         const costPrice = Number(item.costPrice || 0);
-                                        const totalValue = quantity * costPrice;
+                                        const totalValue = totalQuantity * costPrice;
 
                                         return (
                                             <tr key={item.sku || item.id} className="hover:bg-gray-700 transition-colors duration-200">
@@ -536,10 +536,10 @@ export default function InventoryManagement() {
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">Rs {Number(item.marginPrice || 0).toFixed(2)}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">Rs {Number(item.retailPrice || 0).toFixed(2)}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">Rs {Number(item.salesPrice || 0).toFixed(2)}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{quantity}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{totalQuantity}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(getStatus(quantity))}`}>
-                                                        {getStatus(quantity)}
+                                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(getStatus(totalQuantity))}`}>
+                                                        {getStatus(totalQuantity)}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
@@ -610,7 +610,7 @@ export default function InventoryManagement() {
                         {inventoryDetails ? (
                             <div className="mb-4">
                                 <div className="text-gray-400 text-sm">Total Quantity</div>
-                                <div className="text-white font-semibold mb-2">{inventoryDetails.quantity}</div>
+                                <div className="text-white font-semibold mb-2">{inventoryDetails.totalQuantity}</div>
                                 <div className="text-gray-400 text-sm mb-1">History</div>
                                 <div className="max-h-48 overflow-y-auto">
                                     <table className="w-full text-sm text-gray-200">
@@ -626,7 +626,7 @@ export default function InventoryManagement() {
                                             {historySuppliers.map((h, idx) => (
                                                 <tr key={idx}>
                                                     <td className="py-1 px-2">{new Date(h.date).toLocaleString()}</td>
-                                                    <td className="py-1 px-2">{h.quantity}</td>
+                                                    <td className="py-1 px-2">{h.totalQuantity}</td>
                                                     <td className="py-1 px-2">{h.supplierEmail}</td>
                                                     <td className="py-1 px-2">{h.supplier ? h.supplier.name : <span className="text-gray-500">Not found</span>}</td>
                                                 </tr>
@@ -697,7 +697,7 @@ export default function InventoryManagement() {
                                         <tr key={item.id} className="hover:bg-gray-800">
                                             <td className="px-4 py-2">{item.id}</td>
                                             <td className="px-4 py-2">{item.name}</td>
-                                            <td className="px-4 py-2 text-right">{item.quantity}</td>
+                                            <td className="px-4 py-2 text-right">{item.totalQuantity}</td>
                                             <td className="px-4 py-2 text-right">Rs {item.costValuation.toFixed(2)}</td>
                                             <td className="px-4 py-2 text-right">Rs {item.wholesaleValuation.toFixed(2)}</td>
                                             <td className="px-4 py-2 text-right">Rs {item.retailValuation.toFixed(2)}</td>

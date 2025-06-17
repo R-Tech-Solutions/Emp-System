@@ -4,42 +4,12 @@ import { useState, useEffect } from "react"
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { backEndURL } from "../Backendurl";
+import * as XLSX from 'xlsx';
 
 export default function PurchaseApp() {
     const [currentView, setCurrentView] = useState("list") // "list", "create", "details"
     const [selectedPurchaseId, setSelectedPurchaseId] = useState(null)
     const [purchases, setPurchases] = useState([
-        {
-            id: "PUR-001",
-            date: "2024-01-15",
-            name: "John Doe",
-            email: "john@example.com",
-            phone: "555-0123",
-            items: [
-                { name: "Premium Wireless Headphones", quantity: 1, price: 299.99, total: 299.99 },
-                { name: "USB-C Cable", quantity: 2, price: 24.99, total: 49.98 },
-            ],
-            subtotal: 349.97,
-            shipping: 15.99,
-            tax: 28.0,
-            total: 393.96,
-            billingAddress: "123 Main St, New York, NY 10001",
-            shippingAddress: "123 Main St, New York, NY 10001",
-        },
-        {
-            id: "PUR-002",
-            date: "2024-01-14",
-            name: "Jane Smith",
-            email: "jane@example.com",
-            phone: "555-0456",
-            items: [{ name: "Bluetooth Speaker", quantity: 1, price: 149.99, total: 149.99 }],
-            subtotal: 149.99,
-            shipping: 9.99,
-            tax: 12.0,
-            total: 171.98,
-            billingAddress: "456 Oak Ave, Los Angeles, CA 90210",
-            shippingAddress: "456 Oak Ave, Los Angeles, CA 90210",
-        },
     ])
 
     // Form state for creating new purchase
@@ -67,6 +37,10 @@ export default function PurchaseApp() {
     })
 
     const [cartItems, setCartItems] = useState([])
+    const [identifierModalOpen, setIdentifierModalOpen] = useState(false)
+    const [currentItem, setCurrentItem] = useState(null)
+    const [productIdentifiers, setProductIdentifiers] = useState({}) // { productId: { identifiers: [] } }
+    const [pendingQuantityUpdates, setPendingQuantityUpdates] = useState({}) // { productId: newQuantity }
 
     // Add this new state for price list selection
     const [priceList, setPriceList] = useState("Standard")
@@ -251,12 +225,130 @@ export default function PurchaseApp() {
         }))
     }
 
-    const updateItemQuantity = (id, newQuantity) => {
+    const updateItemQuantity = async (id, newQuantity) => {
         if (newQuantity < 1) return
+        
+        const item = cartItems.find(item => item.id === id)
+        if (!item) return
+
+        // Store the pending quantity update
+        setPendingQuantityUpdates(prev => ({
+            ...prev,
+            [id]: newQuantity
+        }))
+
+        // Update the display quantity immediately
         setCartItems((prev) =>
             prev.map((item) => (item.id === id ? { ...item, quantity: newQuantity, total: item.price * newQuantity } : item)),
         )
     }
+
+    const confirmQuantityUpdate = async (id) => {
+        const newQuantity = pendingQuantityUpdates[id]
+        if (!newQuantity) return
+
+        const item = cartItems.find(item => item.id === id)
+        if (!item) return
+
+        // Fetch product details to check identifier type
+        try {
+            const response = await fetch(`${backEndURL}/api/products/${item.sku}`)
+            const product = await response.json()
+            
+            if (product.productIdentifierType === 'serial' || product.productIdentifierType === 'imei') {
+                setCurrentItem({ 
+                    ...item, 
+                    newQuantity, 
+                    productIdentifierType: product.productIdentifierType 
+                })
+                setIdentifierModalOpen(true)
+            } else {
+                // If not serial or imei, just confirm the quantity
+                setCartItems((prev) =>
+                    prev.map((item) => 
+                        item.id === id 
+                            ? { ...item, quantity: newQuantity, total: item.price * newQuantity } 
+                            : item
+                    )
+                )
+            }
+        } catch (error) {
+            console.error('Error fetching product details:', error)
+        }
+
+        // Clear the pending update
+        setPendingQuantityUpdates(prev => {
+            const newState = { ...prev }
+            delete newState[id]
+            return newState
+        })
+    }
+
+    const handleIdentifiersSubmit = async (identifiers) => {
+        if (!currentItem) return;
+
+        try {
+            // Generate a temporary purchase ID if not available
+            const tempPurchaseId = `TEMP-${Date.now()}`;
+
+            // Save identifiers to the appropriate collection
+            const response = await fetch(`${backEndURL}/api/identifiers/save`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    productId: currentItem.sku,
+                    identifiers: identifiers.map(i => i.value),
+                    type: currentItem.productIdentifierType,
+                    purchaseId: tempPurchaseId // Add temporary purchase ID
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save identifiers');
+            }
+
+            // Update the cart item with new identifiers
+            setCartItems((prev) =>
+                prev.map((item) => {
+                    if (item.id === currentItem.id) {
+                        const existingIdentifiers = item.existingIdentifiers || [];
+                        const newIdentifiers = identifiers.map(i => ({
+                            value: i.value,
+                            purchaseId: tempPurchaseId // Store purchase ID with identifier
+                        }));
+                        return {
+                            ...item,
+                            quantity: currentItem.newQuantity,
+                            total: item.price * currentItem.newQuantity,
+                            existingIdentifiers: [...existingIdentifiers, ...newIdentifiers]
+                        };
+                    }
+                    return item;
+                })
+            );
+
+            setProductIdentifiers(prev => ({
+                ...prev,
+                [currentItem.id]: { 
+                    identifiers: [
+                        ...(prev[currentItem.id]?.identifiers || []),
+                        ...identifiers.map(i => ({
+                            ...i,
+                            purchaseId: tempPurchaseId // Store purchase ID with identifier
+                        }))
+                    ]
+                }
+            }));
+
+            setIdentifierModalOpen(false);
+            setCurrentItem(null);
+        } catch (error) {
+            console.error('Error saving identifiers:', error);
+            alert('Failed to save identifiers. Please try again.');
+        }
+    };
 
     const removeItem = (id) => {
         setCartItems((prev) => prev.filter((item) => item.id !== id))
@@ -276,7 +368,8 @@ export default function PurchaseApp() {
                 name: item.name,
                 quantity: item.quantity,
                 price: item.price,
-                total: item.total
+                total: item.total,
+                identifiers: productIdentifiers[item.id]?.identifiers || []
             })),
             subtotal,
             total: grandTotal,
@@ -299,18 +392,41 @@ export default function PurchaseApp() {
 
             const savedPurchase = await response.json();
 
+            // Update identifiers with the actual purchase ID
+            for (const item of cartItems) {
+                if (productIdentifiers[item.id]?.identifiers) {
+                    const identifiers = productIdentifiers[item.id].identifiers;
+                    if (identifiers.length > 0) {
+                        await fetch(`${backEndURL}/api/identifiers/update-purchase-id`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                productId: item.sku,
+                                type: item.productIdentifierType,
+                                tempPurchaseId: identifiers[0].purchaseId,
+                                purchaseId: savedPurchase.purchaseId
+                            })
+                        });
+                    }
+                }
+            }
+
             // Add to local state
             addPurchase(savedPurchase);
 
             // Send each product to inventory
             for (const item of cartItems) {
-                await fetch(`${backEndURL}/api/inventory`, {
+                await fetch(`${backEndURL}/api/inventory/update`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         productId: item.sku,
                         quantity: item.quantity,
                         supplierEmail: formData.email,
+                        invoiceId: savedPurchase.id,
+                        identifiers: productIdentifiers[item.id]?.identifiers || []
                     }),
                 });
             }
@@ -339,6 +455,7 @@ export default function PurchaseApp() {
                 sameAsShipping: false,
             });
             setCartItems([]);
+            setProductIdentifiers({});
             setCurrentView("list");
 
             // Fast page refresh after saving
@@ -354,36 +471,76 @@ export default function PurchaseApp() {
         return Number(product.costPrice) || 0;
     };
 
-    const addProductToCart = (product) => {
-        setCartItems((prev) => {
-            const existing = prev.find((item) => item.sku === product.sku)
-            if (existing) {
-                // If already in cart, increase quantity
-                return prev.map((item) =>
-                    item.sku === product.sku
-                        ? {
-                            ...item,
-                            quantity: item.quantity + 1,
-                            price: getProductPrice(product),
-                            total: getProductPrice(product) * (item.quantity + 1),
-                        }
-                        : item
-                )
-            }
-            // Add new product to cart
-            return [
-                ...prev,
-                {
-                    id: product.sku,
-                    sku: product.sku,
-                    name: product.name,
-                    price: getProductPrice(product),
-                    quantity: 1,
-                    total: getProductPrice(product),
-                },
-            ]
-        })
-        setAddProductDropdownOpen(false)
+    const addProductToCart = async (product) => {
+        try {
+            // Fetch complete product details including identifier type
+            const response = await fetch(`${backEndURL}/api/products/${product.sku}`)
+            const productDetails = await response.json()
+            
+            setCartItems((prev) => {
+                const existing = prev.find((item) => item.sku === product.sku)
+                if (existing) {
+                    // If already in cart, increase quantity
+                    return prev.map((item) =>
+                        item.sku === product.sku
+                            ? {
+                                ...item,
+                                quantity: item.quantity + 1,
+                                price: getProductPrice(product),
+                                total: getProductPrice(product) * (item.quantity + 1),
+                                productIdentifierType: productDetails.productIdentifierType,
+                                existingIdentifiers: item.existingIdentifiers || [] // Keep track of existing identifiers
+                            }
+                            : item
+                    )
+                }
+                // Add new product to cart
+                return [
+                    ...prev,
+                    {
+                        id: product.sku,
+                        sku: product.sku,
+                        name: product.name,
+                        price: getProductPrice(product),
+                        quantity: 1,
+                        total: getProductPrice(product),
+                        productIdentifierType: productDetails.productIdentifierType,
+                        existingIdentifiers: [] // Initialize empty array for new products
+                    },
+                ]
+            })
+            setAddProductDropdownOpen(false)
+        } catch (error) {
+            console.error('Error fetching product details:', error)
+            // Fallback to adding without identifier type
+            setCartItems((prev) => {
+                const existing = prev.find((item) => item.sku === product.sku)
+                if (existing) {
+                    return prev.map((item) =>
+                        item.sku === product.sku
+                            ? {
+                                ...item,
+                                quantity: item.quantity + 1,
+                                price: getProductPrice(product),
+                                total: getProductPrice(product) * (item.quantity + 1)
+                            }
+                            : item
+                    )
+                }
+                return [
+                    ...prev,
+                    {
+                        id: product.sku,
+                        sku: product.sku,
+                        name: product.name,
+                        price: getProductPrice(product),
+                        quantity: 1,
+                        total: getProductPrice(product)
+                    },
+                ]
+            })
+            setAddProductDropdownOpen(false)
+        }
     }
 
     // Save customer info (POST to backend if new supplier)
@@ -492,7 +649,7 @@ export default function PurchaseApp() {
             if (!res.ok) throw new Error("Failed to create product");
             const product = await res.json();
             // Add to cart
-            addProductToCart(product);
+            await addProductToCart(product);
             setAddProductModalOpen(false);
             setNewProductForm({ name: "", costPrice: "", sku: "", category: "General", description: "" });
         } catch (err) {
@@ -510,12 +667,29 @@ export default function PurchaseApp() {
                     <h1 className="text-3xl font-bold text-white mb-2">Purchase Management</h1>
                     <p className="text-gray-400">Manage and track all your purchases</p>
                 </div>
-                <button
-                    onClick={() => setCurrentView("create")}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                    Create New Purchase
-                </button>
+                <div className="flex space-x-4">
+                    <label className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                        Import
+                        <input
+                            type="file"
+                            accept=".xlsx,.xls"
+                            onChange={handleImport}
+                            className="hidden"
+                        />
+                    </label>
+                    <button
+                        onClick={handleExport}
+                        className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                        Export
+                    </button>
+                    <button
+                        onClick={() => setCurrentView("create")}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        Create New Purchase
+                    </button>
+                </div>
             </div>
 
             {/* Stats Cards */}
@@ -782,6 +956,17 @@ export default function PurchaseApp() {
                                                 >
                                                     +
                                                 </button>
+                                                {pendingQuantityUpdates[item.id] && (item.productIdentifierType === 'serial' || item.productIdentifierType === 'imei') && (
+                                                    <button
+                                                        onClick={() => confirmQuantityUpdate(item.id)}
+                                                        className="bg-green-600 hover:bg-green-500 text-white w-8 h-8 rounded flex items-center justify-center"
+                                                        title="Confirm quantity update"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                        </svg>
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="text-right py-4 px-2">
@@ -1212,6 +1397,56 @@ export default function PurchaseApp() {
                         </div>
                     </div>
                 )}
+
+                {/* Identifier Modal */}
+                {identifierModalOpen && currentItem && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                        <div className="bg-gray-900 rounded-lg shadow-2xl p-6 w-full max-w-md relative max-h-[80vh] flex flex-col">
+                            <button
+                                className="absolute top-2 right-2 text-gray-400 hover:text-white text-2xl font-bold"
+                                onClick={() => setIdentifierModalOpen(false)}
+                                aria-label="Close"
+                            >
+                                &times;
+                            </button>
+                            <h2 className="text-xl font-semibold mb-4 text-white">Enter Product Identifiers</h2>
+                            <form onSubmit={(e) => {
+                                e.preventDefault()
+                                const formData = new FormData(e.target)
+                                const identifiers = Array.from({ length: currentItem.newQuantity }, (_, i) => ({
+                                    index: i + 1,
+                                    value: formData.get(`identifier-${i}`)
+                                }))
+                                handleIdentifiersSubmit(identifiers)
+                            }} className="flex flex-col flex-grow">
+                                <div className="space-y-3 overflow-y-auto pr-2 max-h-[calc(80vh-180px)]">
+                                    {Array.from({ length: currentItem.newQuantity }, (_, i) => (
+                                        <div key={i} className="bg-gray-800 p-3 rounded-lg">
+                                            <label className="block text-sm font-medium mb-1">
+                                                Product {i + 1} {currentItem.productIdentifierType === 'serial' ? 'Serial Number' : 'IMEI'}
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name={`identifier-${i}`}
+                                                required
+                                                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm"
+                                                placeholder={`Enter ${currentItem.productIdentifierType === 'serial' ? 'serial number' : 'IMEI'} for product ${i + 1}`}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="mt-4 pt-4 border-t border-gray-700">
+                                    <button
+                                        type="submit"
+                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200"
+                                    >
+                                        Save Identifiers
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
             </div>
         )
     }
@@ -1437,6 +1672,42 @@ export default function PurchaseApp() {
     doc.save(`purchase-${selectedPurchase.purchaseId}.pdf`);
 };
 
+const handleImport = (event) => {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+        
+        // Process the imported data
+        console.log('Imported data:', jsonData);
+        // Add your import logic here
+    };
+    
+    reader.readAsArrayBuffer(file);
+};
+
+const handleExport = () => {
+    // Create a worksheet
+    const ws = XLSX.utils.json_to_sheet(purchases.map(purchase => ({
+        'Purchase ID': purchase.purchaseId,
+        'Customer Name': purchase.customerName,
+        'Customer Email': purchase.customerEmail,
+        'Date': new Date(purchase.createdAt).toLocaleDateString(),
+        'Total': purchase.total,
+        'Status': purchase.paymentStatus
+    })));
+
+    // Create a workbook
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Purchases');
+
+    // Save the file
+    XLSX.writeFile(wb, 'purchases.xlsx');
+};
 
     const renderCurrentView = () => {
         switch (currentView) {

@@ -8,16 +8,18 @@ const InventoryModel = {
   async create({ productId, quantity, supplierEmail, deductInfo }) {
     try {
       const docRef = db.collection(INVENTORY_COLLECTION).doc(productId);
+      const currentDate = new Date().toISOString();
+      
       const data = {
         productId,
-        quantity,
+        totalQuantity: quantity, // Total quantity ever purchased
         supplierEmail,
-        lastUpdated: new Date().toISOString(),
-        transactions: [{
-          type: 'initial',
+        lastUpdated: currentDate,
+        purchases: [{  // Initial purchase record
           quantity,
-          date: new Date().toISOString(),
-          reference: null
+          supplierEmail,
+          date: currentDate,
+          purchaseId: deductInfo?.purchaseId || null
         }]
       };
       
@@ -50,7 +52,7 @@ const InventoryModel = {
     }
   },
 
-  async updateQuantity(productId, quantity, type = 'sale', reference = null) {
+  async updateQuantity(productId, quantity, type = 'sale', reference = null, supplierEmail = null) {
     const docRef = db.collection(INVENTORY_COLLECTION).doc(productId);
     
     try {
@@ -62,25 +64,24 @@ const InventoryModel = {
         }
 
         const currentData = doc.data();
-        const newQuantity = currentData.quantity + quantity;
-        
-        if (newQuantity < 0) {
-          throw new Error('Insufficient inventory');
-        }
-
+        const currentDate = new Date().toISOString();
         const updatedData = {
-          quantity: newQuantity,
-          lastUpdated: new Date().toISOString(),
-          transactions: [
-            ...(currentData.transactions || []).slice(-9), // Keep only last 10 transactions
-            {
-              type,
-              quantity,
-              date: new Date().toISOString(),
-              reference
-            }
-          ]
+          lastUpdated: currentDate
         };
+
+        // If this is a purchase (positive quantity), update totalQuantity and add to purchases array
+        if (quantity > 0 && supplierEmail) {
+          updatedData.totalQuantity = (currentData.totalQuantity || 0) + quantity;
+          updatedData.purchases = [
+            ...(currentData.purchases || []),
+            {
+              quantity,
+              supplierEmail,
+              date: currentDate,
+              purchaseId: reference
+            }
+          ];
+        }
 
         transaction.update(docRef, updatedData);
         return { id: productId, ...currentData, ...updatedData };

@@ -18,7 +18,7 @@ function productData({
   marginPricePercent,
   retailPrice,
   retailPricePercent,
-  quantity,
+  productIdentifierType,
 }) {
   // Convert string "true"/"false" to boolean
   let weighWithScaleBool = false;
@@ -51,6 +51,7 @@ function productData({
     marginPricePercent: marginPricePercent || 0,
     retailPrice: round2(retailPrice || 0),
     retailPricePercent: retailPricePercent || 0,
+    productIdentifierType: productIdentifierType || "none", // default to none
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };

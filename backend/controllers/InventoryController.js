@@ -57,7 +57,7 @@ exports.getAllInventory = async (req, res) => {
 
 exports.updateInventory = async (req, res) => {
   try {
-    const { productId, quantity, type, invoiceId } = req.body;
+    const { productId, quantity, type, invoiceId, supplierEmail } = req.body;
 
     if (!productId || quantity === undefined) {
       return res.status(400).json({ error: 'Product ID and quantity are required' });
@@ -70,30 +70,44 @@ exports.updateInventory = async (req, res) => {
     const result = await db.runTransaction(async (transaction) => {
       const inventoryDoc = await transaction.get(inventoryRef);
       
+      // If document doesn't exist, create it
       if (!inventoryDoc.exists) {
-        throw new Error('Product not found in inventory');
+        const currentDate = new Date().toISOString();
+        const newInventory = {
+          productId,
+          totalQuantity: quantity,
+          supplierEmail,
+          lastUpdated: currentDate,
+          purchases: [{
+            quantity,
+            supplierEmail,
+            date: currentDate,
+            purchaseId: invoiceId
+          }]
+        };
+        transaction.set(inventoryRef, newInventory);
+        return newInventory;
       }
 
       const currentData = inventoryDoc.data();
-      const newQuantity = currentData.quantity + quantity;
-
-      if (newQuantity < 0) {
-        throw new Error('Insufficient inventory');
-      }
-
+      const currentDate = new Date().toISOString();
       const updatedData = {
-        quantity: newQuantity,
-        lastUpdated: new Date().toISOString(),
-        transactions: [
-          ...(currentData.transactions || []).slice(-9),
-          {
-            type: type || 'sale',
-            quantity,
-            date: new Date().toISOString(),
-            reference: invoiceId || null
-          }
-        ]
+        lastUpdated: currentDate
       };
+
+      // If this is a purchase (positive quantity), update totalQuantity and add to purchases array
+      if (quantity > 0 && supplierEmail) {
+        updatedData.totalQuantity = (currentData.totalQuantity || 0) + quantity;
+        updatedData.purchases = [
+          ...(currentData.purchases || []),
+          {
+            quantity,
+            supplierEmail,
+            date: currentDate,
+            purchaseId: invoiceId
+          }
+        ];
+      }
 
       transaction.update(inventoryRef, updatedData);
       return { ...currentData, ...updatedData };
@@ -105,7 +119,7 @@ exports.updateInventory = async (req, res) => {
 
     res.status(200).json({
       id: productId,
-      quantity: result.quantity,
+      totalQuantity: result.totalQuantity,
       lastUpdated: result.lastUpdated,
       message: 'Inventory updated successfully'
     });
