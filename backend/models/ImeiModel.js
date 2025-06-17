@@ -20,6 +20,7 @@ class ImeiModel {
                     imei,
                     sold: false,
                     createdAt: new Date(),
+                    soldAt: null,
                     purchaseId: purchaseId
                 }));
                 
@@ -40,6 +41,7 @@ class ImeiModel {
                         imei,
                         sold: false,
                         createdAt: new Date(),
+                        soldAt: null,
                         purchaseId: purchaseId
                     }))
                 });
@@ -65,7 +67,8 @@ class ImeiModel {
                 identifiers: imeiData.map(imei => ({
                     imei,
                     sold: false,
-                    createdAt: new Date()
+                    createdAt: new Date(),
+                    soldAt: null
                 }))
             });
             return docRef;
@@ -83,7 +86,7 @@ class ImeiModel {
         }
     }
 
-    async markAsSold(productId, imei) {
+    async markAsSold(productId, imei, invoiceId = null) {
         try {
             const doc = await this.collection.doc(productId).get();
             if (!doc.exists) return null;
@@ -91,7 +94,12 @@ class ImeiModel {
             const data = doc.data();
             const updatedIdentifiers = data.identifiers.map(item => {
                 if (item.imei === imei) {
-                    return { ...item, sold: true };
+                    return { 
+                        ...item, 
+                        sold: true,
+                        soldAt: new Date(),
+                        invoiceId: invoiceId
+                    };
                 }
                 return item;
             });

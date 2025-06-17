@@ -4,20 +4,21 @@ const INVOICE_COLLECTION = 'invoices';
 async function getNextInvoiceId() {
   // Get the latest invoice and increment
   const snapshot = await db.collection(INVOICE_COLLECTION)
-    .orderBy('createdAt', 'desc')
+    .orderBy('invoiceNumber', 'desc')
     .limit(1)
     .get();
+  
   let nextNumber = 1;
   if (!snapshot.empty) {
     const last = snapshot.docs[0];
-    const lastId = last.id;
-    // Extract number from Inv-00001
-    const match = /Inv-(\d+)/.exec(lastId);
+    const lastInvoiceNumber = last.data().invoiceNumber;
+    // Extract number from Inv-01, Inv-02, etc.
+    const match = /Inv-(\d+)/.exec(lastInvoiceNumber);
     if (match) {
       nextNumber = parseInt(match[1], 10) + 1;
     }
   }
-  return `Inv-${String(nextNumber).padStart(5, '0')}`;
+  return `Inv-${String(nextNumber).padStart(2, '0')}`;
 }
 
 const InvoiceModel = {

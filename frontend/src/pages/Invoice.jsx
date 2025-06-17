@@ -864,6 +864,14 @@ const EnhancedBillingPOSSystem = () => {
   const [searchModalTerm, setSearchModalTerm] = useState("")
   const [searchModalSelectedIndex, setSearchModalSelectedIndex] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // New state for identifier selection
+  const [showIdentifierModal, setShowIdentifierModal] = useState(false)
+  const [selectedProductForIdentifier, setSelectedProductForIdentifier] = useState(null)
+  const [availableIdentifiers, setAvailableIdentifiers] = useState([])
+  const [isLoadingIdentifiers, setIsLoadingIdentifiers] = useState(false)
+  const [selectedIdentifiers, setSelectedIdentifiers] = useState([])
+
   // Multi-tab functionality with optimizations
   const [tabs, setTabs] = useState([{ id: 1, number: 1 }])
   const [activeTab, setActiveTab] = useState(1)
@@ -1286,9 +1294,60 @@ const EnhancedBillingPOSSystem = () => {
     }))
   }, [])
 
-  // Optimized cart management
+  // Fast toast notification - moved here before addToCart
+  const showToast = useCallback((message, type = "info") => {
+    setToast({ message, type, isVisible: true })
+  }, [])
+
+  const hideToast = useCallback(() => {
+    setToast((prev) => ({ ...prev, isVisible: false }))
+  }, [])
+
+  // Enhanced addToCart function with identifier support
   const addToCart = useCallback(
-    (product) => {
+    async (product) => {
+      console.log('Product clicked:', product) // Debug log
+      console.log('Product identifier type:', product.productIdentifierType) // Debug log
+      
+      // Check if product has identifier type
+      if (product.productIdentifierType && product.productIdentifierType !== 'none') {
+        console.log('Opening identifier modal for:', product.productIdentifierType) // Debug log
+        // Show identifier selection modal
+        setSelectedProductForIdentifier(product)
+        setIsLoadingIdentifiers(true)
+        
+        try {
+          // Fetch available identifiers
+          const response = await fetch(`${backEndURL}/api/identifiers/${product.productIdentifierType}/${product.id}`)
+          console.log('API Response status:', response.status) // Debug log
+          
+          if (response.ok) {
+            const data = await response.json()
+            console.log('API Response data:', data) // Debug log
+            
+            if (data && data.identifiers) {
+              // Filter only available (not sold) identifiers
+              const available = data.identifiers.filter(item => !item.sold)
+              console.log('Available identifiers:', available) // Debug log
+              setAvailableIdentifiers(available)
+              setSelectedIdentifiers([])
+              setShowIdentifierModal(true)
+            } else {
+              showToast(`No available ${product.productIdentifierType} numbers found for this product`, "warning")
+            }
+          } else {
+            showToast(`No ${product.productIdentifierType} numbers found for this product`, "warning")
+          }
+        } catch (error) {
+          console.error('Error fetching identifiers:', error)
+          showToast(`Error fetching ${product.productIdentifierType} numbers`, "error")
+        } finally {
+          setIsLoadingIdentifiers(false)
+        }
+        return
+      }
+
+      // If no identifier type, add directly to cart
       const priceKey = `${selectedPriceType}Price`
       const price = product[priceKey]
       const currentCart = currentTabData.cart
@@ -1326,8 +1385,52 @@ const EnhancedBillingPOSSystem = () => {
       }
       showToast(`${product.name} added to cart`, "success")
     },
-    [selectedPriceType, currentTabData.cart, activeTab, updateTabData],
+    [selectedPriceType, currentTabData.cart, activeTab, updateTabData, showToast],
   )
+
+  // Function to handle identifier selection and add to cart
+  const handleIdentifierSelection = useCallback((selectedIds) => {
+    if (!selectedProductForIdentifier || selectedIds.length === 0) return
+
+    const priceKey = `${selectedPriceType}Price`
+    const price = selectedProductForIdentifier[priceKey]
+    const currentCart = currentTabData.cart
+
+    // Create cart items for each selected identifier
+    selectedIds.forEach(identifierId => {
+      const identifier = availableIdentifiers.find(item => 
+        item[selectedProductForIdentifier.productIdentifierType] === identifierId
+      )
+      
+      if (identifier) {
+        const newItem = {
+          id: `${selectedProductForIdentifier.id}-${identifierId}`,
+          name: selectedProductForIdentifier.name,
+          price: price,
+          originalPrice: price,
+          quantity: 1,
+          barcode: selectedProductForIdentifier.barcode,
+          category: selectedProductForIdentifier.category,
+          stock: 1, // Individual item
+          discountType: "none",
+          discountValue: 0,
+          discountedPrice: price,
+          identifierType: selectedProductForIdentifier.productIdentifierType,
+          identifierValue: identifierId,
+          mainProductId: selectedProductForIdentifier.id,
+          mainProductSku: selectedProductForIdentifier.sku || selectedProductForIdentifier.id
+        }
+        
+        updateTabData(activeTab, { cart: [...currentCart, newItem] })
+      }
+    })
+
+    showToast(`${selectedIds.length} ${selectedProductForIdentifier.productIdentifierType} item(s) added to cart`, "success")
+    setShowIdentifierModal(false)
+    setSelectedProductForIdentifier(null)
+    setAvailableIdentifiers([])
+    setSelectedIdentifiers([])
+  }, [selectedProductForIdentifier, selectedPriceType, currentTabData.cart, activeTab, updateTabData, availableIdentifiers])
 
   const handleQuantityAdd = useCallback(
     (productId) => {
@@ -1454,48 +1557,468 @@ const EnhancedBillingPOSSystem = () => {
   const taxAmount = useMemo(() => taxableAmount * (currentTaxRate / 100), [taxableAmount, currentTaxRate])
   const grandTotal = useMemo(() => taxableAmount + taxAmount, [taxableAmount, taxAmount])
 
-  // Fast toast notification
-  const showToast = useCallback((message, type = "info") => {
-    setToast({ message, type, isVisible: true })
-  }, [])
+  // New state for barcode search functionality
+  const [barcodeSearchResults, setBarcodeSearchResults] = useState([])
+  const [showBarcodeSearch, setShowBarcodeSearch] = useState(false)
+  const [isSearchingBarcode, setIsSearchingBarcode] = useState(false)
+  const [selectedSearchIndex, setSelectedSearchIndex] = useState(0)
 
-  const hideToast = useCallback(() => {
-    setToast((prev) => ({ ...prev, isVisible: false }))
-  }, [])
-
-  // Fast barcode scan
+  // Enhanced barcode scan with identifier support
   const handleBarcodeScan = useCallback(
-    (e) => {
+    async (e) => {
       if (e.key === "Enter" && barcodeInput.trim()) {
         const product = products.find((p) => p.barcode === barcodeInput.trim())
         if (product) {
-          addToCart(product)
-          showToast(`Product found: ${product.name}`, "success")
+          // Check if product has identifier type
+          if (product.productIdentifierType && product.productIdentifierType !== 'none') {
+            console.log('Product has identifier type:', product.productIdentifierType)
+            // Show identifier selection modal
+            setSelectedProductForIdentifier(product)
+            setIsLoadingIdentifiers(true)
+            
+            try {
+              // Fetch available identifiers
+              const response = await fetch(`${backEndURL}/api/identifiers/${product.productIdentifierType}/${product.id}`)
+              console.log('API Response status:', response.status)
+              
+              if (response.ok) {
+                const data = await response.json()
+                console.log('API Response data:', data)
+                
+                if (data && data.identifiers) {
+                  // Filter only available (not sold) identifiers
+                  const available = data.identifiers.filter(item => !item.sold)
+                  console.log('Available identifiers:', available)
+                  setAvailableIdentifiers(available)
+                  setSelectedIdentifiers([])
+                  setShowIdentifierModal(true)
+                } else {
+                  showToast(`No available ${product.productIdentifierType} numbers found for this product`, "warning")
+                }
+              } else {
+                showToast(`No ${product.productIdentifierType} numbers found for this product`, "warning")
+              }
+            } catch (error) {
+              console.error('Error fetching identifiers:', error)
+              showToast(`Error fetching ${product.productIdentifierType} numbers`, "error")
+            } finally {
+              setIsLoadingIdentifiers(false)
+            }
+          } else {
+            // No identifier type, add directly to cart
+            addToCart(product)
+            showToast(`Product found: ${product.name}`, "success")
+          }
           setBarcodeInput("")
+          setBarcodeSearchResults([])
+          setShowBarcodeSearch(false)
         } else {
           showToast("Product not found", "error")
           setBarcodeInput("")
+          setBarcodeSearchResults([])
+          setShowBarcodeSearch(false)
         }
       }
     },
-    [barcodeInput, products, addToCart, showToast],
+    [barcodeInput, products, addToCart, showToast, backEndURL, selectedProductForIdentifier, setIsLoadingIdentifiers, setAvailableIdentifiers, setSelectedIdentifiers, setShowIdentifierModal, setBarcodeSearchResults, setShowBarcodeSearch],
   )
 
-  // Enhanced completePayment function - Super Fast Version
+  // Real-time barcode search function
+  const handleBarcodeSearch = useCallback(
+    async (searchTerm) => {
+      if (!searchTerm.trim()) {
+        setBarcodeSearchResults([])
+        setShowBarcodeSearch(false)
+        return
+      }
+
+      setIsSearchingBarcode(true)
+      try {
+        // Search in products first
+        const matchingProducts = products.filter(product => 
+          product.barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.name.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+
+        // Search in identifiers
+        const identifierResults = []
+        const soldIdentifiers = [] // Track sold identifiers to show messages
+        
+        for (const product of products) {
+          if (product.productIdentifierType && product.productIdentifierType !== 'none') {
+            try {
+              const response = await fetch(`${backEndURL}/api/identifiers/${product.productIdentifierType}/${product.id}`)
+              if (response.ok) {
+                const data = await response.json()
+                if (data && data.identifiers) {
+                  const matchingIdentifiers = data.identifiers.filter(item => {
+                    const identifierValue = item[product.productIdentifierType]
+                    return identifierValue && identifierValue.toLowerCase().includes(searchTerm.toLowerCase())
+                  })
+                  
+                  matchingIdentifiers.forEach(identifier => {
+                    if (identifier.sold) {
+                      // Add to sold identifiers list
+                      soldIdentifiers.push({
+                        product: product,
+                        identifier: identifier,
+                        displayText: `${product.name} - ${product.productIdentifierType.toUpperCase()}: ${identifier[product.productIdentifierType]} (SOLD)`
+                      })
+                    } else {
+                      // Add to available identifiers list
+                      identifierResults.push({
+                        type: 'identifier',
+                        product: product,
+                        identifier: identifier,
+                        displayText: `${product.name} - ${product.productIdentifierType.toUpperCase()}: ${identifier[product.productIdentifierType]}`
+                      })
+                    }
+                  })
+                }
+              }
+            } catch (error) {
+              console.error(`Error searching identifiers for product ${product.id}:`, error)
+            }
+          }
+        }
+
+        // Combine results
+        const combinedResults = [
+          ...matchingProducts.map(product => ({
+            type: 'product',
+            product: product,
+            displayText: `${product.name} (${product.barcode})`
+          })),
+          ...identifierResults // Only include available (not sold) identifiers in results
+        ]
+
+        setBarcodeSearchResults(combinedResults)
+        setShowBarcodeSearch(combinedResults.length > 0)
+        setSelectedSearchIndex(0)
+        
+        // Show message for sold identifiers
+        if (soldIdentifiers.length > 0) {
+          const soldMessage = soldIdentifiers.map(item => 
+            `${item.product.name} - ${item.product.productIdentifierType.toUpperCase()}: ${item.identifier[item.product.productIdentifierType]}`
+          ).join(', ')
+          showToast(`⚠️ Already sold: ${soldMessage}`, "warning")
+        }
+      } catch (error) {
+        console.error('Error in barcode search:', error)
+      } finally {
+        setIsSearchingBarcode(false)
+      }
+    },
+    [products, backEndURL, showToast]
+  )
+
+  // Handle barcode input change with automatic search and action
+  const handleBarcodeInputChange = useCallback((e) => {
+    const value = e.target.value
+    setBarcodeInput(value)
+    
+    // Clear previous search results
+    setBarcodeSearchResults([])
+    setShowBarcodeSearch(false)
+    
+    if (!value.trim()) return
+
+    // Check for exact barcode match immediately (no debounce for exact matches)
+    const exactProductMatch = products.find(product => product.barcode === value.trim())
+    
+    if (exactProductMatch) {
+      // Exact barcode match found - handle automatically
+      if (exactProductMatch.productIdentifierType && exactProductMatch.productIdentifierType !== 'none') {
+        // Product has identifiers - open popup
+        console.log('Exact barcode match with identifiers:', exactProductMatch.productIdentifierType)
+        setSelectedProductForIdentifier(exactProductMatch)
+        setIsLoadingIdentifiers(true)
+        
+        fetch(`${backEndURL}/api/identifiers/${exactProductMatch.productIdentifierType}/${exactProductMatch.id}`)
+          .then(response => response.json())
+          .then(data => {
+            if (data && data.identifiers) {
+              const available = data.identifiers.filter(item => !item.sold)
+              setAvailableIdentifiers(available)
+              setSelectedIdentifiers([])
+              setShowIdentifierModal(true)
+            } else {
+              showToast(`No available ${exactProductMatch.productIdentifierType} numbers found`, "warning")
+            }
+          })
+          .catch(error => {
+            console.error('Error fetching identifiers:', error)
+            showToast(`Error fetching ${exactProductMatch.productIdentifierType} numbers`, "error")
+          })
+          .finally(() => {
+            setIsLoadingIdentifiers(false)
+          })
+      } else {
+        // No identifiers - add directly to cart
+        addToCart(exactProductMatch)
+        showToast(`Product added: ${exactProductMatch.name}`, "success")
+      }
+      
+      // Clear input after action
+      setBarcodeInput("")
+      return
+    }
+
+    // Debounce search for partial matches and identifier searches
+    const timeoutId = setTimeout(async () => {
+      // Check for exact identifier match
+      let exactIdentifierMatch = null
+      let soldIdentifierMatch = null // Track if we find a sold identifier
+      
+      for (const product of products) {
+        if (product.productIdentifierType && product.productIdentifierType !== 'none') {
+          try {
+            const response = await fetch(`${backEndURL}/api/identifiers/${product.productIdentifierType}/${product.id}`)
+            if (response.ok) {
+              const data = await response.json()
+              if (data && data.identifiers) {
+                // First check for available (not sold) exact match
+                const exactMatch = data.identifiers.find(item => 
+                  item[product.productIdentifierType] === value.trim() && !item.sold
+                )
+                if (exactMatch) {
+                  exactIdentifierMatch = { product, identifier: exactMatch }
+                  break
+                }
+                
+                // If no available match found, check if it's sold
+                const soldMatch = data.identifiers.find(item => 
+                  item[product.productIdentifierType] === value.trim() && item.sold
+                )
+                if (soldMatch) {
+                  soldIdentifierMatch = { product, identifier: soldMatch }
+                }
+              }
+            }
+          } catch (error) {
+            console.error(`Error checking identifiers for product ${product.id}:`, error)
+          }
+        }
+      }
+
+      // If we found a sold identifier, show warning message
+      if (soldIdentifierMatch) {
+        const { product, identifier } = soldIdentifierMatch
+        const identifierValue = identifier[product.productIdentifierType]
+        showToast(`⚠️ ${product.name} with ${product.productIdentifierType.toUpperCase()}: ${identifierValue} is already sold!`, "warning")
+        setBarcodeInput("")
+        return
+      }
+
+      if (exactIdentifierMatch) {
+        // Exact identifier match found - add to cart automatically
+        const { product, identifier } = exactIdentifierMatch
+        const priceKey = `${selectedPriceType}Price`
+        const price = product[priceKey]
+        const currentCart = currentTabData.cart
+        const identifierValue = identifier[product.productIdentifierType]
+
+        const newItem = {
+          id: `${product.id}-${identifierValue}`,
+          name: product.name,
+          price: price,
+          originalPrice: price,
+          quantity: 1,
+          barcode: product.barcode,
+          category: product.category,
+          stock: 1,
+          discountType: "none",
+          discountValue: 0,
+          discountedPrice: price,
+          identifierType: product.productIdentifierType,
+          identifierValue: identifierValue,
+          mainProductId: product.id,
+          mainProductSku: product.sku || product.id
+        }
+        
+        updateTabData(activeTab, { cart: [...currentCart, newItem] })
+        showToast(`${product.name} with ${product.productIdentifierType.toUpperCase()}: ${identifierValue} added to cart`, "success")
+        setBarcodeInput("")
+        return
+      }
+
+      // If no exact matches, show search results for partial matches
+      handleBarcodeSearch(value)
+    }, 300) // Reduced debounce for better responsiveness
+
+    return () => clearTimeout(timeoutId)
+  }, [products, addToCart, showToast, backEndURL, selectedPriceType, currentTabData.cart, activeTab, updateTabData, handleBarcodeSearch])
+
+  // Handle search result selection
+  const handleSearchResultSelect = useCallback((result) => {
+    if (result.type === 'product') {
+      // Handle product selection
+      if (result.product.productIdentifierType && result.product.productIdentifierType !== 'none') {
+        // Open identifier modal
+        setSelectedProductForIdentifier(result.product)
+        setIsLoadingIdentifiers(true)
+        
+        fetch(`${backEndURL}/api/identifiers/${result.product.productIdentifierType}/${result.product.id}`)
+          .then(response => response.json())
+          .then(data => {
+            if (data && data.identifiers) {
+              const available = data.identifiers.filter(item => !item.sold)
+              setAvailableIdentifiers(available)
+              setSelectedIdentifiers([])
+              setShowIdentifierModal(true)
+            }
+          })
+          .catch(error => {
+            console.error('Error fetching identifiers:', error)
+            showToast(`Error fetching ${result.product.productIdentifierType} numbers`, "error")
+          })
+          .finally(() => {
+            setIsLoadingIdentifiers(false)
+          })
+      } else {
+        // Add directly to cart
+        addToCart(result.product)
+        showToast(`Product added: ${result.product.name}`, "success")
+      }
+    } else if (result.type === 'identifier') {
+      // Check if identifier is sold
+      if (result.identifier && result.identifier.sold) {
+        const identifierValue = result.identifier[result.product.productIdentifierType]
+        showToast(`⚠️ ${result.product.name} with ${result.product.productIdentifierType.toUpperCase()}: ${identifierValue} is already sold!`, "warning")
+        return
+      }
+      
+      // Handle identifier selection - add specific identifier to cart
+      const priceKey = `${selectedPriceType}Price`
+      const price = result.product[priceKey]
+      const currentCart = currentTabData.cart
+      const identifierValue = result.identifier[result.product.productIdentifierType]
+
+      const newItem = {
+        id: `${result.product.id}-${identifierValue}`,
+        name: result.product.name,
+        price: price,
+        originalPrice: price,
+        quantity: 1,
+        barcode: result.product.barcode,
+        category: result.product.category,
+        stock: 1,
+        discountType: "none",
+        discountValue: 0,
+        discountedPrice: price,
+        identifierType: result.product.productIdentifierType,
+        identifierValue: identifierValue,
+        mainProductId: result.product.id,
+        mainProductSku: result.product.sku || result.product.id
+      }
+      
+      updateTabData(activeTab, { cart: [...currentCart, newItem] })
+      showToast(`${result.product.name} with ${result.product.productIdentifierType.toUpperCase()}: ${identifierValue} added to cart`, "success")
+    }
+
+    setBarcodeInput("")
+    setBarcodeSearchResults([])
+    setShowBarcodeSearch(false)
+  }, [selectedPriceType, currentTabData.cart, activeTab, updateTabData, addToCart, showToast, backEndURL])
+
+  // Keyboard navigation for search results
+  useEffect(() => {
+    const handleSearchKeyDown = (e) => {
+      if (!showBarcodeSearch || barcodeSearchResults.length === 0) return
+
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault()
+          setSelectedSearchIndex(prev => {
+            let nextIndex = prev < barcodeSearchResults.length - 1 ? prev + 1 : 0
+            // Skip sold identifiers
+            while (nextIndex !== prev) {
+              const result = barcodeSearchResults[nextIndex]
+              const isSoldIdentifier = result.type === 'identifier' && result.identifier && result.identifier.sold
+              if (!isSoldIdentifier) break
+              nextIndex = nextIndex < barcodeSearchResults.length - 1 ? nextIndex + 1 : 0
+            }
+            return nextIndex
+          })
+          break
+        case 'ArrowUp':
+          e.preventDefault()
+          setSelectedSearchIndex(prev => {
+            let nextIndex = prev > 0 ? prev - 1 : barcodeSearchResults.length - 1
+            // Skip sold identifiers
+            while (nextIndex !== prev) {
+              const result = barcodeSearchResults[nextIndex]
+              const isSoldIdentifier = result.type === 'identifier' && result.identifier && result.identifier.sold
+              if (!isSoldIdentifier) break
+              nextIndex = nextIndex > 0 ? nextIndex - 1 : barcodeSearchResults.length - 1
+            }
+            return nextIndex
+          })
+          break
+        case 'Enter':
+          e.preventDefault()
+          if (selectedSearchIndex >= 0 && selectedSearchIndex < barcodeSearchResults.length) {
+            const result = barcodeSearchResults[selectedSearchIndex]
+            const isSoldIdentifier = result.type === 'identifier' && result.identifier && result.identifier.sold
+            if (!isSoldIdentifier) {
+              handleSearchResultSelect(result)
+            } else {
+              const identifierValue = result.identifier[result.product.productIdentifierType]
+              showToast(`⚠️ ${result.product.name} with ${result.product.productIdentifierType.toUpperCase()}: ${identifierValue} is already sold!`, "warning")
+            }
+          }
+          break
+        case 'Escape':
+          e.preventDefault()
+          setShowBarcodeSearch(false)
+          setBarcodeSearchResults([])
+          setBarcodeInput("")
+          break
+      }
+    }
+
+    const barcodeInput = barcodeRef.current
+    if (barcodeInput) {
+      barcodeInput.addEventListener('keydown', handleSearchKeyDown)
+    }
+
+    return () => {
+      if (barcodeInput) {
+        barcodeInput.removeEventListener('keydown', handleSearchKeyDown)
+      }
+    }
+  }, [showBarcodeSearch, barcodeSearchResults, selectedSearchIndex, handleSearchResultSelect, showToast])
+
+  // Enhanced completePayment function with async processing
   const completePayment = useCallback(
     async (paymentData) => {
       setIsProcessing(true)
       try {
-        // Create minimal invoice object for maximum speed
-        const invoice = {
-          items: cart.map((item) => ({
+        // Prepare invoice items with identifier information
+        const invoiceItems = cart.map((item) => {
+          const baseItem = {
             id: item.id,
             name: item.name,
             quantity: item.quantity,
             price: item.discountedPrice || item.price,
             category: item.category,
             barcode: item.barcode,
-          })),
+          }
+
+          // Add identifier information if present
+          if (item.identifierType && item.identifierValue) {
+            baseItem.identifierType = item.identifierType
+            baseItem.identifierValue = item.identifierValue
+            baseItem.mainProductId = item.mainProductId
+            baseItem.mainProductSku = item.mainProductSku
+          }
+
+          return baseItem
+        })
+
+        // Create invoice object with enhanced data
+        const invoice = {
+          items: invoiceItems,
           customer: currentSelectedCustomer ? { 
             id: currentSelectedCustomer.id, 
             name: currentSelectedCustomer.name 
@@ -1509,7 +2032,7 @@ const EnhancedBillingPOSSystem = () => {
           date: new Date().toISOString(),
         }
 
-        // Super fast API call with optimized headers
+        // Step 1: Create the invoice
         const response = await fetch(`${backEndURL}/api/invoices`, {
           method: "POST",
           headers: {
@@ -1531,10 +2054,82 @@ const EnhancedBillingPOSSystem = () => {
         handleClearCart();
         showToast("Payment completed successfully!", "success");
 
+        // Step 2 & 3: Process inventory and identifiers asynchronously (non-blocking)
+        Promise.all([
+          // Update inventory for all items
+          ...cart.map(async (item) => {
+            try {
+              // For items with identifiers, use the main product ID
+              const productId = item.mainProductId || item.id
+              const quantity = item.quantity
+
+              console.log(`Updating inventory for product ${productId}, quantity: ${quantity}`)
+
+              const inventoryResponse = await fetch(`${backEndURL}/api/inventory/deduct`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  productId: productId,
+                  quantity: quantity,
+                  invoiceId: savedInvoice.id
+                })
+              });
+
+              if (!inventoryResponse.ok) {
+                const errorData = await inventoryResponse.json()
+                console.error(`Failed to update inventory for product ${productId}:`, errorData)
+              } else {
+                console.log(`Successfully updated inventory for product ${productId}`)
+              }
+            } catch (error) {
+              console.error(`Error updating inventory for product ${item.id}:`, error);
+            }
+          }),
+
+          // Mark identifiers as sold
+          ...cart.filter(item => item.identifierType && item.identifierValue).map(async (item) => {
+            try {
+              console.log(`Marking ${item.identifierType} ${item.identifierValue} as sold for invoice ${savedInvoice.id}`)
+
+              const identifierResponse = await fetch(`${backEndURL}/api/identifiers/mark-sold`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  productId: item.mainProductId,
+                  identifier: item.identifierValue,
+                  type: item.identifierType,
+                  invoiceId: savedInvoice.id
+                })
+              });
+
+              if (!identifierResponse.ok) {
+                const errorData = await identifierResponse.json()
+                console.error(`Failed to mark identifier ${item.identifierValue} as sold:`, errorData)
+              } else {
+                console.log(`Successfully marked ${item.identifierType} ${item.identifierValue} as sold`)
+              }
+            } catch (error) {
+              console.error(`Error marking identifier ${item.identifierValue} as sold:`, error);
+            }
+          })
+        ]).then(() => {
+          console.log('All background processing completed successfully')
+        }).catch(error => {
+          console.error('Background processing error:', error);
+          // Don't show error to user since payment was successful
+        });
+
         // Update local products state immediately for instant UI feedback
         setProducts(prevProducts =>
           prevProducts.map(product => {
-            const cartItem = cart.find(item => item.id === product.id);
+            const cartItem = cart.find(item => {
+              const productId = item.mainProductId || item.id
+              return productId === product.id
+            });
             if (cartItem) {
               return { ...product, stock: Math.max(0, product.stock - cartItem.quantity) };
             }
@@ -1559,6 +2154,7 @@ const EnhancedBillingPOSSystem = () => {
       handleClearCart,
       showToast,
       setProducts,
+      backEndURL,
     ],
   )
 
@@ -1596,7 +2192,7 @@ const EnhancedBillingPOSSystem = () => {
           const inventory = inventoryMap.get(product.id);
           return {
             ...product,
-            stock: inventory ? inventory.quantity : 0
+            stock: inventory ? inventory.totalQuantity : 0
           };
         })
       );
@@ -1679,13 +2275,15 @@ const EnhancedBillingPOSSystem = () => {
           name: product.name,
           barcode: product.barcode,
           category: product.category,
-          stock: inventory ? inventory.quantity : 0,
+          stock: inventory ? inventory.totalQuantity : 0,
           standardPrice: product.salesPrice,
           wholesalePrice: product.marginPrice,
           retailPrice: product.retailPrice,
           cost: product.costPrice,
           description: product.description,
           image: product.imageUrl,
+          productIdentifierType: product.productIdentifierType || 'none', // Add this field
+          sku: product.sku || product.id, // Add SKU field
         }
       })
 
@@ -2109,15 +2707,85 @@ const EnhancedBillingPOSSystem = () => {
               </div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Barcode Scanner</label>
-                <input
-                  ref={barcodeRef}
-                  type="text"
-                  value={barcodeInput}
-                  onChange={(e) => setBarcodeInput(e.target.value)}
-                  onKeyPress={handleBarcodeScan}
-                  placeholder="Scan or enter barcode..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+                <div className="relative">
+                  <input
+                    ref={barcodeRef}
+                    type="text"
+                    value={barcodeInput}
+                    onChange={handleBarcodeInputChange}
+                    onKeyPress={handleBarcodeScan}
+                    placeholder="Scan or enter barcode/product name/IMEI/Serial..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  {isSearchingBarcode && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="spinner"></div>
+                    </div>
+                  )}
+                  
+                  {/* Search Results Dropdown */}
+                  {showBarcodeSearch && barcodeSearchResults.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {barcodeSearchResults.map((result, index) => {
+                        // Check if this is a sold identifier
+                        const isSoldIdentifier = result.type === 'identifier' && result.identifier && result.identifier.sold;
+                        
+                        return (
+                          <div
+                            key={index}
+                            className={`px-4 py-3 transition-colors ${
+                              isSoldIdentifier 
+                                ? 'bg-gray-100 cursor-not-allowed opacity-60' 
+                                : `cursor-pointer hover:bg-blue-50 ${
+                                    index === selectedSearchIndex ? 'bg-blue-100 border-l-4 border-blue-500' : ''
+                                  }`
+                            }`}
+                            onClick={() => !isSoldIdentifier && handleSearchResultSelect(result)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className={`font-medium ${isSoldIdentifier ? 'text-gray-500' : 'text-gray-800'}`}>
+                                  {result.displayText}
+                                  {isSoldIdentifier && <span className="ml-2 text-red-500 font-semibold">(SOLD)</span>}
+                                </div>
+                                <div className={`text-sm ${isSoldIdentifier ? 'text-gray-400' : 'text-gray-500'}`}>
+                                  {result.type === 'product' ? (
+                                    <>
+                                      🏷️ {result.product.category} • 
+                                      💰 Rs {result.product[`${selectedPriceType}Price`].toFixed(2)} • 
+                                      📦 Stock: {result.product.stock}
+                                      {result.product.productIdentifierType && result.product.productIdentifierType !== 'none' && (
+                                        <span className="ml-2 text-blue-600 font-semibold">
+                                          • {result.product.productIdentifierType.toUpperCase()}
+                                        </span>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <>
+                                      🏷️ {result.product.category} • 
+                                      💰 Rs {result.product[`${selectedPriceType}Price`].toFixed(2)} • 
+                                      {isSoldIdentifier ? (
+                                        <span className="text-red-500 font-semibold">❌ Already Sold</span>
+                                      ) : (
+                                        <span>📦 Available</span>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="ml-2 text-gray-400">
+                                {result.type === 'product' ? '📦' : (isSoldIdentifier ? '❌' : '🔍')}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                <div className="mt-2 text-xs text-gray-500">
+                  💡 Tip: Exact barcode matches auto-add to cart. Type IMEI/Serial numbers to find specific items. Use ↑↓ arrows to navigate search results.
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-4">
                 <input
@@ -2481,6 +3149,23 @@ const EnhancedBillingPOSSystem = () => {
           </div>
         </div>
       )}
+
+      {/* Identifier Selection Modal */}
+      {showIdentifierModal && selectedProductForIdentifier && (
+        <IdentifierSelectionModal
+          selectedProduct={selectedProductForIdentifier}
+          availableIdentifiers={availableIdentifiers}
+          selectedIdentifiers={selectedIdentifiers}
+          setSelectedIdentifiers={setSelectedIdentifiers}
+          setShowIdentifierModal={setShowIdentifierModal}
+          setSelectedProductForIdentifier={setSelectedProductForIdentifier}
+          setAvailableIdentifiers={setAvailableIdentifiers}
+          setSelectedIdentifiersOuter={setSelectedIdentifiers}
+          isLoadingIdentifiers={isLoadingIdentifiers}
+          handleIdentifierSelection={handleIdentifierSelection}
+          selectedPriceType={selectedPriceType}
+        />
+      )}
     </div>
   )
 }
@@ -2528,6 +3213,11 @@ const EnhancedProductCard = ({ product, onAddToCart, selectedPriceType, isSelect
 
         <div className="text-[9px] text-gray-500 truncate">
           {product.category}
+          {product.productIdentifierType && product.productIdentifierType !== 'none' && (
+            <span className="ml-1 text-blue-600 font-semibold">
+              • {product.productIdentifierType.toUpperCase()}
+            </span>
+          )}
         </div>
 
         <div className="flex justify-between items-center">
@@ -2582,6 +3272,11 @@ const EnhancedCartItemWithDiscount = ({ item, updateQuantity, removeFromCart, up
             <h4 className="font-medium text-gray-800 text-sm truncate">{item.name}</h4>
             <div className="text-xs text-gray-500">
               🏷️ {item.category} • 📊 {item.barcode}
+              {item.identifierType && item.identifierValue && (
+                <span className="ml-2 text-blue-600 font-semibold">
+                  {item.identifierType.toUpperCase()}: {item.identifierValue}
+                </span>
+              )}
             </div>
             {item.discountType !== "none" && totalSavings > 0 && (
               <div className="text-xs text-green-600 font-medium mt-1">💰 Saved: Rs {totalSavings.toFixed(2)}</div>
@@ -3661,6 +4356,206 @@ const InvoicesPage = ({ invoices, searchTerm, setSearchTerm, dateRange, setDateR
     </div>
   )
 }
+
+// Place this component at the end of the file
+const IdentifierSelectionModal = ({
+  selectedProduct,
+  availableIdentifiers,
+  selectedIdentifiers,
+  setSelectedIdentifiers,
+  setShowIdentifierModal,
+  setSelectedProductForIdentifier,
+  setAvailableIdentifiers,
+  setSelectedIdentifiersOuter,
+  isLoadingIdentifiers,
+  handleIdentifierSelection,
+  selectedPriceType,
+}) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const searchInputRef = useRef(null);
+
+  // Filter identifiers by search term
+  const filteredIdentifiers = useMemo(() => {
+    if (!searchTerm) return availableIdentifiers;
+    return availableIdentifiers.filter((identifier) => {
+      const value = identifier[selectedProduct.productIdentifierType] || "";
+      return value.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+  }, [searchTerm, availableIdentifiers, selectedProduct.productIdentifierType]);
+
+  // Handle single selection and add to cart
+  const handleSingleSelection = useCallback((identifier) => {
+    const identifierValue = identifier[selectedProduct.productIdentifierType];
+    handleIdentifierSelection([identifierValue]); // Pass as array for compatibility
+  }, [selectedProduct.productIdentifierType, handleIdentifierSelection]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!filteredIdentifiers.length) return;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setHighlightedIndex((prev) => (prev + 1) % filteredIdentifiers.length);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setHighlightedIndex((prev) => (prev - 1 + filteredIdentifiers.length) % filteredIdentifiers.length);
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        setHighlightedIndex((prev) => (prev - 1 + filteredIdentifiers.length) % filteredIdentifiers.length);
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        setHighlightedIndex((prev) => (prev + 1) % filteredIdentifiers.length);
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        const identifier = filteredIdentifiers[highlightedIndex];
+        if (identifier) {
+          handleSingleSelection(identifier);
+        }
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        setShowIdentifierModal(false);
+        setSelectedProductForIdentifier(null);
+        setAvailableIdentifiers([]);
+        setSelectedIdentifiersOuter([]);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [filteredIdentifiers, highlightedIndex, handleSingleSelection, setShowIdentifierModal, setSelectedProductForIdentifier, setAvailableIdentifiers, setSelectedIdentifiersOuter]);
+
+  // Reset highlight on search/filter change
+  useEffect(() => {
+    setHighlightedIndex(0);
+  }, [searchTerm, filteredIdentifiers.length]);
+
+  useEffect(() => {
+    searchInputRef.current?.focus();
+  }, []);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto card-shadow fade-in">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-semibold text-gray-800">
+            🔍 Select {selectedProduct.productIdentifierType.toUpperCase()} Number
+          </h3>
+          <button
+            onClick={() => {
+              setShowIdentifierModal(false);
+              setSelectedProductForIdentifier(null);
+              setAvailableIdentifiers([]);
+              setSelectedIdentifiersOuter([]);
+            }}
+            className="text-gray-500 hover:text-gray-700 text-2xl"
+          >
+            ×
+          </button>
+        </div>
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <h4 className="font-medium text-blue-800 mb-2">Product Details:</h4>
+          <div className="text-sm text-blue-700">
+            <p><strong>Name:</strong> {selectedProduct.name}</p>
+            <p><strong>SKU:</strong> {selectedProduct.sku || selectedProduct.id}</p>
+            <p><strong>Barcode:</strong> {selectedProduct.barcode}</p>
+            <p><strong>Category:</strong> {selectedProduct.category}</p>
+            <p><strong>Price:</strong> Rs {selectedProduct[`${selectedPriceType}Price`].toFixed(2)}</p>
+          </div>
+        </div>
+        <div className="mb-4">
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={`Search ${selectedProduct.productIdentifierType.toUpperCase()}...`}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+        {isLoadingIdentifiers ? (
+          <div className="flex justify-center py-8">
+            <FastSpinner />
+          </div>
+        ) : (
+          <>
+            {filteredIdentifiers.length > 0 ? (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h4 className="font-medium text-gray-800">
+                    Available {selectedProduct.productIdentifierType.toUpperCase()} Numbers ({filteredIdentifiers.length})
+                  </h4>
+                  <div className="text-sm text-gray-600">
+                    Click to select one item
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-60 overflow-y-auto">
+                  {filteredIdentifiers.map((identifier, index) => {
+                    const identifierValue = identifier[selectedProduct.productIdentifierType];
+                    const isHighlighted = index === highlightedIndex;
+                    return (
+                      <div
+                        key={index}
+                        className={`p-3 border rounded-lg cursor-pointer transition-all hover:bg-blue-50 hover:border-blue-300 ${
+                          isHighlighted ? 'ring-2 ring-blue-400 bg-blue-50 border-blue-300' : 'border-gray-200'
+                        }`}
+                        onClick={() => handleSingleSelection(identifier)}
+                      >
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-800">{identifierValue}</div>
+                          <div className="text-xs text-gray-500">
+                            Added: {new Date(identifier.createdAt).toLocaleDateString()}
+                          </div>
+                          {identifier.purchaseId && (
+                            <div className="text-xs text-gray-500">
+                              Purchase: {identifier.purchaseId}
+                            </div>
+                          )}
+                        </div>
+                        {isHighlighted && <div className="ml-2 text-blue-400">⬅️</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      setShowIdentifierModal(false);
+                      setSelectedProductForIdentifier(null);
+                      setAvailableIdentifiers([]);
+                      setSelectedIdentifiersOuter([]);
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-4xl mb-4">⚠️</div>
+                <h4 className="text-lg font-medium text-gray-800 mb-2">No Available {selectedProduct.productIdentifierType.toUpperCase()} Numbers</h4>
+                <p className="text-gray-600 mb-4">
+                  All {selectedProduct.productIdentifierType} numbers for this product have been sold or are not available.
+                </p>
+                <button
+                  onClick={() => {
+                    setShowIdentifierModal(false);
+                    setSelectedProductForIdentifier(null);
+                    setAvailableIdentifiers([]);
+                    setSelectedIdentifiersOuter([]);
+                  }}
+                  className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default EnhancedBillingPOSSystem
 

@@ -17,14 +17,8 @@ exports.createInvoice = async (req, res) => {
       return res.status(400).json({ error: 'Invoice items are required.' });
     }
 
-    // Generate invoice ID immediately without database query
-    const timestamp = Date.now();
-    const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    const invoiceNumber = `Inv-${timestamp}${randomSuffix}`;
-    
-    // Prepare minimal invoice data for maximum speed
+    // Prepare invoice data for maximum speed
     const invoiceData = {
-      invoiceNumber,
       items: invoice.items,
       customer: invoice.customer || null,
       subtotal: invoice.subtotal || 0,
@@ -33,42 +27,21 @@ exports.createInvoice = async (req, res) => {
       total: invoice.total || 0,
       paymentMethod: invoice.paymentMethod || 'Cash',
       paymentStatus: "Paid",
-      createdAt: new Date().toISOString(),
-      timestamp: timestamp
+      timestamp: Date.now()
     };
 
-    // Super fast invoice creation - no batch operations for maximum speed
-    const invoiceRef = db.collection('invoices').doc(invoiceNumber);
-    await invoiceRef.set(invoiceData);
+    // Use InvoiceModel to create invoice with proper numbering
+    const savedInvoice = await InvoiceModel.create(invoiceData);
 
     // Return success response immediately
     res.status(201).json({ 
       success: true,
-      id: invoiceNumber, 
-      ...invoiceData,
+      ...savedInvoice,
       processingTime: Date.now() - res.get('X-Response-Time')
     });
 
-    // Handle inventory updates asynchronously (non-blocking)
-    if (invoice.items && invoice.items.length > 0) {
-      // Use a separate batch for inventory updates
-      const inventoryBatch = db.batch();
-      
-      invoice.items.forEach(item => {
-        if (item.id && item.quantity) {
-          const inventoryRef = db.collection('inventory').doc(item.id);
-          inventoryBatch.update(inventoryRef, {
-            quantity: db.FieldValue.increment(-Math.abs(item.quantity)),
-            lastUpdated: new Date().toISOString()
-          });
-        }
-      });
-
-      // Commit inventory updates in background (don't wait for response)
-      inventoryBatch.commit().catch(err => {
-        console.error('Background inventory update failed:', err);
-      });
-    }
+    // Note: Inventory and identifier updates are now handled asynchronously by the frontend
+    // This provides better control over the process and allows for proper identifier tracking
 
   } catch (err) {
     console.error('Error creating invoice:', err);

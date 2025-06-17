@@ -74,7 +74,7 @@ class IdentifiersController {
 
     async markAsSold(req, res) {
         try {
-            const { productId, identifier, type } = req.body;
+            const { productId, identifier, type, invoiceId } = req.body;
 
             if (!productId || !identifier || !type) {
                 return res.status(400).json({ error: 'Missing required fields' });
@@ -82,9 +82,9 @@ class IdentifiersController {
 
             let result;
             if (type === 'imei') {
-                result = await ImeiModel.markAsSold(productId, identifier);
+                result = await ImeiModel.markAsSold(productId, identifier, invoiceId);
             } else if (type === 'serial') {
-                result = await SerialModel.markAsSold(productId, identifier);
+                result = await SerialModel.markAsSold(productId, identifier, invoiceId);
             } else {
                 return res.status(400).json({ error: 'Invalid identifier type' });
             }

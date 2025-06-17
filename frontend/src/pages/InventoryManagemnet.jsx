@@ -28,6 +28,9 @@ export default function InventoryManagement() {
     const [inventoryDetails, setInventoryDetails] = useState(null);
     const [historySuppliers, setHistorySuppliers] = useState([]);
     const [showValuationModal, setShowValuationModal] = useState(false);
+    const [showTransactionHistory, setShowTransactionHistory] = useState(false);
+    const [transactionHistory, setTransactionHistory] = useState([]);
+    const [selectedProductForTransactions, setSelectedProductForTransactions] = useState(null);
 
     useEffect(() => {
         async function fetchProducts() {
@@ -170,6 +173,20 @@ export default function InventoryManagement() {
             }));
         } catch {
             return history.map(h => ({ ...h, supplier: null }));
+        }
+    };
+
+    // Fetch transaction history for a product
+    const fetchTransactionHistory = async (productId) => {
+        try {
+            const res = await fetch(`${backEndURL}/api/inventory/${productId}/transactions`);
+            const data = await res.json();
+            setTransactionHistory(data.transactions || []);
+            setSelectedProductForTransactions(productId);
+            setShowTransactionHistory(true);
+        } catch (error) {
+            console.error('Error fetching transaction history:', error);
+            setTransactionHistory([]);
         }
     };
 
@@ -611,6 +628,15 @@ export default function InventoryManagement() {
                             <div className="mb-4">
                                 <div className="text-gray-400 text-sm">Total Quantity</div>
                                 <div className="text-white font-semibold mb-2">{inventoryDetails.totalQuantity}</div>
+                                
+                                {/* Transaction History Button */}
+                                <button
+                                    onClick={() => fetchTransactionHistory(selectedProduct.sku || selectedProduct.id)}
+                                    className="mb-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                                >
+                                    📊 View Transaction History
+                                </button>
+                                
                                 <div className="text-gray-400 text-sm mb-1">History</div>
                                 <div className="max-h-48 overflow-y-auto">
                                     <table className="w-full text-sm text-gray-200">
@@ -715,6 +741,81 @@ export default function InventoryManagement() {
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Transaction History Modal */}
+            {showTransactionHistory && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                    <div className="bg-gray-900 rounded-lg shadow-2xl p-8 w-full max-w-4xl relative">
+                        <button
+                            className="absolute top-2 right-2 text-gray-400 hover:text-white text-2xl font-bold"
+                            onClick={() => setShowTransactionHistory(false)}
+                            aria-label="Close"
+                        >
+                            &times;
+                        </button>
+                        <h2 className="text-2xl font-bold mb-4 text-white">Transaction History</h2>
+                        <p className="text-gray-400 mb-4">Product ID: {selectedProductForTransactions}</p>
+                        
+                        {transactionHistory.length > 0 ? (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-gray-200">
+                                    <thead className="bg-gray-800">
+                                        <tr>
+                                            <th className="px-4 py-2 text-left">Date</th>
+                                            <th className="px-4 py-2 text-left">Type</th>
+                                            <th className="px-4 py-2 text-right">Quantity</th>
+                                            <th className="px-4 py-2 text-left">Description</th>
+                                            <th className="px-4 py-2 text-left">Reference</th>
+                                            <th className="px-4 py-2 text-left">Supplier Email</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-700">
+                                        {transactionHistory.map((transaction, index) => (
+                                            <tr key={index} className="hover:bg-gray-800">
+                                                <td className="px-4 py-2">
+                                                    {new Date(transaction.date).toLocaleString()}
+                                                </td>
+                                                <td className="px-4 py-2">
+                                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                                        transaction.type === 'purchase' 
+                                                            ? 'bg-green-900 text-green-300' 
+                                                            : 'bg-red-900 text-red-300'
+                                                    }`}>
+                                                        {transaction.type === 'purchase' ? '📥 Purchase' : '📤 Sale'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-2 text-right">
+                                                    <span className={transaction.type === 'purchase' ? 'text-green-400' : 'text-red-400'}>
+                                                        {transaction.type === 'purchase' ? '+' : '-'}{transaction.quantity}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-2">{transaction.description}</td>
+                                                <td className="px-4 py-2">
+                                                    {transaction.reference ? (
+                                                        <span className="text-blue-400">
+                                                            {transaction.type === 'sale' ? `Invoice: ${transaction.reference}` : `Purchase: ${transaction.reference}`}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-gray-500">-</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-2">
+                                                    {transaction.supplierEmail || <span className="text-gray-500">-</span>}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div className="text-center py-8">
+                                <p className="text-gray-400 text-lg">No transaction history found</p>
+                                <p className="text-gray-500 text-sm mt-2">This product has no inventory transactions yet</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

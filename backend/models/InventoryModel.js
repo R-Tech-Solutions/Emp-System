@@ -20,6 +20,14 @@ const InventoryModel = {
           supplierEmail,
           date: currentDate,
           purchaseId: deductInfo?.purchaseId || null
+        }],
+        transactions: [{  // Initial transaction record
+          type: 'purchase',
+          quantity: quantity,
+          date: currentDate,
+          reference: deductInfo?.purchaseId || null,
+          supplierEmail: supplierEmail,
+          description: `Initial purchase of ${quantity} units`
         }]
       };
       
@@ -81,6 +89,40 @@ const InventoryModel = {
               purchaseId: reference
             }
           ];
+          
+          // Add to transactions array
+          updatedData.transactions = [
+            ...(currentData.transactions || []),
+            {
+              type: 'purchase',
+              quantity: quantity,
+              date: currentDate,
+              reference: reference,
+              supplierEmail: supplierEmail,
+              description: `Purchased ${quantity} units`
+            }
+          ];
+        }
+        // If this is a sale (negative quantity), deduct from totalQuantity
+        else if (quantity < 0) {
+          const newQuantity = (currentData.totalQuantity || 0) + quantity; // quantity is negative, so this subtracts
+          if (newQuantity < 0) {
+            throw new Error('Insufficient stock for sale');
+          }
+          updatedData.totalQuantity = newQuantity;
+          
+          // Add to transactions array
+          updatedData.transactions = [
+            ...(currentData.transactions || []),
+            {
+              type: 'sale',
+              quantity: Math.abs(quantity), // Store as positive number for clarity
+              date: currentDate,
+              reference: reference,
+              description: `Sold ${Math.abs(quantity)} units`,
+              invoiceId: reference
+            }
+          ];
         }
 
         transaction.update(docRef, updatedData);
@@ -94,6 +136,16 @@ const InventoryModel = {
       console.error('Error updating inventory:', error);
       throw error;
     }
+  },
+
+  // Method specifically for handling sales
+  async deductFromStock(productId, quantity, invoiceId = null) {
+    return this.updateQuantity(productId, -Math.abs(quantity), 'sale', invoiceId);
+  },
+
+  // Method specifically for handling purchases
+  async addToStock(productId, quantity, supplierEmail, purchaseId = null) {
+    return this.updateQuantity(productId, Math.abs(quantity), 'purchase', purchaseId, supplierEmail);
   },
 
   // Clear cache for a specific product or all products
