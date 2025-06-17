@@ -1596,7 +1596,7 @@ const EnhancedBillingPOSSystem = () => {
           const inventory = inventoryMap.get(product.id);
           return {
             ...product,
-            stock: inventory ? inventory.totalQuantity : 0
+            stock: inventory ? inventory.quantity : 0
           };
         })
       );
@@ -1679,7 +1679,7 @@ const EnhancedBillingPOSSystem = () => {
           name: product.name,
           barcode: product.barcode,
           category: product.category,
-          stock: inventory ? inventory.totalQuantity : 0,
+          stock: inventory ? inventory.quantity : 0,
           standardPrice: product.salesPrice,
           wholesalePrice: product.marginPrice,
           retailPrice: product.retailPrice,

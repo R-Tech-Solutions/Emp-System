@@ -1,7 +1,6 @@
 const { db } = require('../firebaseConfig');
 const INVENTORY_COLLECTION = 'inventory';
 
-// Cache for frequently accessed inventory items
 const inventoryCache = new Map();
 const CACHE_TTL = 60000; // 1 minute cache TTL
 
