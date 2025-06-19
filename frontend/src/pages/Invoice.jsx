@@ -357,7 +357,7 @@ const printInvoice = (invoice, format = "a4") => {
   const iframe = document.createElement('iframe');
   iframe.style.display = 'none';
   document.body.appendChild(iframe);
-  
+
   // Generate and write the HTML content
   const htmlContent = generateInvoiceHTML(invoice, format);
   const iframeDoc = iframe.contentWindow.document;
@@ -375,7 +375,7 @@ const printInvoice = (invoice, format = "a4") => {
     </html>
   `);
   iframeDoc.close();
-  
+
   // Print after a short delay to ensure content is loaded
   setTimeout(() => {
     iframe.contentWindow.print();
@@ -559,6 +559,9 @@ const generateA4InvoiceHTML = (invoice) => {
   `
 }
 
+
+
+
 const generateThermalReceiptHTML = (invoice) => {
   if (!invoice) {
     console.error('Invoice data is missing')
@@ -579,7 +582,7 @@ const generateThermalReceiptHTML = (invoice) => {
   });
 
   // Calculate discount percentage
-  const discountPercentage = invoice.subtotal > 0 
+  const discountPercentage = invoice.subtotal > 0
     ? ((invoice.discountAmount / invoice.subtotal) * 100).toFixed(2)
     : 0;
 
@@ -602,7 +605,7 @@ const generateThermalReceiptHTML = (invoice) => {
       </div>
       
       ${invoice.customer
-        ? `
+      ? `
           <div style="border-bottom: 1px dashed #333; margin: 8px 0;"></div>
           <div style="text-align: left; margin: 8px 0;">
             <p style="margin: 1px 0; font-size: 9px;"><strong>Customer:</strong></p>
@@ -612,15 +615,15 @@ const generateThermalReceiptHTML = (invoice) => {
             ${invoice.customer.email ? `<p style="margin: 1px 0; font-size: 9px;">✉️ ${invoice.customer.email}</p>` : ''}
           </div>
         `
-        : ""
-      }
+      : ""
+    }
       
       <div style="border-bottom: 1px dashed #333; margin: 8px 0;"></div>
       
       <div style="text-align: left; margin: 8px 0;">
         ${invoice.items
-          .map(
-            (item, index) => `
+      .map(
+        (item, index) => `
               <div style="margin-bottom: 6px;">
                 <p style="margin: 1px 0; font-size: 9px; font-weight: bold;">${item.name}</p>
                 ${item.identifier ? `
@@ -640,8 +643,8 @@ const generateThermalReceiptHTML = (invoice) => {
                 </div>
               </div>
             `
-          )
-          .join("")}
+      )
+      .join("")}
       </div>
       
       <div style="border-bottom: 1px dashed #333; margin: 8px 0;"></div>
@@ -652,14 +655,14 @@ const generateThermalReceiptHTML = (invoice) => {
           <span>Rs ${invoice.subtotal.toFixed(2)}</span>
         </div>
         ${invoice.discountAmount > 0
-          ? `
+      ? `
             <div style="display: flex; justify-content: space-between; margin: 2px 0;">
               <span>Discount (${discountPercentage}%):</span>
               <span>-Rs ${invoice.discountAmount.toFixed(2)}</span>
             </div>
           `
-          : ""
-        }
+      : ""
+    }
         <div style="display: flex; justify-content: space-between; margin: 2px 0;">
           <span>Tax:</span>
           <span>Rs ${invoice.taxAmount.toFixed(2)}</span>
@@ -682,7 +685,7 @@ const generateThermalReceiptHTML = (invoice) => {
       <div style="border-bottom: 1px dashed #333; margin: 8px 0;"></div>
       
       <div style="text-align: center; margin: 8px 0; font-size: 8px;">
-        <p style="margin: 2px 0;">Thank you for your business!</p>
+        <p style="margin: 2px 0;">Thank you for your businessNew!</p>
         <p style="margin: 2px 0;">Please come again</p>
         <p style="margin: 2px 0;">Powered by R-tech Solution</p>
         <!-- Barcode -->
@@ -915,13 +918,13 @@ const EnhancedBillingPOSSystem = () => {
         setIsLoadingSettings(false);
       }
     };
-    
+
     fetchBusinessSettings();
   }, []);
+
   const [barcodeInput, setBarcodeInput] = useState("")
   const [selectedPriceType, setSelectedPriceType] = useState("standard")
   const [selectedCategory, setSelectedCategory] = useState("All")
-  const [showPayment, setShowPayment] = useState(false)
   const [showInvoice, setShowInvoice] = useState(false)
   const [showCustomerModal, setShowCustomerModal] = useState(false)
   const [currentInvoice, setCurrentInvoice] = useState(null)
@@ -937,6 +940,7 @@ const EnhancedBillingPOSSystem = () => {
   const [focusedElement, setFocusedElement] = useState(null)
   const focusableElementsRef = useRef([])
   const [showHoldBillModal, setShowHoldBillModal] = useState(false);
+
   // Enhanced state for better performance
   const [activeMainTab, setActiveMainTab] = useState("pos")
   const [invoiceSearchTerm, setInvoiceSearchTerm] = useState("")
@@ -964,10 +968,17 @@ const EnhancedBillingPOSSystem = () => {
       selectedCustomer: null,
       discount: { type: "amount", value: 0 },
       taxRate: 0,
+      showPayment: false,
+      showCustomerModal: false,
+      showProductsModal: false,
+      showInvoice: false,
+      showPrintSelection: false,
+      showInvoiceDetails: false,
+      showCustomSearchModal: false,
+      showHoldBillModal: false,
     },
   })
   const [heldBills, setHeldBills] = useState([])
-  const [showPrintSelection, setShowPrintSelection] = useState(false)
   const [pendingInvoice, setPendingInvoice] = useState(null)
 
   // Performance state
@@ -999,6 +1010,14 @@ const EnhancedBillingPOSSystem = () => {
         selectedCustomer: null,
         discount: { type: "amount", value: 0 },
         taxRate: 0,
+        showPayment: false,
+        showCustomerModal: false,
+        showProductsModal: false,
+        showInvoice: false,
+        showPrintSelection: false,
+        showInvoiceDetails: false,
+        showCustomSearchModal: false,
+        showHoldBillModal: false,
       }
     )
   }, [tabData, activeTab])
@@ -1101,11 +1120,11 @@ const EnhancedBillingPOSSystem = () => {
         e.preventDefault()
         if (showCustomSearchModal) setShowCustomSearchModal(false)
         else if (showKeyboardShortcuts) setShowKeyboardShortcuts(false)
-        else if (showPayment) setShowPayment(false)
+        else if (currentTabData.showPayment) updateTabData(activeTab, { showPayment: false })
         else if (showInvoice) setShowInvoice(false)
         else if (showCustomerModal) setShowCustomerModal(false)
         else if (showProductsModal) setShowProductsModal(false)
-        else if (showPrintSelection) setShowPrintSelection(false)
+        else if (currentTabData.showPrintSelection) updateTabData(activeTab, { showPrintSelection: false })
         else if (showInvoiceDetails) setShowInvoiceDetails(false)
         else if (cart.length > 0) handleClearCart()
         return false
@@ -1218,7 +1237,7 @@ const EnhancedBillingPOSSystem = () => {
           case "m":
             e.preventDefault()
             e.stopPropagation()
-            if (cart.length > 0) setShowPayment(true)
+            if (cart.length > 0) updateTabData(activeTab, { showPayment: true })
             return false
           case "c":
             e.preventDefault()
@@ -1266,7 +1285,7 @@ const EnhancedBillingPOSSystem = () => {
   }, [
     showCustomSearchModal,
     showKeyboardShortcuts,
-    showPayment,
+    currentTabData.showPayment,
     showInvoice,
     showProductsModal,
     showCustomerModal,
@@ -1277,6 +1296,7 @@ const EnhancedBillingPOSSystem = () => {
     tabs,
     isAltPressed,
   ])
+  const heldBill = heldBills.find(h => h.tabId === activeTab);
 
   // Fast tab management functions
   const handleAddTab = useCallback(() => {
@@ -1290,6 +1310,14 @@ const EnhancedBillingPOSSystem = () => {
         selectedCustomer: null,
         discount: { type: "amount", value: 0 },
         taxRate: 0,
+        showPayment: false,
+        showCustomerModal: false,
+        showProductsModal: false,
+        showInvoice: false,
+        showPrintSelection: false,
+        showInvoiceDetails: false,
+        showCustomSearchModal: false,
+        showHoldBillModal: false,
       },
     }))
     setActiveTab(newTabId)
@@ -1298,14 +1326,31 @@ const EnhancedBillingPOSSystem = () => {
 
   const handleTabChange = useCallback(
     (tabId) => {
-      setActiveTab(tabId)
-      const tab = tabs.find((t) => t.id === tabId)
+      setTabData((prev) => ({
+        ...prev,
+        [tabId]: {
+          ...prev[tabId],
+          showPayment: false,
+          showCustomerModal: false,
+          showProductsModal: false,
+          showInvoice: false,
+          showPrintSelection: false,
+          showInvoiceDetails: false,
+          showCustomSearchModal: false,
+          showHoldBillModal: false,
+        },
+      }));
+      setActiveTab(tabId);
+      const tab = tabs.find((t) => t.id === tabId);
       if (tab) {
-        showToast(`Switched to tab ${String(tab.number).padStart(2, "0")}`, "info")
+        showToast(`Switched to tab ${String(tab.number).padStart(2, "0")}`, "info");
       }
+      setTimeout(() => {
+        barcodeRef.current?.focus();
+      }, 100);
     },
-    [tabs],
-  )
+    [tabs]
+  );
 
   const handleHoldBill = useCallback(
     (tabId) => {
@@ -1327,8 +1372,16 @@ const EnhancedBillingPOSSystem = () => {
           [tabId]: {
             cart: [],
             selectedCustomer: null,
-            discount: { type: "amount", value: 0 },
-            taxRate: 0,
+            discount: heldBill.discount,
+            taxRate: heldBill.taxRate,
+            showPayment: currentData.showPayment,
+            showCustomerModal: currentData.showCustomerModal,
+            showProductsModal: currentData.showProductsModal,
+            showInvoice: currentData.showInvoice,
+            showPrintSelection: currentData.showPrintSelection,
+            showInvoiceDetails: currentData.showInvoiceDetails,
+            showCustomSearchModal: currentData.showCustomSearchModal,
+            showHoldBillModal: currentData.showHoldBillModal,
           },
         }))
 
@@ -1352,6 +1405,14 @@ const EnhancedBillingPOSSystem = () => {
             selectedCustomer: heldBill.selectedCustomer,
             discount: heldBill.discount,
             taxRate: heldBill.taxRate,
+            showPayment: heldBill.showPayment,
+            showCustomerModal: heldBill.showCustomerModal,
+            showProductsModal: heldBill.showProductsModal,
+            showInvoice: heldBill.showInvoice,
+            showPrintSelection: heldBill.showPrintSelection,
+            showInvoiceDetails: heldBill.showInvoiceDetails,
+            showCustomSearchModal: heldBill.showCustomSearchModal,
+            showHoldBillModal: heldBill.showHoldBillModal,
           },
         }))
 
@@ -1467,6 +1528,11 @@ const EnhancedBillingPOSSystem = () => {
         updateTabData(activeTab, { cart: [...currentCart, newItem] })
       }
       showToast(`${product.name} added to cart`, "success")
+      // Always focus barcode input after adding
+      setTimeout(() => {
+        barcodeRef.current?.focus();
+      }, 100);
+
     },
     [selectedPriceType, currentTabData.cart, activeTab, updateTabData, showToast],
   )
@@ -1572,6 +1638,14 @@ const EnhancedBillingPOSSystem = () => {
       selectedCustomer: null,
       discount: { type: "amount", value: 0 },
       taxRate: 0,
+      showPayment: false,
+      showCustomerModal: false,
+      showProductsModal: false,
+      showInvoice: false,
+      showPrintSelection: false,
+      showInvoiceDetails: false,
+      showCustomSearchModal: false,
+      showHoldBillModal: false,
     })
     showToast("Cart cleared", "info")
   }, [activeTab, updateTabData])
@@ -1702,6 +1776,9 @@ const EnhancedBillingPOSSystem = () => {
           setShowBarcodeSearch(false)
         }
       }
+      setTimeout(() => {
+        barcodeRef.current?.focus();
+      }, 100);
     },
     [barcodeInput, products, addToCart, showToast, backEndURL, selectedProductForIdentifier, setIsLoadingIdentifiers, setAvailableIdentifiers, setSelectedIdentifiers, setShowIdentifierModal, setBarcodeSearchResults, setShowBarcodeSearch],
   )
@@ -1844,6 +1921,10 @@ const EnhancedBillingPOSSystem = () => {
 
       // Clear input after action
       setBarcodeInput("")
+      // After handling product add or identifier modal, always focus barcode input
+      setTimeout(() => {
+        barcodeRef.current?.focus();
+      }, 100);
       return
     }
 
@@ -2004,6 +2085,12 @@ const EnhancedBillingPOSSystem = () => {
     setShowBarcodeSearch(false)
   }, [selectedPriceType, currentTabData.cart, activeTab, updateTabData, addToCart, showToast, backEndURL])
 
+  useEffect(() => {
+    setTimeout(() => {
+      barcodeRef.current?.focus();
+    }, 200);
+  }, [activeTab]);
+
   // Keyboard navigation for search results
   useEffect(() => {
     const handleSearchKeyDown = (e) => {
@@ -2082,12 +2169,12 @@ const EnhancedBillingPOSSystem = () => {
           heldAt: new Date(),
           billName, // Save the name/note
         };
-  
+
         setHeldBills((prev) => {
           const filtered = prev.filter((h) => h.tabId !== tabId);
           return [...filtered, holdData];
         });
-  
+
         setTabData((prev) => ({
           ...prev,
           [tabId]: {
@@ -2095,9 +2182,17 @@ const EnhancedBillingPOSSystem = () => {
             selectedCustomer: null,
             discount: { type: "amount", value: 0 },
             taxRate: 0,
+            showPayment: currentData.showPayment,
+            showCustomerModal: currentData.showCustomerModal,
+            showProductsModal: currentData.showProductsModal,
+            showInvoice: currentData.showInvoice,
+            showPrintSelection: currentData.showPrintSelection,
+            showInvoiceDetails: currentData.showInvoiceDetails,
+            showCustomSearchModal: currentData.showCustomSearchModal,
+            showHoldBillModal: currentData.showHoldBillModal,
           },
         }));
-  
+
         const tab = tabs.find((t) => t.id === tabId);
         showToast(
           `Bill "${billName}" held for tab ${String(tab?.number || "").padStart(2, "0")}`,
@@ -2176,28 +2271,28 @@ const EnhancedBillingPOSSystem = () => {
 
         // Update UI immediately for instant feedback
         setPendingInvoice({ ...invoice, id: savedInvoice.id });
-        setShowPayment(false);
+        updateTabData(activeTab, { showPayment: false });
         handleClearCart();
         showToast("Payment completed successfully!", "success");
-        
+
         // Automatically print based on business settings
         const format = businessSettings.printingStyle?.toLowerCase() === 'pos' ? 'pos' : 'a4';
-        
+
         // Create a hidden iframe for printing
         const iframe = document.createElement('iframe');
         iframe.style.display = 'none';
         document.body.appendChild(iframe);
-        
+
         // Get the invoice with identifiers and saved ID
         const invoiceWithIdentifiers = { ...invoice, id: savedInvoice.id };
-        
+
         // Generate and write the HTML content
         const htmlContent = generateInvoiceHTML(invoiceWithIdentifiers, format);
         const iframeDoc = iframe.contentWindow.document;
         iframeDoc.open();
         iframeDoc.write(htmlContent);
         iframeDoc.close();
-        
+
         // Print after a short delay to ensure content is loaded
         setTimeout(() => {
           iframe.contentWindow.print();
@@ -3062,7 +3157,7 @@ const EnhancedBillingPOSSystem = () => {
               )}
 
               {/* Cart Items with Scroll */}
-              <div className="flex-1 overflow-y-auto mb-4 space-y-2 virtual-scroll">
+              <div className="flex-1 overflow-y-auto space-y-2 virtual-scroll">
                 {cart.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <div className="text-4xl mb-2">🛒</div>
@@ -3083,7 +3178,7 @@ const EnhancedBillingPOSSystem = () => {
               </div>
 
               {/* Cart Summary - Fixed at bottom */}
-              <div className="mt-auto pt-4 border-t border-gray-200">
+              <div className="pt-4 border-t border-gray-200 bg-white sticky bottom-0 z-10">
                 <div className="space-y-2">
                   <div className="flex justify-between text-gray-600">
                     <span>Subtotal:</span>
@@ -3103,7 +3198,7 @@ const EnhancedBillingPOSSystem = () => {
                   </div>
                 </div>
                 <button
-                  onClick={() => setShowPayment(true)}
+                  onClick={() => updateTabData(activeTab, { showPayment: true })}
                   disabled={cart.length === 0}
                   className={`w-full mt-4 py-3 rounded-lg font-semibold text-white transition-colors ${cart.length === 0
                     ? "bg-gray-400 cursor-not-allowed"
@@ -3129,21 +3224,21 @@ const EnhancedBillingPOSSystem = () => {
           />
         )}
       </div>      {/* Custom Search Modal */}
-      {showPayment && (
+      {currentTabData.showPayment && (
         <EnhancedPaymentModal
           grandTotal={grandTotal}
           subtotal={calculatedSubtotal}
           taxRate={currentTaxRate}
           discount={currentDiscount}
-          onClose={() => setShowPayment(false)}
+          onClose={() => updateTabData(activeTab, { showPayment: false })}
           onPaymentComplete={completePayment}
         />
       )}
 
       {/* Enhanced Print Selection Modal */}
-      {showPrintSelection && pendingInvoice && (
+      {currentTabData.showPrintSelection && pendingInvoice && (
         <EnhancedPrintSelectionModal
-          onClose={() => setShowPrintSelection(false)}
+          onClose={() => updateTabData(activeTab, { showPrintSelection: false })}
           onPrintSelection={handlePrintSelection}
           invoice={pendingInvoice}
         />
@@ -4815,8 +4910,6 @@ const downloadInvoiceAsPDF = async (invoice, format = 'a4') => {
     doc.save(`invoice-${invoice.id || 'Unknown'}-a4.pdf`);
     return;
   }
-
-  // --- Advanced POS (Thermal) Layout ---
   let y = 8;
   // Logo (small, centered)
   if (logo) doc.addImage(logo, 'JPEG', 25, y, 30, 12);
