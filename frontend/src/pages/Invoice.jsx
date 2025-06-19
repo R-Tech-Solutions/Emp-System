@@ -1,9 +1,11 @@
-"use client"
 import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { backEndURL } from "../Backendurl"
 import { useNavigate } from "react-router-dom"
 import axios from "axios"
 import DotSpinner from "../loaders/Loader"
+import JsBarcode from "jsbarcode"
+import { jsPDF } from 'jspdf'
+import autoTable from 'jspdf-autotable'
 // Enhanced Print Styles for both POS and A4 formats
 
 const printStyles = `
@@ -345,17 +347,22 @@ const printStyles = `
 `
 
 // Add download functionality
-const downloadInvoiceAsPDF = (invoice, format = "a4") => {
+const printInvoice = (invoice, format = "a4") => {
   if (!invoice) {
     console.error('Invoice data is missing')
     return
   }
 
-  // Create a new window for printing
-  const printWindow = window.open("", "_blank")
-  const invoiceHTML = generateInvoiceHTML(invoice, format)
-
-  printWindow.document.write(`
+  // Create a hidden iframe for printing
+  const iframe = document.createElement('iframe');
+  iframe.style.display = 'none';
+  document.body.appendChild(iframe);
+  
+  // Generate and write the HTML content
+  const htmlContent = generateInvoiceHTML(invoice, format);
+  const iframeDoc = iframe.contentWindow.document;
+  iframeDoc.open();
+  iframeDoc.write(`
     <!DOCTYPE html>
     <html>
     <head>
@@ -363,17 +370,18 @@ const downloadInvoiceAsPDF = (invoice, format = "a4") => {
       <style>${printStyles}</style>
     </head>
     <body>
-      ${invoiceHTML}
-      <script>
-        window.onload = function() {
-          window.print();
-          setTimeout(() => window.close(), 1000);
-        }
-      </script>
+      ${htmlContent}
     </body>
     </html>
-  `)
-  printWindow.document.close()
+  `);
+  iframeDoc.close();
+  
+  // Print after a short delay to ensure content is loaded
+  setTimeout(() => {
+    iframe.contentWindow.print();
+    // Remove the iframe after printing
+    setTimeout(() => document.body.removeChild(iframe), 500);
+  }, 250);
 }
 
 const generateInvoiceHTML = (invoice, format) => {
@@ -395,6 +403,19 @@ const generateA4InvoiceHTML = (invoice) => {
     return '<div>Error: Invoice data is missing</div>'
   }
 
+  // Create barcode SVG
+  const barcodeContainer = document.createElement('div');
+  const barcodeSvg = document.createElement('svg');
+  barcodeContainer.appendChild(barcodeSvg);
+  JsBarcode(barcodeSvg, invoice.id || 'Unknown', {
+    format: "CODE128",
+    width: 2,
+    height: 100,
+    displayValue: true,
+    fontSize: 14,
+    margin: 10
+  });
+
   // Ensure all required values have defaults
   const safeInvoice = {
     id: invoice.id || 'Unknown',
@@ -409,136 +430,159 @@ const generateA4InvoiceHTML = (invoice) => {
     paymentStatus: invoice.paymentStatus || 'Paid'
   }
 
+  // Calculate discount percentage
+  const discountPercentage = safeInvoice.subtotal > 0 
+    ? ((safeInvoice.discountAmount / safeInvoice.subtotal) * 100).toFixed(2)
+    : 0;
+
   return `
-    <div class="a4-invoice professional-invoice">
-      <!-- Header Section -->
-      <div style="background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; padding: 20px; border-radius: 8px 8px 0 0;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
+  <div class="a4-invoice professional-invoice" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; line-height: 1.4; color: #1f2937; padding: 20px; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.05); max-width: 800px; margin: auto; border-radius: 10px;">
+
+  <!-- Header -->
+  <div style="background: linear-gradient(135deg, #1e3a8a, #2563eb); color: white; padding: 20px 30px; border-radius: 10px 10px 0 0;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+          <div style="width: 60px; height: 60px; background: white; color: #1e40af; font-size: 28px; font-weight: bold; display: flex; align-items: center; justify-content: center; border-radius: 10px;">R</div>
           <div>
-            <div style="display: flex; align-items: center; margin-bottom: 10px;">
-              <div style="width: 50px; height: 50px; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 15px; color: #1e40af; font-weight: bold; font-size: 24px;">
-                R
-              </div>
-              <div>
-                <h1 style="margin: 0; font-size: 28px; font-weight: bold;">R-tech Solution</h1>
-                <p style="margin: 0; font-size: 14px; opacity: 0.9;">Point of Sale System</p>
-              </div>
-            </div>
-            <div style="font-size: 12px; opacity: 0.9;">
-              <p style="margin: 2px 0;">📍 262 Peradeniya road, Kandy</p>
-              <p style="margin: 2px 0;">📞 +94 11 123 4567</p>
-              <p style="margin: 2px 0;">✉️ support@srilankapos.com</p>
-            </div>
-          </div>
-          <div style="text-align: right; color: white;">
-            <h2 style="margin: 0 0 10px 0; font-size: 32px; font-weight: bold;">INVOICE</h2>
-            <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 6px;">
-              <p style="margin: 2px 0;"><strong>Invoice #:</strong> ${safeInvoice.id}</p>
-              <p style="margin: 2px 0;"><strong>Date:</strong> ${new Date(safeInvoice.date).toLocaleDateString()}</p>
-              <p style="margin: 2px 0;"><strong>Time:</strong> ${new Date(safeInvoice.date).toLocaleTimeString()}</p>
-            </div>
+            <h1 style="margin: 0; font-size: 26px;">R-tech Solution</h1>
+            <p style="margin: 0; font-size: 14px; opacity: 0.9;">Point of Sale System</p>
           </div>
         </div>
-      </div>
-
-      <!-- Customer Information -->
-      ${safeInvoice.customer
-      ? `
-        <div style="padding: 15px; border: 1px solid #e5e7eb; margin-bottom: 10px;">
-          <h3 style="margin: 0 0 10px 0; color: #1e40af; font-size: 16px;">👤 BILL TO</h3>
-          <div style="background: #f8fafc; padding: 12px; border-radius: 6px; border-left: 4px solid #1e40af;">
-            <p style="margin: 0; font-weight: 600; font-size: 14px;">${safeInvoice.customer.name || 'N/A'}</p>
-            ${safeInvoice.customer.company ? `<p style="margin: 2px 0; font-size: 12px; color: #6b7280;">🏢 ${safeInvoice.customer.company}</p>` : ""}
-            ${safeInvoice.customer.phone ? `<p style="margin: 2px 0; font-size: 12px; color: #6b7280;">📞 ${safeInvoice.customer.phone}</p>` : ""}
-            ${safeInvoice.customer.email ? `<p style="margin: 2px 0; font-size: 12px; color: #6b7280;">✉️ ${safeInvoice.customer.email}</p>` : ""}
-          </div>
-        </div>
-      `
-      : ""
-    }
-
-      <!-- Items Table -->
-      <div style="padding: 15px; border: 1px solid #e5e7eb; margin-bottom: 10px;">
-        <h3 style="margin: 0 0 15px 0; color: #1e40af; font-size: 16px;">📋 ITEMS</h3>
-        <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
-          <thead>
-            <tr style="background: #1e40af; color: white;">
-              <th style="text-align: left; padding: 12px 8px;">DESCRIPTION</th>
-              <th style="text-align: center; padding: 12px 8px; width: 80px;">QTY</th>
-              <th style="text-align: right; padding: 12px 8px; width: 100px;">RATE</th>
-              <th style="text-align: right; padding: 12px 8px; width: 100px;">AMOUNT</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${safeInvoice.items
-      .map(
-        (item, index) => `
-              <tr style="background: ${index % 2 === 0 ? "#ffffff" : "#f9fafb"};">
-                <td style="padding: 10px 8px;">
-                  <div style="font-weight: 600; color: #1f2937;">${item.name || 'Unknown Item'}</div>
-                  <div style="font-size: 11px; color: #6b7280;">🏷️ ${item.category || 'N/A'} • SKU: ${item.barcode || 'N/A'}</div>
-                </td>
-                <td style="text-align: center; padding: 10px 8px; font-weight: 500;">${item.quantity || 0}</td>
-                <td style="text-align: right; padding: 10px 8px;">Rs ${(item.price || 0).toFixed(2)}</td>
-                <td style="text-align: right; padding: 10px 8px; font-weight: 600;">Rs ${((item.price || 0) * (item.quantity || 0)).toFixed(2)}</td>
-              </tr>
-            `,
-      )
-      .join("")}
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Summary Section -->
-      <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
-        <div style="width: 300px; background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-            <span style="color: #6b7280;">Subtotal:</span>
-            <span style="font-weight: 500;">Rs ${safeInvoice.subtotal.toFixed(2)}</span>
-          </div>
-          ${safeInvoice.discountAmount > 0
-      ? `
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; color: #dc2626;">
-              <span>Discount:</span>
-              <span>-Rs ${safeInvoice.discountAmount.toFixed(2)}</span>
-            </div>
-          `
-      : ""
-    }
-          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-            <span style="color: #6b7280;">Tax:</span>
-            <span style="font-weight: 500;">Rs ${safeInvoice.taxAmount.toFixed(2)}</span>
-          </div>
-          <div style="border-top: 2px solid #1e40af; padding-top: 8px; margin-top: 8px;">
-            <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; color: #1e40af;">
-              <span>TOTAL:</span>
-              <span>Rs ${safeInvoice.total.toFixed(2)}</span>
-            </div>
-          </div>
+        <div style="font-size: 12px; opacity: 0.9;">
+          <p>📍 262 Peradeniya road, Kandy</p>
+          <p>📞 +94 11 123 4567</p>
+          <p>✉️ support@srilankapos.com</p>
         </div>
       </div>
-
-      <!-- Payment Information -->
-      <div style="padding: 15px; border: 1px solid #e5e7eb; margin-top: 20px;">
-        <h3 style="margin: 0 0 10px 0; color: #1e40af; font-size: 16px;">💳 PAYMENT INFORMATION</h3>
-        <div style="background: #f0fdf4; padding: 12px; border-radius: 6px; border-left: 4px solid #10b981;">
-          <p style="margin: 0; color: #166534;"><strong>Payment Method:</strong> ${safeInvoice.paymentMethod}</p>
-          <p style="margin: 2px 0; color: #166534;"><strong>Payment Status:</strong> ${safeInvoice.paymentStatus}</p>
-          <p style="margin: 2px 0; color: #166534;"><strong>Amount Paid:</strong> Rs ${safeInvoice.total.toFixed(2)}</p>
+      <div style="text-align: right; margin-top: 10px;">
+        <h2 style="margin: 0; font-size: 32px;">INVOICE</h2>
+        <div style="margin-top: 10px; background: rgba(255,255,255,0.2); padding: 12px; border-radius: 6px;">
+          <p><strong>Invoice #:</strong> ${safeInvoice.id}</p>
+          <p><strong>Date:</strong> ${new Date(safeInvoice.date).toLocaleDateString()}</p>
+          <p><strong>Time:</strong> ${new Date(safeInvoice.date).toLocaleTimeString()}</p>
         </div>
-      </div>
-
-      <!-- Footer -->
-      <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 12px;">
-        <p style="margin: 5px 0; font-weight: 600;">Thank you for your business! 🙏</p>
-        <p style="margin: 5px 0;">This is a computer generated invoice and does not require signature.</p>
-        <p style="margin: 5px 0;">Powered by R-tech Solution POS System</p>
       </div>
     </div>
+  </div>
+
+  <!-- Customer Info -->
+  ${safeInvoice.customer ? `
+    <div style="padding: 20px; border-bottom: 1px solid #e5e7eb;">
+      <h3 style="margin: 0 0 10px; color: #1e40af;">👤 BILL TO</h3>
+      <div style="background: #f1f5f9; padding: 15px; border-left: 4px solid #1e40af; border-radius: 6px;">
+        <p style="font-weight: 600; margin-bottom: 5px;">${safeInvoice.customer.name || 'N/A'}</p>
+        ${safeInvoice.customer.company ? `<p>🏢 ${safeInvoice.customer.company}</p>` : ""}
+        ${safeInvoice.customer.phone ? `<p>📞 ${safeInvoice.customer.phone}</p>` : ""}
+        ${safeInvoice.customer.email ? `<p>✉️ ${safeInvoice.customer.email}</p>` : ""}
+      </div>
+    </div>` : ''}
+
+  <!-- Items -->
+  <div style="padding: 20px; border-bottom: 1px solid #e5e7eb;">
+    <h3 style="margin: 0 0 15px; color: #1e40af;">📋 ITEMS</h3>
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr style="background-color: #1e40af; color: white;">
+          <th style="text-align: left; padding: 12px;">DESCRIPTION</th>
+          <th style="text-align: center; padding: 12px;">QTY</th>
+          <th style="text-align: right; padding: 12px;">RATE</th>
+          <th style="text-align: right; padding: 12px;">AMOUNT</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${safeInvoice.items.map((item, index) => `
+          <tr style="background: ${index % 2 === 0 ? "#ffffff" : "#f9fafb"};">
+            <td style="padding: 12px;">
+              <div style="font-weight: 600;">${item.name || 'Unknown Item'}</div>
+              <div style="font-size: 12px; color: #6b7280;">🏷️ ${item.category || 'N/A'} • SKU: ${item.barcode || 'N/A'}</div>
+              ${item.identifier ? `<div style="font-size: 12px; color: #4b5563; margin-top: 5px;"><strong>${item.identifierType}:</strong> ${item.identifierValue}</div>` : ""}
+            </td>
+            <td style="text-align: center; font-weight: 500;">${item.quantity || 0}</td>
+            <td style="text-align: right;">
+              ${item.discountAmount > 0 ? `
+                <div style="text-decoration: line-through; color: #9ca3af; font-size: 12px;">Rs ${(item.originalPrice || 0).toFixed(2)}</div>
+                <div style="color: #dc2626; font-size: 12px;">-Rs ${(item.discountAmount || 0).toFixed(2)} (${((item.discountAmount / item.originalPrice) * 100).toFixed(2)}%)</div>
+              ` : ""}
+              <div>Rs ${(item.discountedPrice || 0).toFixed(2)}</div>
+            </td>
+            <td style="text-align: right; font-weight: 600;">Rs ${((item.discountedPrice || 0) * (item.quantity || 0)).toFixed(2)}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Summary -->
+  <div style="padding: 20px; display: flex; justify-content: flex-end;">
+    <div style="width: 100%; max-width: 320px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+        <span style="color: #6b7280;">Subtotal:</span>
+        <span>Rs ${safeInvoice.subtotal.toFixed(2)}</span>
+      </div>
+      ${safeInvoice.discountAmount > 0 ? `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; color: #dc2626;">
+          <span>Discount (${discountPercentage}%):</span>
+          <span>-Rs ${safeInvoice.discountAmount.toFixed(2)}</span>
+        </div>` : ""}
+      <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+        <span style="color: #6b7280;">Tax:</span>
+        <span>Rs ${safeInvoice.taxAmount.toFixed(2)}</span>
+      </div>
+      <div style="border-top: 2px solid #1e40af; padding-top: 10px; margin-top: 10px; font-weight: bold; font-size: 18px; color: #1e40af;">
+        <div style="display: flex; justify-content: space-between;">
+          <span>Total:</span>
+          <span>Rs ${safeInvoice.total.toFixed(2)}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Info -->
+  <div style="padding: 20px; border-top: 1px solid #e5e7eb;">
+    <h3 style="color: #1e40af;">💳 PAYMENT INFORMATION</h3>
+    <div style="background: #f0fdf4; padding: 15px; border-left: 4px solid #10b981; border-radius: 6px;">
+      <p><strong>Payment Method:</strong> ${safeInvoice.paymentMethod}</p>
+      <p><strong>Payment Status:</strong> ${safeInvoice.paymentStatus}</p>
+      <p><strong>Amount Paid:</strong> Rs ${safeInvoice.total.toFixed(2)}</p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="text-align: center; margin-top: 30px; color: #6b7280; font-size: 13px;">
+    <p style="margin: 5px 0;"><strong>Thank you for your business! 🙏</strong></p>
+    <p style="margin: 5px 0;">This is a computer-generated invoice and does not require a signature.</p>
+    <p style="margin: 5px 0;">Powered by R-tech Solution POS System</p>
+    <div style="margin-top: 15px;">${barcodeContainer.innerHTML}</div>
+  </div>
+
+</div>
   `
 }
 
 const generateThermalReceiptHTML = (invoice) => {
+  if (!invoice) {
+    console.error('Invoice data is missing')
+    return '<div>Error: Invoice data is missing</div>'
+  }
+
+  // Create barcode SVG for thermal receipt
+  const barcodeContainer = document.createElement('div');
+  const barcodeSvg = document.createElement('svg');
+  barcodeContainer.appendChild(barcodeSvg);
+  JsBarcode(barcodeSvg, invoice.id || 'Unknown', {
+    format: "CODE128",
+    width: 1.5,
+    height: 50,
+    displayValue: true,
+    fontSize: 10,
+    margin: 5
+  });
+
+  // Calculate discount percentage
+  const discountPercentage = invoice.subtotal > 0 
+    ? ((invoice.discountAmount / invoice.subtotal) * 100).toFixed(2)
+    : 0;
+
   return `
     <div class="pos-invoice" style="font-family: 'Courier New', monospace; text-align: center; line-height: 1.4;">
       <div style="text-align: center; margin-bottom: 10px;">
@@ -558,32 +602,46 @@ const generateThermalReceiptHTML = (invoice) => {
       </div>
       
       ${invoice.customer
-      ? `
-        <div style="border-bottom: 1px dashed #333; margin: 8px 0;"></div>
-        <div style="text-align: left; margin: 8px 0;">
-          <p style="margin: 1px 0; font-size: 9px;"><strong>Customer:</strong></p>
-          <p style="margin: 1px 0; font-size: 9px;">${invoice.customer.name}</p>
-        </div>
-      `
-      : ""
-    }
+        ? `
+          <div style="border-bottom: 1px dashed #333; margin: 8px 0;"></div>
+          <div style="text-align: left; margin: 8px 0;">
+            <p style="margin: 1px 0; font-size: 9px;"><strong>Customer:</strong></p>
+            <p style="margin: 1px 0; font-size: 9px;">👤 ${invoice.customer.name}</p>
+            ${invoice.customer.company ? `<p style="margin: 1px 0; font-size: 9px;">🏢 ${invoice.customer.company}</p>` : ''}
+            ${invoice.customer.phone ? `<p style="margin: 1px 0; font-size: 9px;">📞 ${invoice.customer.phone}</p>` : ''}
+            ${invoice.customer.email ? `<p style="margin: 1px 0; font-size: 9px;">✉️ ${invoice.customer.email}</p>` : ''}
+          </div>
+        `
+        : ""
+      }
       
       <div style="border-bottom: 1px dashed #333; margin: 8px 0;"></div>
       
       <div style="text-align: left; margin: 8px 0;">
         ${invoice.items
-      .map(
-        (item) => `
-          <div style="margin-bottom: 6px;">
-            <p style="margin: 1px 0; font-size: 9px; font-weight: bold;">${item.name}</p>
-            <div style="display: flex; justify-content: space-between; font-size: 9px;">
-              <span>${item.quantity} x Rs ${item.price.toFixed(2)}</span>
-              <span>Rs ${(item.price * item.quantity).toFixed(2)}</span>
-            </div>
-          </div>
-        `,
-      )
-      .join("")}
+          .map(
+            (item, index) => `
+              <div style="margin-bottom: 6px;">
+                <p style="margin: 1px 0; font-size: 9px; font-weight: bold;">${item.name}</p>
+                ${item.identifier ? `
+                  <p style="margin: 1px 0; font-size: 8px; color: #666;">
+                    ${item.identifierType}: ${item.identifierValue}
+                  </p>
+                ` : ''}
+                <div style="display: flex; justify-content: space-between; font-size: 9px;">
+                  <span>${item.quantity} x 
+                    ${item.discountAmount > 0 ? `
+                      <span style="text-decoration: line-through;">Rs ${item.originalPrice.toFixed(2)}</span>
+                      <span style="color: #dc2626;">-${item.discountAmount.toFixed(2)} (${((item.discountAmount / item.originalPrice) * 100).toFixed(2)}%)</span>
+                      Rs ${item.discountedPrice.toFixed(2)}
+                    ` : `Rs ${item.discountedPrice.toFixed(2)}`}
+                  </span>
+                  <span>Rs ${(item.discountedPrice * item.quantity).toFixed(2)}</span>
+                </div>
+              </div>
+            `
+          )
+          .join("")}
       </div>
       
       <div style="border-bottom: 1px dashed #333; margin: 8px 0;"></div>
@@ -594,14 +652,14 @@ const generateThermalReceiptHTML = (invoice) => {
           <span>Rs ${invoice.subtotal.toFixed(2)}</span>
         </div>
         ${invoice.discountAmount > 0
-      ? `
-          <div style="display: flex; justify-content: space-between; margin: 2px 0;">
-            <span>Discount:</span>
-            <span>-Rs ${invoice.discountAmount.toFixed(2)}</span>
-          </div>
-        `
-      : ""
-    }
+          ? `
+            <div style="display: flex; justify-content: space-between; margin: 2px 0;">
+              <span>Discount (${discountPercentage}%):</span>
+              <span>-Rs ${invoice.discountAmount.toFixed(2)}</span>
+            </div>
+          `
+          : ""
+        }
         <div style="display: flex; justify-content: space-between; margin: 2px 0;">
           <span>Tax:</span>
           <span>Rs ${invoice.taxAmount.toFixed(2)}</span>
@@ -627,6 +685,10 @@ const generateThermalReceiptHTML = (invoice) => {
         <p style="margin: 2px 0;">Thank you for your business!</p>
         <p style="margin: 2px 0;">Please come again</p>
         <p style="margin: 2px 0;">Powered by R-tech Solution</p>
+        <!-- Barcode -->
+        <div style="margin-top: 10px; text-align: center;">
+          ${barcodeContainer.innerHTML}
+        </div>
       </div>
     </div>
   `
@@ -832,9 +894,30 @@ const EnhancedPrintSelectionModal = ({ onClose, onPrintSelection, invoice }) => 
 const EnhancedBillingPOSSystem = () => {
   const navigate = useNavigate()
   // State management with performance optimizations
+  const [businessSettings, setBusinessSettings] = useState({ printingStyle: 'A4' }); // Default to A4
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const [products, setProducts] = useState([])
   const [customers, setCustomers] = useState([])
   const [searchTerm, setSearchTerm] = useState("")
+
+  // Fetch business settings
+  useEffect(() => {
+    const fetchBusinessSettings = async () => {
+      try {
+        const response = await fetch(`${backEndURL}/api/business-settings`);
+        if (response.ok) {
+          const { data } = await response.json();
+          setBusinessSettings(data || { printingStyle: 'A4' });
+        }
+      } catch (error) {
+        console.error('Error fetching business settings:', error);
+      } finally {
+        setIsLoadingSettings(false);
+      }
+    };
+    
+    fetchBusinessSettings();
+  }, []);
   const [barcodeInput, setBarcodeInput] = useState("")
   const [selectedPriceType, setSelectedPriceType] = useState("standard")
   const [selectedCategory, setSelectedCategory] = useState("All")
@@ -853,7 +936,7 @@ const EnhancedBillingPOSSystem = () => {
   const [isAltPressed, setIsAltPressed] = useState(false)
   const [focusedElement, setFocusedElement] = useState(null)
   const focusableElementsRef = useRef([])
-
+  const [showHoldBillModal, setShowHoldBillModal] = useState(false);
   // Enhanced state for better performance
   const [activeMainTab, setActiveMainTab] = useState("pos")
   const [invoiceSearchTerm, setInvoiceSearchTerm] = useState("")
@@ -864,7 +947,7 @@ const EnhancedBillingPOSSystem = () => {
   const [searchModalTerm, setSearchModalTerm] = useState("")
   const [searchModalSelectedIndex, setSearchModalSelectedIndex] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // New state for identifier selection
   const [showIdentifierModal, setShowIdentifierModal] = useState(false)
   const [selectedProductForIdentifier, setSelectedProductForIdentifier] = useState(null)
@@ -1308,23 +1391,23 @@ const EnhancedBillingPOSSystem = () => {
     async (product) => {
       console.log('Product clicked:', product) // Debug log
       console.log('Product identifier type:', product.productIdentifierType) // Debug log
-      
+
       // Check if product has identifier type
       if (product.productIdentifierType && product.productIdentifierType !== 'none') {
         console.log('Opening identifier modal for:', product.productIdentifierType) // Debug log
         // Show identifier selection modal
         setSelectedProductForIdentifier(product)
         setIsLoadingIdentifiers(true)
-        
+
         try {
           // Fetch available identifiers
           const response = await fetch(`${backEndURL}/api/identifiers/${product.productIdentifierType}/${product.id}`)
           console.log('API Response status:', response.status) // Debug log
-          
+
           if (response.ok) {
             const data = await response.json()
             console.log('API Response data:', data) // Debug log
-            
+
             if (data && data.identifiers) {
               // Filter only available (not sold) identifiers
               const available = data.identifiers.filter(item => !item.sold)
@@ -1398,10 +1481,10 @@ const EnhancedBillingPOSSystem = () => {
 
     // Create cart items for each selected identifier
     selectedIds.forEach(identifierId => {
-      const identifier = availableIdentifiers.find(item => 
+      const identifier = availableIdentifiers.find(item =>
         item[selectedProductForIdentifier.productIdentifierType] === identifierId
       )
-      
+
       if (identifier) {
         const newItem = {
           id: `${selectedProductForIdentifier.id}-${identifierId}`,
@@ -1420,7 +1503,7 @@ const EnhancedBillingPOSSystem = () => {
           mainProductId: selectedProductForIdentifier.id,
           mainProductSku: selectedProductForIdentifier.sku || selectedProductForIdentifier.id
         }
-        
+
         updateTabData(activeTab, { cart: [...currentCart, newItem] })
       }
     })
@@ -1575,16 +1658,16 @@ const EnhancedBillingPOSSystem = () => {
             // Show identifier selection modal
             setSelectedProductForIdentifier(product)
             setIsLoadingIdentifiers(true)
-            
+
             try {
               // Fetch available identifiers
               const response = await fetch(`${backEndURL}/api/identifiers/${product.productIdentifierType}/${product.id}`)
               console.log('API Response status:', response.status)
-              
+
               if (response.ok) {
                 const data = await response.json()
                 console.log('API Response data:', data)
-                
+
                 if (data && data.identifiers) {
                   // Filter only available (not sold) identifiers
                   const available = data.identifiers.filter(item => !item.sold)
@@ -1635,7 +1718,7 @@ const EnhancedBillingPOSSystem = () => {
       setIsSearchingBarcode(true)
       try {
         // Search in products first
-        const matchingProducts = products.filter(product => 
+        const matchingProducts = products.filter(product =>
           product.barcode.toLowerCase().includes(searchTerm.toLowerCase()) ||
           product.name.toLowerCase().includes(searchTerm.toLowerCase())
         )
@@ -1643,7 +1726,7 @@ const EnhancedBillingPOSSystem = () => {
         // Search in identifiers
         const identifierResults = []
         const soldIdentifiers = [] // Track sold identifiers to show messages
-        
+
         for (const product of products) {
           if (product.productIdentifierType && product.productIdentifierType !== 'none') {
             try {
@@ -1655,7 +1738,7 @@ const EnhancedBillingPOSSystem = () => {
                     const identifierValue = item[product.productIdentifierType]
                     return identifierValue && identifierValue.toLowerCase().includes(searchTerm.toLowerCase())
                   })
-                  
+
                   matchingIdentifiers.forEach(identifier => {
                     if (identifier.sold) {
                       // Add to sold identifiers list
@@ -1695,10 +1778,10 @@ const EnhancedBillingPOSSystem = () => {
         setBarcodeSearchResults(combinedResults)
         setShowBarcodeSearch(combinedResults.length > 0)
         setSelectedSearchIndex(0)
-        
+
         // Show message for sold identifiers
         if (soldIdentifiers.length > 0) {
-          const soldMessage = soldIdentifiers.map(item => 
+          const soldMessage = soldIdentifiers.map(item =>
             `${item.product.name} - ${item.product.productIdentifierType.toUpperCase()}: ${item.identifier[item.product.productIdentifierType]}`
           ).join(', ')
           showToast(`⚠️ Already sold: ${soldMessage}`, "warning")
@@ -1716,16 +1799,16 @@ const EnhancedBillingPOSSystem = () => {
   const handleBarcodeInputChange = useCallback((e) => {
     const value = e.target.value
     setBarcodeInput(value)
-    
+
     // Clear previous search results
     setBarcodeSearchResults([])
     setShowBarcodeSearch(false)
-    
+
     if (!value.trim()) return
 
     // Check for exact barcode match immediately (no debounce for exact matches)
     const exactProductMatch = products.find(product => product.barcode === value.trim())
-    
+
     if (exactProductMatch) {
       // Exact barcode match found - handle automatically
       if (exactProductMatch.productIdentifierType && exactProductMatch.productIdentifierType !== 'none') {
@@ -1733,7 +1816,7 @@ const EnhancedBillingPOSSystem = () => {
         console.log('Exact barcode match with identifiers:', exactProductMatch.productIdentifierType)
         setSelectedProductForIdentifier(exactProductMatch)
         setIsLoadingIdentifiers(true)
-        
+
         fetch(`${backEndURL}/api/identifiers/${exactProductMatch.productIdentifierType}/${exactProductMatch.id}`)
           .then(response => response.json())
           .then(data => {
@@ -1758,7 +1841,7 @@ const EnhancedBillingPOSSystem = () => {
         addToCart(exactProductMatch)
         showToast(`Product added: ${exactProductMatch.name}`, "success")
       }
-      
+
       // Clear input after action
       setBarcodeInput("")
       return
@@ -1769,7 +1852,7 @@ const EnhancedBillingPOSSystem = () => {
       // Check for exact identifier match
       let exactIdentifierMatch = null
       let soldIdentifierMatch = null // Track if we find a sold identifier
-      
+
       for (const product of products) {
         if (product.productIdentifierType && product.productIdentifierType !== 'none') {
           try {
@@ -1778,16 +1861,16 @@ const EnhancedBillingPOSSystem = () => {
               const data = await response.json()
               if (data && data.identifiers) {
                 // First check for available (not sold) exact match
-                const exactMatch = data.identifiers.find(item => 
+                const exactMatch = data.identifiers.find(item =>
                   item[product.productIdentifierType] === value.trim() && !item.sold
                 )
                 if (exactMatch) {
                   exactIdentifierMatch = { product, identifier: exactMatch }
                   break
                 }
-                
+
                 // If no available match found, check if it's sold
-                const soldMatch = data.identifiers.find(item => 
+                const soldMatch = data.identifiers.find(item =>
                   item[product.productIdentifierType] === value.trim() && item.sold
                 )
                 if (soldMatch) {
@@ -1835,7 +1918,7 @@ const EnhancedBillingPOSSystem = () => {
           mainProductId: product.id,
           mainProductSku: product.sku || product.id
         }
-        
+
         updateTabData(activeTab, { cart: [...currentCart, newItem] })
         showToast(`${product.name} with ${product.productIdentifierType.toUpperCase()}: ${identifierValue} added to cart`, "success")
         setBarcodeInput("")
@@ -1857,7 +1940,7 @@ const EnhancedBillingPOSSystem = () => {
         // Open identifier modal
         setSelectedProductForIdentifier(result.product)
         setIsLoadingIdentifiers(true)
-        
+
         fetch(`${backEndURL}/api/identifiers/${result.product.productIdentifierType}/${result.product.id}`)
           .then(response => response.json())
           .then(data => {
@@ -1887,7 +1970,7 @@ const EnhancedBillingPOSSystem = () => {
         showToast(`⚠️ ${result.product.name} with ${result.product.productIdentifierType.toUpperCase()}: ${identifierValue} is already sold!`, "warning")
         return
       }
-      
+
       // Handle identifier selection - add specific identifier to cart
       const priceKey = `${selectedPriceType}Price`
       const price = result.product[priceKey]
@@ -1911,7 +1994,7 @@ const EnhancedBillingPOSSystem = () => {
         mainProductId: result.product.id,
         mainProductSku: result.product.sku || result.product.id
       }
-      
+
       updateTabData(activeTab, { cart: [...currentCart, newItem] })
       showToast(`${result.product.name} with ${result.product.productIdentifierType.toUpperCase()}: ${identifierValue} added to cart`, "success")
     }
@@ -1989,6 +2072,43 @@ const EnhancedBillingPOSSystem = () => {
     }
   }, [showBarcodeSearch, barcodeSearchResults, selectedSearchIndex, handleSearchResultSelect, showToast])
 
+  const handleHoldBillWithName = useCallback(
+    (tabId, billName) => {
+      const currentData = tabData[tabId];
+      if (currentData && currentData.cart.length > 0) {
+        const holdData = {
+          tabId,
+          ...currentData,
+          heldAt: new Date(),
+          billName, // Save the name/note
+        };
+  
+        setHeldBills((prev) => {
+          const filtered = prev.filter((h) => h.tabId !== tabId);
+          return [...filtered, holdData];
+        });
+  
+        setTabData((prev) => ({
+          ...prev,
+          [tabId]: {
+            cart: [],
+            selectedCustomer: null,
+            discount: { type: "amount", value: 0 },
+            taxRate: 0,
+          },
+        }));
+  
+        const tab = tabs.find((t) => t.id === tabId);
+        showToast(
+          `Bill "${billName}" held for tab ${String(tab?.number || "").padStart(2, "0")}`,
+          "success"
+        );
+      } else {
+        showToast("No items to hold", "warning");
+      }
+    },
+    [tabData, tabs]
+  );
   // Enhanced completePayment function with async processing
   const completePayment = useCallback(
     async (paymentData) => {
@@ -2000,7 +2120,10 @@ const EnhancedBillingPOSSystem = () => {
             id: item.id,
             name: item.name,
             quantity: item.quantity,
-            price: item.discountedPrice || item.price,
+            price: item.price,
+            discountedPrice: item.discountedPrice || item.price,
+            originalPrice: item.price,
+            discountAmount: item.price - (item.discountedPrice || item.price),
             category: item.category,
             barcode: item.barcode,
           }
@@ -2011,6 +2134,10 @@ const EnhancedBillingPOSSystem = () => {
             baseItem.identifierValue = item.identifierValue
             baseItem.mainProductId = item.mainProductId
             baseItem.mainProductSku = item.mainProductSku
+            baseItem.identifier = {
+              type: item.identifierType,
+              value: item.identifierValue
+            }
           }
 
           return baseItem
@@ -2019,9 +2146,9 @@ const EnhancedBillingPOSSystem = () => {
         // Create invoice object with enhanced data
         const invoice = {
           items: invoiceItems,
-          customer: currentSelectedCustomer ? { 
-            id: currentSelectedCustomer.id, 
-            name: currentSelectedCustomer.name 
+          customer: currentSelectedCustomer ? {
+            id: currentSelectedCustomer.id,
+            name: currentSelectedCustomer.name
           } : null,
           subtotal: calculatedSubtotal,
           discountAmount: discountAmount,
@@ -2046,13 +2173,37 @@ const EnhancedBillingPOSSystem = () => {
         }
 
         const savedInvoice = await response.json();
-        
+
         // Update UI immediately for instant feedback
         setPendingInvoice({ ...invoice, id: savedInvoice.id });
-        setShowPrintSelection(true);
         setShowPayment(false);
         handleClearCart();
         showToast("Payment completed successfully!", "success");
+        
+        // Automatically print based on business settings
+        const format = businessSettings.printingStyle?.toLowerCase() === 'pos' ? 'pos' : 'a4';
+        
+        // Create a hidden iframe for printing
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+        
+        // Get the invoice with identifiers and saved ID
+        const invoiceWithIdentifiers = { ...invoice, id: savedInvoice.id };
+        
+        // Generate and write the HTML content
+        const htmlContent = generateInvoiceHTML(invoiceWithIdentifiers, format);
+        const iframeDoc = iframe.contentWindow.document;
+        iframeDoc.open();
+        iframeDoc.write(htmlContent);
+        iframeDoc.close();
+        
+        // Print after a short delay to ensure content is loaded
+        setTimeout(() => {
+          iframe.contentWindow.print();
+          // Remove the iframe after printing
+          setTimeout(() => document.body.removeChild(iframe), 500);
+        }, 250);
 
         // Step 2 & 3: Process inventory and identifiers asynchronously (non-blocking)
         Promise.all([
@@ -2155,6 +2306,8 @@ const EnhancedBillingPOSSystem = () => {
       showToast,
       setProducts,
       backEndURL,
+      businessSettings,
+      generateInvoiceHTML
     ],
   )
 
@@ -2478,6 +2631,13 @@ const EnhancedBillingPOSSystem = () => {
     }
   };
 
+  // Focus barcode input on POS page mount or when switching to POS tab
+  useEffect(() => {
+    if (activeMainTab === 'pos' && barcodeRef.current) {
+      barcodeRef.current.focus();
+    }
+  }, [activeMainTab]);
+
   if (isLoading) {
     return (
       <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
@@ -2526,16 +2686,19 @@ const EnhancedBillingPOSSystem = () => {
         >
           ⌨️
         </button>
-
-        {/* Hold Bill */}
         <button
-          onClick={() => handleHoldBill(activeTab)}
+          onClick={() => setShowHoldBillModal(true)}
           className="bg-yellow-500 hover:bg-yellow-600 text-white rounded-full p-3 card-shadow transition-all duration-150 hover:scale-105"
           title="Hold Current Bill (Shift+H)"
         >
           🧾
         </button>
-
+        {showHoldBillModal && (
+          <HoldBillModal
+            onClose={() => setShowHoldBillModal(false)}
+            onSave={(billName) => handleHoldBillWithName(activeTab, billName)}
+          />
+        )}
         {/* Unhold Bill */}
         <button
           onClick={() => handleUnholdBill(activeTab)}
@@ -2722,24 +2885,22 @@ const EnhancedBillingPOSSystem = () => {
                       <div className="spinner"></div>
                     </div>
                   )}
-                  
+
                   {/* Search Results Dropdown */}
                   {showBarcodeSearch && barcodeSearchResults.length > 0 && (
                     <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       {barcodeSearchResults.map((result, index) => {
                         // Check if this is a sold identifier
                         const isSoldIdentifier = result.type === 'identifier' && result.identifier && result.identifier.sold;
-                        
+
                         return (
                           <div
                             key={index}
-                            className={`px-4 py-3 transition-colors ${
-                              isSoldIdentifier 
-                                ? 'bg-gray-100 cursor-not-allowed opacity-60' 
-                                : `cursor-pointer hover:bg-blue-50 ${
-                                    index === selectedSearchIndex ? 'bg-blue-100 border-l-4 border-blue-500' : ''
-                                  }`
-                            }`}
+                            className={`px-4 py-3 transition-colors ${isSoldIdentifier
+                              ? 'bg-gray-100 cursor-not-allowed opacity-60'
+                              : `cursor-pointer hover:bg-blue-50 ${index === selectedSearchIndex ? 'bg-blue-100 border-l-4 border-blue-500' : ''
+                              }`
+                              }`}
                             onClick={() => !isSoldIdentifier && handleSearchResultSelect(result)}
                           >
                             <div className="flex items-center justify-between">
@@ -2751,8 +2912,8 @@ const EnhancedBillingPOSSystem = () => {
                                 <div className={`text-sm ${isSoldIdentifier ? 'text-gray-400' : 'text-gray-500'}`}>
                                   {result.type === 'product' ? (
                                     <>
-                                      🏷️ {result.product.category} • 
-                                      💰 Rs {result.product[`${selectedPriceType}Price`].toFixed(2)} • 
+                                      🏷️ {result.product.category} •
+                                      💰 Rs {result.product[`${selectedPriceType}Price`].toFixed(2)} •
                                       📦 Stock: {result.product.stock}
                                       {result.product.productIdentifierType && result.product.productIdentifierType !== 'none' && (
                                         <span className="ml-2 text-blue-600 font-semibold">
@@ -2762,8 +2923,8 @@ const EnhancedBillingPOSSystem = () => {
                                     </>
                                   ) : (
                                     <>
-                                      🏷️ {result.product.category} • 
-                                      💰 Rs {result.product[`${selectedPriceType}Price`].toFixed(2)} • 
+                                      🏷️ {result.product.category} •
+                                      💰 Rs {result.product[`${selectedPriceType}Price`].toFixed(2)} •
                                       {isSoldIdentifier ? (
                                         <span className="text-red-500 font-semibold">❌ Already Sold</span>
                                       ) : (
@@ -3131,8 +3292,8 @@ const EnhancedBillingPOSSystem = () => {
                   type="submit"
                   disabled={isSubmitting}
                   className={`px-4 py-2 text-sm font-medium text-white rounded-md flex items-center gap-2 ${isSubmitting
-                      ? 'bg-red-400 cursor-not-allowed'
-                      : 'bg-red-600 hover:bg-red-700'
+                    ? 'bg-red-400 cursor-not-allowed'
+                    : 'bg-red-600 hover:bg-red-700'
                     }`}
                 >
                   {isSubmitting ? (
@@ -3715,223 +3876,74 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
 }
 
 // Enhanced Invoice Modal Component with Download Options
-const EnhancedInvoiceModal = ({ invoice, onClose, onPrintSelection }) => {
-  const [showPrintOptions, setShowPrintOptions] = useState(false)
-  const [focusedButton, setFocusedButton] = useState('print')
-
+const EnhancedInvoiceModal = ({ invoice, onClose }) => {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         onClose()
       } else if (e.altKey && e.key === 'p') {
-        handlePrintFormat('a4')
+        printInvoice(invoice, 'a4')
       } else if (e.altKey && e.key === 'r') {
-        handlePrintFormat('pos')
+        printInvoice(invoice, 'pos')
       } else if (e.altKey && e.key === 'd') {
-        handleDownload('a4')
+        printInvoice(invoice, 'a4')
       } else if (e.altKey && e.key === 's') {
-        handleDownload('pos')
+        printInvoice(invoice, 'pos')
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
+  }, [onClose, invoice])
 
-  const handlePrintClick = () => {
-    setShowPrintOptions(true)
-  }
-
-  const handlePrintFormat = (format) => {
-    onPrintSelection(format, invoice)
-    setShowPrintOptions(false)
-  }
-
-  const handleDownload = (format) => {
-    downloadInvoiceAsPDF(invoice, format)
+  const handlePrint = (format) => {
+    printInvoice(invoice, format)
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto card-shadow fade-in">
-        <div className="flex justify-between items-center mb-6 no-print">
-          <h2 className="text-2xl font-bold text-gray-800">🧾 Invoice Details</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Invoice #{invoice.id}</h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 text-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 rounded group relative"
+            className="text-gray-500 hover:text-gray-700"
           >
-            ×
-            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-              Press Esc to close
-            </span>
+            ✕
           </button>
         </div>
 
-        {/* Print and Download Options */}
-        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg no-print">
-          <h3 className="font-medium text-blue-800 mb-3">📄 Print & Download Options:</h3>
-          <div className="flex flex-wrap gap-2">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button
-              onClick={() => handlePrintFormat("a4")}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-500 group relative"
+              onClick={() => handlePrint('a4')}
+              className="flex items-center justify-center gap-2 p-3 border rounded-lg hover:bg-gray-50"
             >
               🖨️ Print A4
-              <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                Press Alt + P
-              </span>
+              <span className="text-sm text-gray-500">(Alt + P)</span>
             </button>
             <button
-              onClick={() => handlePrintFormat("pos")}
-              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-green-500 group relative"
+              onClick={() => handlePrint('pos')}
+              className="flex items-center justify-center gap-2 p-3 border rounded-lg hover:bg-gray-50"
             >
               🖨️ Print Receipt
-              <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                Press Alt + R
-              </span>
+              <span className="text-sm text-gray-500">(Alt + R)</span>
             </button>
             <button
-              onClick={() => handleDownload("a4")}
-              className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-purple-500 group relative"
+              onClick={() => handlePrint('a4')}
+              className="flex items-center justify-center gap-2 p-3 border rounded-lg hover:bg-gray-50"
             >
               📄 Download A4
-              <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                Press Alt + D
-              </span>
+              <span className="text-sm text-gray-500">(Alt + D)</span>
             </button>
             <button
-              onClick={() => handleDownload("pos")}
-              className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-orange-500 group relative"
+              onClick={() => handlePrint('pos')}
+              className="flex items-center justify-center gap-2 p-3 border rounded-lg hover:bg-gray-50"
             >
               🧾 Download Receipt
-              <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                Press Alt + S
-              </span>
+              <span className="text-sm text-gray-500">(Alt + S)</span>
             </button>
           </div>
-        </div>
-
-        {/* Invoice Content */}
-        <div id="printable-invoice" className="bg-white p-8 rounded-lg border border-gray-200">
-          {/* Header */}
-          <div className="flex justify-between items-start mb-8">
-            <div>
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-xl mr-3">
-                  R
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-800">R-tech Solution</h1>
-                </div>
-              </div>
-              <div className="text-sm text-gray-600">
-                <p>📍 262 Peradeniya road, Kandy</p>
-                <p>📞 +94 11 123 4567</p>
-                <p>✉️ support@srilankapos.com</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <h2 className="text-2xl font-bold text-blue-600 mb-2">INVOICE</h2>
-              <div className="text-sm text-gray-600">
-                <p>
-                  <strong>Invoice #:</strong> {invoice.id}
-                </p>
-                <p>
-                  <strong>Date:</strong> {new Date(invoice.date).toLocaleDateString()}
-                </p>
-                <p>
-                  <strong>Time:</strong> {new Date(invoice.date).toLocaleTimeString()}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Customer Info */}
-          {invoice.customer && (
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <h3 className="font-semibold text-gray-800 mb-2">👤 Bill To:</h3>
-              <div className="text-gray-700">
-                <p className="font-medium">{invoice.customer.name}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Items Table */}
-          <div className="mb-6">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-gray-100 border-b-2 border-gray-300">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-800">Item</th>
-                  <th className="text-center py-3 px-4 font-semibold text-gray-800">Qty</th>
-                  <th className="text-right py-3 px-4 font-semibold text-gray-800">Price</th>
-                  <th className="text-right py-3 px-4 font-semibold text-gray-800">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoice.items.map((item, index) => (
-                  <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
-                    <td className="py-3 px-4">
-                      <div className="font-medium text-gray-800">{item.name}</div>
-                      <div className="text-sm text-gray-500">{item.category}</div>
-                    </td>
-                    <td className="text-center py-3 px-4 text-gray-700">{item.quantity}</td>
-                    <td className="text-right py-3 px-4 text-gray-700">Rs {item.price.toFixed(2)}</td>
-                    <td className="text-right py-3 px-4 font-medium text-gray-800">
-                      Rs {(item.price * item.quantity).toFixed(2)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Summary */}
-          <div className="flex justify-end mb-6">
-            <div className="w-80 bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal:</span>
-                  <span className="font-medium">Rs {invoice.subtotal.toFixed(2)}</span>
-                </div>
-                {invoice.discountAmount > 0 && (
-                  <div className="flex justify-between text-red-600">
-                    <span>Discount:</span>
-                    <span>-Rs {invoice.discountAmount.toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Tax:</span>
-                  <span className="font-medium">Rs {invoice.taxAmount.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between font-bold text-lg border-t border-gray-300 pt-2 text-blue-600">
-                  <span>Total:</span>
-                  <span>Rs {invoice.total.toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="text-center text-gray-500 text-sm border-t border-gray-200 pt-4">
-            <p>Thank you for your business! 🙏</p>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-3 mt-6 no-print">
-          <button
-            onClick={handlePrintClick}
-            className="flex-1 btn-primary px-4 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onFocus={() => setFocusedButton('print')}
-          >
-            🖨️ Print Invoice
-          </button>
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500"
-            onFocus={() => setFocusedButton('close')}
-          >
-            ❌ Close
-          </button>
         </div>
       </div>
     </div>
@@ -4171,14 +4183,62 @@ const EnhancedCustomerModal = ({ customers, selectedCustomer, setSelectedCustome
     </div>
   )
 }
+const HoldBillModal = ({ onClose, onSave }) => {
+  const [billName, setBillName] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
+  const handleSave = () => {
+    if (!billName.trim()) return;
+    setIsSaving(true);
+    onSave(billName.trim());
+    setIsSaving(false);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md card-shadow fade-in">
+        <h3 className="text-lg font-semibold mb-4">🧾 Hold Bill</h3>
+        <input
+          type="text"
+          value={billName}
+          onChange={(e) => setBillName(e.target.value)}
+          placeholder="Enter a name or note for this bill"
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4"
+        />
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={isSaving || !billName.trim()}
+            className="flex-1 btn-primary px-4 py-2 rounded-lg font-medium"
+          >
+            {isSaving ? "Saving..." : "Save Hold Bill"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 // Invoices Page Component
 const InvoicesPage = ({ invoices, searchTerm, setSearchTerm, dateRange, setDateRange, onInvoiceSelect }) => {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const searchInputRef = useRef(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalInvoice, setModalInvoice] = useState(null);
+
   const filteredInvoices = useMemo(() => {
     return invoices.filter((invoice) => {
+      const invoiceId = (invoice.id || '').toLowerCase();
+      const customerName = (invoice.customer?.name || '').toLowerCase();
       const matchesSearch =
-        invoice.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (invoice.customer && invoice.customer.name.toLowerCase().includes(searchTerm.toLowerCase()))
+        invoiceId.includes(searchTerm.toLowerCase()) ||
+        customerName.includes(searchTerm.toLowerCase());
 
       const invoiceDate = new Date(invoice.createdAt)
       const now = new Date()
@@ -4198,6 +4258,46 @@ const InvoicesPage = ({ invoices, searchTerm, setSearchTerm, dateRange, setDateR
     })
   }, [invoices, searchTerm, dateRange])
 
+  useEffect(() => {
+    // Focus the search input when the page loads
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, []);
+
+  useEffect(() => {
+    setSelectedIndex(0); // Reset selection on filter change
+  }, [searchTerm, dateRange, invoices]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (isModalOpen) {
+        if (e.key === 'Escape') {
+          setIsModalOpen(false);
+          setModalInvoice(null);
+        }
+        return;
+      }
+      if (document.activeElement === searchInputRef.current || document.activeElement.tagName === 'BODY') {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setSelectedIndex((prev) => Math.min(prev + 1, filteredInvoices.length - 1));
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setSelectedIndex((prev) => Math.max(prev - 1, 0));
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          if (filteredInvoices[selectedIndex]) {
+            setModalInvoice(filteredInvoices[selectedIndex]);
+            setIsModalOpen(true);
+          }
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [filteredInvoices, selectedIndex, isModalOpen]);
+
   const totalAmount = useMemo(
     () => filteredInvoices.reduce((sum, invoice) => sum + invoice.total, 0),
     [filteredInvoices],
@@ -4205,7 +4305,7 @@ const InvoicesPage = ({ invoices, searchTerm, setSearchTerm, dateRange, setDateR
   const totalCount = filteredInvoices.length
 
   const handleDownloadInvoice = (invoice, format) => {
-    downloadInvoiceAsPDF(invoice, format)
+    printInvoice(invoice, format)
   }
 
   return (
@@ -4255,6 +4355,7 @@ const InvoicesPage = ({ invoices, searchTerm, setSearchTerm, dateRange, setDateR
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">🔍 Search Invoices</label>
             <input
+              ref={searchInputRef}
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -4291,10 +4392,18 @@ const InvoicesPage = ({ invoices, searchTerm, setSearchTerm, dateRange, setDateR
               <p className="text-gray-500">Try adjusting your search criteria</p>
             </div>
           ) : (
-            filteredInvoices.map((invoice) => (
-              <div key={invoice.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+            filteredInvoices.map((invoice, idx) => (
+              <div
+                key={invoice.id}
+                className={`px-6 py-4 hover:bg-gray-50 transition-colors ${selectedIndex === idx ? 'bg-blue-100 border-l-4 border-blue-500' : ''}`}
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  setModalInvoice(invoice);
+                  setIsModalOpen(true);
+                }}
+              >
                 <div className="flex items-center justify-between">
-                  <div className="flex-1 cursor-pointer" onClick={() => onInvoiceSelect(invoice)}>
+                  <div className="flex-1 cursor-pointer">
                     <div className="flex items-center space-x-3">
                       <div className="flex-shrink-0">
                         <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -4342,7 +4451,7 @@ const InvoicesPage = ({ invoices, searchTerm, setSearchTerm, dateRange, setDateR
                       >
                         🧾 Receipt
                       </button>
-                      <button className="text-gray-400 hover:text-gray-600" onClick={() => onInvoiceSelect(invoice)}>
+                      <button className="text-gray-400 hover:text-gray-600" onClick={() => { setModalInvoice(invoice); setIsModalOpen(true); }}>
                         <span className="text-xl">→</span>
                       </button>
                     </div>
@@ -4353,6 +4462,16 @@ const InvoicesPage = ({ invoices, searchTerm, setSearchTerm, dateRange, setDateR
           )}
         </div>
       </div>
+      {/* Modal for invoice details */}
+      {isModalOpen && modalInvoice && (
+        <EnhancedInvoiceModal
+          invoice={modalInvoice}
+          onClose={() => {
+            setIsModalOpen(false);
+            setModalInvoice(null);
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -4495,9 +4614,8 @@ const IdentifierSelectionModal = ({
                     return (
                       <div
                         key={index}
-                        className={`p-3 border rounded-lg cursor-pointer transition-all hover:bg-blue-50 hover:border-blue-300 ${
-                          isHighlighted ? 'ring-2 ring-blue-400 bg-blue-50 border-blue-300' : 'border-gray-200'
-                        }`}
+                        className={`p-3 border rounded-lg cursor-pointer transition-all hover:bg-blue-50 hover:border-blue-300 ${isHighlighted ? 'ring-2 ring-blue-400 bg-blue-50 border-blue-300' : 'border-gray-200'
+                          }`}
                         onClick={() => handleSingleSelection(identifier)}
                       >
                         <div className="flex-1">
@@ -4556,6 +4674,280 @@ const IdentifierSelectionModal = ({
     </div>
   );
 };
+
+const downloadInvoiceAsPDF = async (invoice, format = 'a4') => {
+  if (!invoice) return;
+
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: format === 'pos' ? [80, 297] : 'a4',
+  });
+
+  // Load logo image from public folder
+  const logoUrl = "/images/logo.jpg";
+  const logo = await new Promise((resolve) => {
+    const img = new window.Image();
+    img.crossOrigin = 'Anonymous';
+    img.src = logoUrl;
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+  });
+
+  if (format === 'a4') {
+    // --- Advanced A4 Layout ---
+    let y = 15;
+    // Header: Logo + Business Info (left), Invoice Info (right)
+    if (logo) doc.addImage(logo, 'JPEG', 15, y, 25, 25);
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('R-tech Solution', 45, y + 10);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Point of Sale System', 45, y + 16);
+    doc.text('262 Peradeniya road, Kandy', 45, y + 21);
+    doc.text('Phone: +94 11 123 4567', 45, y + 26);
+    doc.text('Email: support@srilankapos.com', 45, y + 31);
+    // Invoice Info (right)
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('INVOICE', 195, y + 10, { align: 'right' });
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Invoice #: ${invoice.id || 'Unknown'}`, 195, y + 16, { align: 'right' });
+    doc.text(`Date: ${new Date(invoice.date).toLocaleDateString()}`, 195, y + 21, { align: 'right' });
+    doc.text(`Time: ${new Date(invoice.date).toLocaleTimeString()}`, 195, y + 26, { align: 'right' });
+    doc.setDrawColor(30, 64, 175);
+    doc.setLineWidth(1);
+    doc.line(15, y + 33, 195, y + 33);
+    y += 38;
+
+    // Customer Info
+    if (invoice.customer) {
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Bill To:', 15, y);
+      y += 6;
+      doc.setFont('helvetica', 'normal');
+      doc.text(invoice.customer.name || '', 15, y);
+      if (invoice.customer.company) { y += 5; doc.text(`🏢 ${invoice.customer.company}`, 15, y); }
+      if (invoice.customer.phone) { y += 5; doc.text(`📞 ${invoice.customer.phone}`, 15, y); }
+      if (invoice.customer.email) { y += 5; doc.text(`✉️ ${invoice.customer.email}`, 15, y); }
+      y += 8;
+    }
+
+    // Items Table
+    const tableColumn = ['Description', 'Qty', 'Rate', 'Amount'];
+    const tableRows = invoice.items.map(item => [
+      item.name + (item.identifierType && item.identifierValue ? `\n${item.identifierType}: ${item.identifierValue}` : ''),
+      item.quantity.toString(),
+      `Rs ${(item.discountedPrice || 0).toFixed(2)}`,
+      `Rs ${((item.discountedPrice || 0) * (item.quantity || 0)).toFixed(2)}`
+    ]);
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: y,
+      theme: 'grid',
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [30, 64, 175], textColor: 255, fontStyle: 'bold' },
+      margin: { left: 15, right: 15 },
+      tableWidth: 'auto',
+    });
+    let finalY = doc.lastAutoTable.finalY || y + 20;
+
+    // Summary Box
+    const summaryX = 135;
+    doc.setDrawColor(30, 64, 175);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(summaryX - 5, finalY + 2, 65, 28, 2, 2);
+    doc.setFontSize(10);
+    doc.text(`Subtotal: Rs ${(invoice.subtotal || 0).toFixed(2)}`, summaryX, finalY + 8);
+    if (invoice.discountAmount > 0) {
+      const discountPercentage = invoice.subtotal > 0 ? ((invoice.discountAmount / invoice.subtotal) * 100).toFixed(2) : 0;
+      doc.text(`Discount (${discountPercentage}%): -Rs ${(invoice.discountAmount || 0).toFixed(2)}`, summaryX, finalY + 14);
+      finalY += 6;
+    }
+    doc.text(`Tax: Rs ${(invoice.taxAmount || 0).toFixed(2)}`, summaryX, finalY + 14);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`TOTAL: Rs ${(invoice.total || 0).toFixed(2)}`, summaryX, finalY + 22);
+    doc.setFont('helvetica', 'normal');
+    finalY += 30;
+
+    // Payment Info
+    doc.setFontSize(10);
+    doc.text(`Payment Method: ${invoice.paymentMethod || 'Cash'}`, 15, finalY);
+    doc.text(`Payment Status: ${invoice.paymentStatus || 'Paid'}`, 15, finalY + 5);
+    doc.text(`Amount Paid: Rs ${(invoice.total || 0).toFixed(2)}`, 15, finalY + 10);
+    finalY += 15;
+
+    // Barcode
+    try {
+      const tempDiv = document.createElement('div');
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      tempDiv.appendChild(svg);
+      JsBarcode(svg, invoice.id || 'Unknown', {
+        format: 'CODE128',
+        width: 2,
+        height: 30,
+        displayValue: true,
+        fontSize: 10,
+      });
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const svg64 = btoa(unescape(encodeURIComponent(svgData)));
+      const imageSrc = 'data:image/svg+xml;base64,' + svg64;
+      doc.addImage(imageSrc, 'PNG', 70, finalY, 70, 20);
+      finalY += 25;
+    } catch (err) {
+      doc.text(`Invoice ID: ${invoice.id || 'Unknown'}`, 15, finalY + 10);
+      finalY += 10;
+    }
+
+    // Footer
+    doc.setDrawColor(30, 64, 175);
+    doc.setLineWidth(0.5);
+    doc.line(15, finalY + 10, 195, finalY + 10);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'italic');
+    doc.text('Thank you for your business!', 105, finalY + 16, { align: 'center' });
+    doc.text('Powered by R-tech Solution POS System', 105, finalY + 21, { align: 'center' });
+    // Save
+    doc.save(`invoice-${invoice.id || 'Unknown'}-a4.pdf`);
+    return;
+  }
+
+  // --- Advanced POS (Thermal) Layout ---
+  let y = 8;
+  // Logo (small, centered)
+  if (logo) doc.addImage(logo, 'JPEG', 25, y, 30, 12);
+  y += 14;
+  doc.setFontSize(11);
+  doc.setFont('courier', 'bold');
+  doc.text('R-TECH SOLUTION', 40, y, { align: 'center', maxWidth: 80 });
+  y += 5;
+  doc.setFontSize(8);
+  doc.setFont('courier', 'normal');
+  doc.text('Point of Sale System', 40, y, { align: 'center', maxWidth: 80 });
+  y += 4;
+  doc.text('262 Peradeniya road, Kandy', 40, y, { align: 'center', maxWidth: 80 });
+  y += 4;
+  doc.text('Tel: +94 11 123 4567', 40, y, { align: 'center', maxWidth: 80 });
+  y += 4;
+  doc.setDrawColor(150);
+  doc.setLineWidth(0.3);
+  doc.setLineDashPattern([1.5, 1.5], 0);
+  doc.line(5, y, 75, y);
+  y += 3;
+  doc.setFont('courier', 'bold');
+  doc.setFontSize(9);
+  doc.text('RETAIL INVOICE', 40, y, { align: 'center', maxWidth: 80 });
+  y += 4;
+  doc.setFont('courier', 'normal');
+  doc.setFontSize(8);
+  doc.text(`Invoice: ${invoice.id}`, 8, y);
+  y += 4;
+  doc.text(`Date: ${new Date(invoice.date).toLocaleDateString()}`, 8, y);
+  y += 4;
+  doc.text(`Time: ${new Date(invoice.date).toLocaleTimeString()}`, 8, y);
+  y += 4;
+  doc.setLineDashPattern([1.5, 1.5], 0);
+  doc.line(5, y, 75, y);
+  y += 3;
+  // Customer Info
+  if (invoice.customer) {
+    doc.setFont('courier', 'bold');
+    doc.text('Customer:', 8, y);
+    doc.setFont('courier', 'normal');
+    y += 4;
+    doc.text(`👤 ${invoice.customer.name}`, 8, y);
+    if (invoice.customer.company) { y += 4; doc.text(`🏢 ${invoice.customer.company}`, 8, y); }
+    if (invoice.customer.phone) { y += 4; doc.text(`📞 ${invoice.customer.phone}`, 8, y); }
+    if (invoice.customer.email) { y += 4; doc.text(`✉️ ${invoice.customer.email}`, 8, y); }
+    y += 2;
+    doc.setLineDashPattern([1.5, 1.5], 0);
+    doc.line(5, y, 75, y);
+    y += 3;
+  }
+  // Items
+  doc.setFont('courier', 'bold');
+  doc.text('Item         Qty  Rate   Amt', 8, y);
+  y += 4;
+  doc.setFont('courier', 'normal');
+  invoice.items.forEach(item => {
+    let name = item.name.length > 12 ? item.name.slice(0, 12) + '.' : item.name;
+    let qty = String(item.quantity).padStart(3, ' ');
+    let rate = (item.discountedPrice || 0).toFixed(0).padStart(5, ' ');
+    let amt = ((item.discountedPrice || 0) * (item.quantity || 0)).toFixed(0).padStart(6, ' ');
+    doc.text(`${name.padEnd(12, ' ')} ${qty} ${rate} ${amt}`, 8, y);
+    y += 4;
+    if (item.identifierType && item.identifierValue) {
+      doc.setFontSize(7);
+      doc.text(`  ${item.identifierType}: ${item.identifierValue}`, 8, y);
+      doc.setFontSize(8);
+      y += 3;
+    }
+  });
+  doc.setLineDashPattern([1.5, 1.5], 0);
+  doc.line(5, y, 75, y);
+  y += 3;
+  // Summary
+  doc.setFont('courier', 'bold');
+  doc.text(`SubTotal: Rs ${(invoice.subtotal || 0).toFixed(2)}`, 8, y);
+  y += 4;
+  if (invoice.discountAmount > 0) {
+    const discountPercentage = invoice.subtotal > 0 ? ((invoice.discountAmount / invoice.subtotal) * 100).toFixed(2) : 0;
+    doc.text(`Discount (${discountPercentage}%): -Rs ${(invoice.discountAmount || 0).toFixed(2)}`, 8, y);
+    y += 4;
+  }
+  doc.text(`Tax: Rs ${(invoice.taxAmount || 0).toFixed(2)}`, 8, y);
+  y += 4;
+  doc.text(`TOTAL: Rs ${(invoice.total || 0).toFixed(2)}`, 8, y);
+  y += 5;
+  doc.setLineDashPattern([1.5, 1.5], 0);
+  doc.line(5, y, 75, y);
+  y += 3;
+  // Payment Info
+  doc.setFont('courier', 'normal');
+  doc.text(`Payment: ${invoice.paymentMethod || 'Cash'}`, 8, y);
+  y += 4;
+  doc.text(`Paid: Rs ${(invoice.total || 0).toFixed(2)}`, 8, y);
+  y += 4;
+  doc.text(`Change: Rs 0.00`, 8, y);
+  y += 4;
+  doc.setLineDashPattern([1.5, 1.5], 0);
+  doc.line(5, y, 75, y);
+  y += 3;
+  // Barcode
+  try {
+    const tempDiv = document.createElement('div');
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    tempDiv.appendChild(svg);
+    JsBarcode(svg, invoice.id || 'Unknown', {
+      format: 'CODE128',
+      width: 1.5,
+      height: 18,
+      displayValue: true,
+      fontSize: 8,
+    });
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const svg64 = btoa(unescape(encodeURIComponent(svgData)));
+    const imageSrc = 'data:image/svg+xml;base64,' + svg64;
+    doc.addImage(imageSrc, 'PNG', 15, y, 50, 12);
+    y += 14;
+  } catch (err) {
+    doc.text(`Invoice ID: ${invoice.id || 'Unknown'}`, 8, y);
+    y += 4;
+  }
+  // Footer
+  doc.setFont('courier', 'italic');
+  doc.setFontSize(8);
+  doc.text('Thank you for your business!', 40, y, { align: 'center', maxWidth: 80 });
+  y += 4;
+  doc.text('Powered by R-tech Solution POS System', 40, y, { align: 'center', maxWidth: 80 });
+  // Save
+  doc.save(`invoice-${invoice.id || 'Unknown'}-pos.pdf`);
+};
+
 
 export default EnhancedBillingPOSSystem
 

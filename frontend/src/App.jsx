@@ -27,6 +27,7 @@ import Cashbook from "./pages/Cashbook.jsx";
 import Invoice from "./pages/Invoice.jsx";
 import Income from "./pages/Income.jsx";
 import SalesDashboard from "./pages/SalesDashboard.jsx";
+import BuisnessSettings from "./pages/BuisnessSettings.jsx";
 
 function App() {
   const isLoggedIn = sessionStorage.getItem("isLoggedIn") === "true";
@@ -238,6 +239,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <SalesDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="buisness"
+            element={
+              <ProtectedRoute>
+                <BuisnessSettings />
               </ProtectedRoute>
             }
           />

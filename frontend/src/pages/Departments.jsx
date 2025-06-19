@@ -58,7 +58,6 @@ export default function HRMSystem() {
     "Certificate Levels",
     "Positions",
     "Monthly Work Hours",
-    "Notes & Terms", // New tab
   ];
 
   if (loading) {
@@ -156,7 +155,6 @@ export default function HRMSystem() {
             setData={setMonthlyWorkHours}
           />
         )}
-        {activeTab === "Notes & Terms" && <NotesTermsSection />}
       </div>
     </div>
   );
@@ -604,136 +602,6 @@ function MonthlyWorkHoursSection({ data, setData }) {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-// New Section for Notes & Terms
-function NotesTermsSection() {
-  const [notes, setNotes] = useState("");
-  const [terms, setTerms] = useState([""]);
-  const [loading, setLoading] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
-
-  // Always show at least one input for terms
-  useEffect(() => {
-    setLoading(true);
-    axios
-      .get(`${backEndURL}/api/additional/notes-terms`)
-      .then((res) => {
-        if (res.data) {
-          setNotes(res.data.notes || "");
-          // If no terms or empty array, show one empty input
-          if (Array.isArray(res.data.terms) && res.data.terms.length > 0) {
-            setTerms(res.data.terms);
-          } else {
-            setTerms([""]);
-          }
-          setIsEditing(!!res.data.id);
-        } else {
-          setTerms([""]);
-        }
-      })
-      .catch(() => setTerms([""]))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const handleNotesChange = (e) => setNotes(e.target.value);
-
-  const handleTermsChange = (e, idx) => {
-    const newTerms = [...terms];
-    newTerms[idx] = e.target.value;
-    setTerms(newTerms);
-  };
-
-  const handleTermsKeyDown = (e, idx) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      const newTerms = [...terms];
-      newTerms.splice(idx + 1, 0, "");
-      setTerms(newTerms);
-    }
-    if (e.key === "Backspace" && terms[idx] === "" && terms.length > 1) {
-      e.preventDefault();
-      const newTerms = [...terms];
-      newTerms.splice(idx, 1);
-      setTerms(newTerms);
-    }
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setLoading(true);
-    const payload = { notes, terms: terms.filter((t) => t.trim() !== "") };
-    const req = isEditing
-      ? axios.put(`${backEndURL}/api/additional/notes-terms`, payload)
-      : axios.post(`${backEndURL}/api/additional/notes-terms`, payload);
-    req
-      .then(() => {
-        setSuccessMsg(
-          isEditing ? "Updated successfully!" : "Saved successfully!"
-        );
-        setIsEditing(true);
-      })
-      .catch(() => setSuccessMsg("Error saving data."))
-      .finally(() => setLoading(false));
-  };
-
-  return (
-    <div className="bg-surface p-6 rounded-lg shadow-lg max-w-2xl mx-auto border border-border">
-      <h2 className="text-2xl font-bold text-text-primary mb-6">Notes & Terms</h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium mb-1 text-text-secondary">
-            Notes
-          </label>
-          <textarea
-            className="w-full p-3 rounded-lg bg-background text-text-primary border border-border focus:border-primary focus:ring-1 focus:ring-primary min-h-[80px]"
-            placeholder="Enter notes..."
-            value={notes}
-            onChange={handleNotesChange}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1 text-text-secondary">
-            Terms and Conditions
-          </label>
-          <div className="space-y-2">
-            {terms.map((term, idx) => (
-              <div key={idx} className="flex items-start gap-2">
-                <span className="mt-2 text-primary">•</span>
-                <textarea
-                  className="flex-1 p-2 rounded-lg bg-background text-text-primary border border-border focus:border-primary focus:ring-1 focus:ring-primary min-h-[40px]"
-                  placeholder="Enter term..."
-                  value={term}
-                  onChange={(e) => handleTermsChange(e, idx)}
-                  onKeyDown={(e) => handleTermsKeyDown(e, idx)}
-                  rows={1}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            className="px-6 py-2 rounded-lg bg-primary hover:bg-primary-dark text-white font-semibold shadow-md transition-colors"
-            disabled={loading}
-          >
-            {loading ? (
-              <DotSpinner />
-            ) : isEditing ? (
-              "Update Changes"
-            ) : (
-              "Save Changes"
-            )}
-          </button>
-        </div>
-        {successMsg && (
-          <div className="text-green-600 text-center">{successMsg}</div>
-        )}
-      </form>
     </div>
   );
 }

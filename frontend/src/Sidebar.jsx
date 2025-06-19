@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useTheme } from "./contexts/ThemeContext.jsx";
 import {
@@ -30,7 +30,8 @@ import {
   BookOpen,
   Receipt,
   DollarSign,
-  ChevronDown
+  ChevronDown,
+  FileText 
 } from "lucide-react";
 
 function Sidebar() {
@@ -58,7 +59,6 @@ function Sidebar() {
   };
 
   const navItems = [
-    { type: "header", name: "Main Dashboard" },
     { name: "Admin Dashboard", path: "/dashboard", icon: <Home className="w-5 h-5" /> },
     { type: "header", name: "Human Resource", section: "hrm" },
     { name: "Sections", path: "/sections", icon: <Building2 className="w-5 h-5" />, section: "hrm" },
@@ -74,7 +74,6 @@ function Sidebar() {
     { name: "Profile", path: "/my", icon: <User className="w-5 h-5" />, section: "hrm" },
     { name: "Reports", path: "/reports", icon: <BarChart2 className="w-5 h-5" />, section: "hrm" },
 
-    { type: "header", name: "Sales Dashboard" },
     { name: "Sales Overview", path: "/salesdashboard", icon: <Home className="w-5 h-5" /> },
     { type: "header", name: "Sales & Inventory", section: "sales" },
     { name: "CRM", path: "/crm", icon: <Users className="w-5 h-5" />, section: "sales" },
@@ -104,14 +103,13 @@ function Sidebar() {
 
       {/* Sidebar Container */}
       <div
-        className={`fixed md:static z-50 transform transition-transform duration-300 ease-in-out md:translate-x-0 ${
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-        } md:flex flex-col w-64 h-full bg-background border-r border-border shadow-lg`}
+        className={`fixed md:static z-50 transform transition-transform duration-300 ease-in-out md:translate-x-0 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          } md:flex flex-col w-64 h-full bg-background border-r border-border shadow-lg`}
       >
-        <SidebarContent 
-          navItems={navItems} 
-          toggleTheme={toggleTheme} 
-          theme={theme} 
+        <SidebarContent
+          navItems={navItems}
+          toggleTheme={toggleTheme}
+          theme={theme}
           openSections={openSections}
           toggleSection={toggleSection}
         />
@@ -134,6 +132,29 @@ function SidebarContent({ navItems, toggleTheme, theme, openSections, toggleSect
       alert("An error occurred while logging out. Please try again.");
     }
   };
+
+  // Add keyboard shortcut handler
+  useEffect(() => {
+    const handleKeyPress = (event) => {
+      // Only trigger if Shift is pressed
+      if (event.shiftKey) {
+        switch (event.key.toLowerCase()) {
+          case 'p':
+            navigate('/invoice');
+            break;
+          case 'l':
+            handleLogout();
+            break;
+          case 's':
+            navigate('/buisness');
+            break;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [navigate]);
 
   return (
     <>
@@ -165,9 +186,8 @@ function SidebarContent({ navItems, toggleTheme, theme, openSections, toggleSect
                 >
                   <span>{item.name}</span>
                   <ChevronDown
-                    className={`w-4 h-4 transition-transform duration-200 ${
-                      openSections[item.section] ? "transform rotate-180" : ""
-                    }`}
+                    className={`w-4 h-4 transition-transform duration-200 ${openSections[item.section] ? "transform rotate-180" : ""
+                      }`}
                   />
                 </div>
               );
@@ -188,10 +208,9 @@ function SidebarContent({ navItems, toggleTheme, theme, openSections, toggleSect
               key={item.name}
               to={item.path}
               className={({ isActive }) =>
-                `flex items-center px-4 py-2 mb-1 text-sm font-medium rounded-lg transition-all duration-200 ${
-                  isActive
-                    ? "bg-primary-light text-primary"
-                    : "text-text-secondary hover:bg-surface"
+                `flex items-center px-4 py-2 mb-1 text-sm font-medium rounded-lg transition-all duration-200 ${isActive
+                  ? "bg-primary-light text-primary"
+                  : "text-text-secondary hover:bg-surface"
                 }`
               }
             >
@@ -201,24 +220,39 @@ function SidebarContent({ navItems, toggleTheme, theme, openSections, toggleSect
           );
         })}
       </div>
-
-      {/* Bottom - Theme and Logout */}
       <div className="px-4 py-3 border-t border-border">
-        <button
-          onClick={() => navigate('/invoice')}
-          className="flex items-center w-full mt-2 px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary-dark transition-all shadow-lg hover:shadow-primary/25"
-        >
-          <Receipt className="w-5 h-5 mr-3" />
-          POS
-        </button>
-        <br/>
-        <button
-          onClick={handleLogout}
-          className="flex items-center w-full px-4 py-2 text-sm font-medium text-red-600 rounded-md hover:bg-red-50"
-        >
-          <LogoutIcon className="w-5 h-5" />
-          <span className="ml-3">Logout</span>
-        </button>
+        <div className="flex space-x-4">
+          <button
+            onClick={() => navigate('/invoice')}
+            className="flex items-center px-4 py-2 text-sm font-medium text-green-600 rounded-md hover:bg-red-50 relative group"
+            title="POS (Shift + P)"
+          >
+            <Receipt className="w-5 h-5 mr-3" />
+            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              Shift + P
+            </span>
+          </button>
+          <button
+            onClick={handleLogout}
+            className="flex items-center px-4 py-2 text-sm font-medium text-red-600 rounded-md hover:bg-red-50 relative group"
+            title="Logout (Shift + L)"
+          >
+            <LogoutIcon className="w-5 h-5" />
+            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              Shift + L
+            </span>
+          </button>
+          <button
+            onClick={() => navigate('/buisness')}
+            className="flex items-center px-4 py-2 text-sm font-medium text-blue-600 rounded-md hover:bg-red-50 relative group"
+            title="Settings (Shift + S)"
+          >
+            <FileText className="w-5 h-5 mr-3" />
+            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              Shift + S
+            </span>
+          </button>
+        </div>
       </div>
     </>
   );
