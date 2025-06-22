@@ -3,10 +3,10 @@ const { v4: uuidv4 } = require("uuid");
 const stream = require("stream");
 
 // Helper to upload image to Firebase Storage
-async function uploadImageToStorage(file) {
+async function uploadImageToStorage(file, folder = 'products') {
   if (!file) return "";
   const bucket = storage.bucket();
-  const filename = `products/${uuidv4()}_${file.originalname}`;
+  const filename = `${folder}/${uuidv4()}_${file.originalname}`;
   const fileRef = bucket.file(filename);
   const passthroughStream = new stream.PassThrough();
   passthroughStream.end(file.buffer);
@@ -22,11 +22,11 @@ async function uploadImageToStorage(file) {
 }
 
 // Helper to delete image from Firebase Storage by URL
-async function deleteImageFromStorage(imageUrl) {
+async function deleteImageFromStorage(imageUrl, folder = 'products') {
   if (!imageUrl) return;
   try {
     // Extract the file path after the bucket domain
-    const match = imageUrl.match(/\/products\/[^?]+/);
+    const match = imageUrl.match(new RegExp(`/${folder}/[^?]+`));
     if (!match) return;
     const filePath = match[0].replace(/^\//, "");
     const bucket = storage.bucket();

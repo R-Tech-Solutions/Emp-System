@@ -13,7 +13,9 @@ const ContactModel = {
   },
   async getById(id) {
     const doc = await db.collection(CONTACTS_COLLECTION).doc(id).get();
-    if (!doc.exists) return null;
+    if (!doc.exists) {
+      return null;
+    }
     return { id: doc.id, ...doc.data() };
   },
   async update(id, data) {

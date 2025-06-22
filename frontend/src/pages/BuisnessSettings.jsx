@@ -67,15 +67,22 @@ const BuisnessSettings = () => {
     }));
   };
 
-  const handleLogoChange = (e) => {
+  const handleLogoChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setForm((prev) => ({ ...prev, logo: reader.result }));
-        setLogoPreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+      const formData = new FormData();
+      formData.append('logo', file);
+      try {
+        const res = await axios.post(`${backEndURL}/api/business-settings/upload-logo`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        if (res.data && res.data.url) {
+          setForm((prev) => ({ ...prev, logo: res.data.url }));
+          setLogoPreview(res.data.url);
+        }
+      } catch (err) {
+        alert('Failed to upload logo.');
+      }
     }
   };
 

@@ -13,25 +13,78 @@ exports.createInvoice = async (req, res) => {
     });
 
     const invoice = req.body;
+    console.log('Received invoice data:', {
+      customerId: invoice.customerId,
+      customer: invoice.customer,
+      hasItems: !!invoice.items,
+      itemCount: invoice.items?.length,
+      printingOption: invoice.printingOption
+    });
+    
     if (!invoice.items || !Array.isArray(invoice.items) || invoice.items.length === 0) {
       return res.status(400).json({ error: 'Invoice items are required.' });
+    }
+
+    // Get customer details if customerId is provided
+    let customerArray = [];
+
+    if (invoice.customerId) {
+      try {
+        const customerDoc = await db.collection('contacts').doc(invoice.customerId).get();
+        if (customerDoc.exists) {
+          const customerData = customerDoc.data();
+          customerArray = [{
+            customerId: invoice.customerId,
+            customerName: customerData.name || null,
+            customerPhone: customerData.phone || null,
+            customerEmail: customerData.email || null,
+            customerCompany: customerData.company || null,
+            customerAddress: customerData.address || null,
+            customerCategory: customerData.categoryType || null,
+            customerCreatedAt: customerData.createdAt || null,
+            customerUpdatedAt: customerData.updatedAt || null
+          }];
+        }
+      } catch (error) {
+        console.error('Error fetching customer details:', error);
+      }
+    }
+
+    // Determine printing status based on printing option
+    let printingStatus = 'default';
+    if (invoice.printingOption === 'eprint') {
+      printingStatus = 'digital';
+    } else if (invoice.printingOption === 'both') {
+      printingStatus = 'both';
     }
 
     // Prepare invoice data for maximum speed
     const invoiceData = {
       items: invoice.items,
-      customer: invoice.customer || null,
+      customer: customerArray, // Store customer details as an array
       subtotal: invoice.subtotal || 0,
       discountAmount: invoice.discountAmount || 0,
       taxAmount: invoice.taxAmount || 0,
       total: invoice.total || 0,
       paymentMethod: invoice.paymentMethod || 'Cash',
       paymentStatus: "Paid",
-      timestamp: Date.now()
+      printingOption: invoice.printingOption || 'default',
+      printingStatus: printingStatus,
+      timestamp: Date.now(),
+      amountPaid: typeof invoice.amountPaid !== 'undefined' ? invoice.amountPaid : invoice.total || 0,
+      changeDue: typeof invoice.changeDue !== 'undefined' ? invoice.changeDue : 0
     };
 
     // Use InvoiceModel to create invoice with proper numbering
     const savedInvoice = await InvoiceModel.create(invoiceData);
+    
+    console.log('Saved invoice data:', {
+      id: savedInvoice.id,
+      customerId: savedInvoice.customerId,
+      customer: savedInvoice.customer,
+      customerCount: savedInvoice.customer?.length || 0,
+      printingStatus: savedInvoice.printingStatus
+    });
 
     // Return success response immediately
     res.status(201).json({ 
@@ -68,3 +121,5 @@ exports.getInvoiceById = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch invoice.' });
   }
 };
+
+

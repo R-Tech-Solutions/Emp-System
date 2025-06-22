@@ -24,7 +24,9 @@ const contactController = {
   async getContactById(req, res) {
     try {
       const contact = await ContactModel.getById(req.params.id);
-      if (!contact) return res.status(404).json({ error: 'Contact not found' });
+      if (!contact) {
+        return res.status(404).json({ error: 'Contact not found' });
+      }
       res.json(contact);
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -45,7 +47,7 @@ const contactController = {
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
-  },
+  }
 };
 
 module.exports = contactController;

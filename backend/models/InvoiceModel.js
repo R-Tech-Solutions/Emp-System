@@ -25,13 +25,19 @@ const InvoiceModel = {
   async create(invoice) {
     // Generate custom invoice number
     const invoiceNumber = await getNextInvoiceId();
+    
+    // Prepare invoice data with customer array
+    const invoiceData = {
+      ...invoice,
+      customer: invoice.customer || [], // Ensure customer is always an array
+      invoiceNumber,
+      createdAt: Date.now(), // Use timestamp instead of ISO string
+      updatedAt: Date.now()
+    };
+
     // Use invoiceNumber as document ID
     const docRef = db.collection(INVOICE_COLLECTION).doc(invoiceNumber);
-    await docRef.set({
-      ...invoice,
-      invoiceNumber,
-      createdAt: new Date().toISOString()
-    });
+    await docRef.set(invoiceData);
     const doc = await docRef.get();
     return { id: doc.id, ...doc.data() };
   },
@@ -49,6 +55,13 @@ const InvoiceModel = {
     const doc = await db.collection(INVOICE_COLLECTION).doc(id).get();
     if (!doc.exists) return null;
     return { id: doc.id, ...doc.data() };
+  },
+
+  async updatePrintingStatus(id, printingStatus) {
+    await db.collection(INVOICE_COLLECTION).doc(id).update({
+      printingStatus,
+      updatedAt: Date.now()
+    });
   }
 };
 
