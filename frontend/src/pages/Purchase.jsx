@@ -1009,7 +1009,7 @@ export default function PurchaseApp() {
                         {/* Left Column - Customer Info & Payment */}
                         <div className="lg:col-span-2 space-y-8">
                             <div className="bg-gray-800 rounded-lg shadow-xl p-6">
-                                <h2 className="text-xl font-semibold mb-6">Customer Information</h2>
+                                <h2 className="text-xl font-semibold mb-6">Supplier  Information</h2>
 
                                 {/* Preview mode */}
                                 {customerSaved ? (
@@ -1499,7 +1499,7 @@ export default function PurchaseApp() {
 
                             <div className="grid md:grid-cols-2 gap-6">
                                 <div>
-                                    <h3 className="font-medium mb-2">Customer Information</h3>
+                                    <h3 className="font-medium mb-2">Supplier Information</h3>
                                     <div className="text-gray-300 space-y-1">
                                         <p>{selectedPurchase.customerName}</p>
                                         <p>{selectedPurchase.customerEmail}</p>

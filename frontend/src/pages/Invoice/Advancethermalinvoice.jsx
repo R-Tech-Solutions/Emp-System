@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import JsBarcode from "jsbarcode";
+import { backEndURL } from "../../Backendurl";
 
 const COMPANY = {
   name: "RTechSolution",
@@ -10,7 +11,7 @@ const COMPANY = {
 const fetchInvoice = async (invoiceDocumentId) => {
   if (!invoiceDocumentId) return null;
   try {
-    const res = await fetch(`http://localhost:3001/api/invoices/${invoiceDocumentId}`);
+    const res = await fetch(`${backEndURL}/api/invoices/${invoiceDocumentId}`);
     if (!res.ok) return null;
     return await res.json();
   } catch {
@@ -21,24 +22,7 @@ const fetchInvoice = async (invoiceDocumentId) => {
 const AdvanceThermalInvoice = ({ invoice: invoiceProp, invoiceDocumentId }) => {
   const [invoice, setInvoice] = useState(invoiceProp);
   const printRef = useRef();
-  const barcodeRef = useRef(null);
-
-  useEffect(() => {
-    if (invoice && barcodeRef.current) {
-      const invoiceId = invoice.invoiceNumber || invoice.id || '';
-      if (invoiceId) {
-        requestAnimationFrame(() => {
-          JsBarcode(barcodeRef.current, invoiceId, {
-            format: "CODE128",
-            width: 1.2,
-            height: 40,
-            displayValue: false,
-            margin: 0
-          });
-        });
-      }
-    }
-  }, [invoice]);
+  const [barcodeDataUrl, setBarcodeDataUrl] = useState('');
 
   useEffect(() => {
     if (!invoiceProp && invoiceDocumentId) {
@@ -47,6 +31,27 @@ const AdvanceThermalInvoice = ({ invoice: invoiceProp, invoiceDocumentId }) => {
       });
     }
   }, [invoiceDocumentId, invoiceProp]);
+
+  useEffect(() => {
+    if (invoice) {
+      const invoiceId = invoice.invoiceNumber || invoice.id || '';
+      if (invoiceId) {
+        const canvas = document.createElement('canvas');
+        JsBarcode(canvas, invoiceId, {
+          format: "CODE128",
+          width: 1.5,
+          height: 50,
+          displayValue: false,
+          margin: 5
+        });
+        setBarcodeDataUrl(canvas.toDataURL('image/png'));
+      } else {
+        setBarcodeDataUrl('');
+      }
+    } else {
+      setBarcodeDataUrl('');
+    }
+  }, [invoice]);
 
   const handlePrint = () => {
     if (printRef.current) {
@@ -204,15 +209,16 @@ const AdvanceThermalInvoice = ({ invoice: invoiceProp, invoiceDocumentId }) => {
 
       {/* Barcode Section (dynamic) */}
       <div style={{ textAlign: 'center', marginTop: '16px' }}>
-        <canvas ref={barcodeRef}></canvas>
-        <div style={{ fontSize: '10px', color: '#111', marginTop: '2px', letterSpacing: '1px' }}>{invoice.invoiceNumber || invoice.id || ''}</div>
-        <div style={{ fontSize: '9.5px', color: '#444', marginTop: '2px' }}>Scan for Invoice ID</div>
+        {barcodeDataUrl && (
+          <img src={barcodeDataUrl} alt={`Barcode for invoice ${invoice.invoiceNumber}`} style={{ display: 'block', margin: '0 auto', height: 50 }} />
+        )}
+        <div style={{ fontSize: '10px', color: '#111', marginTop: '2px', letterSpacing: '1px' }}>{invoice.invoiceNumber}</div>
       </div>
 
       {/* Receipt code and printed timestamp */}
       <div style={{ borderTop: '1px dashed #bbb', margin: '10px 0 0 0', paddingTop: '6px', fontSize: '10px', color: '#888', textAlign: 'center' }}>
         Receipt Code: <b>{getReceiptCode()}</b> <br />
-        Printed on: {printedOn}
+        Printed on: {printedOn}?m 
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import autoTable from "jspdf-autotable";
 import JsBarcode from "jsbarcode";
 import logo from "./Assets/logo.jpg";
 import html2canvas from "html2canvas";
+import { backEndURL } from "../../Backendurl";
 
 const COMPANY = {
   name: "RTechSolution",
@@ -15,7 +16,7 @@ const COMPANY = {
 const fetchInvoice = async (invoiceDocumentId) => {
   if (!invoiceDocumentId) return null;
   try {
-    const res = await fetch(`http://localhost:3001/api/invoices/${invoiceDocumentId}`);
+    const res = await fetch(`${backEndURL}/api/invoices/${invoiceDocumentId}`);
     if (!res.ok) return null;
     return await res.json();
   } catch {
