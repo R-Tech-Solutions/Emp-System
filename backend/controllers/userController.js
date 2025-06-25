@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt'); // Import bcrypt for password hashing
 // Create a new user
 exports.createUser = async (req, res) => {
   try {
-    const { email, password, name, role, status } = req.body;
+    const { email, password, name, role, status, permissions } = req.body;
 
     // Basic validation
     if (!email || !password || !name) {
@@ -14,7 +14,7 @@ exports.createUser = async (req, res) => {
       });
     }
 
-    const user = await User.create({ email, password, name, role, status });
+    const user = await User.create({ email, password, name, role, status, permissions });
     
     res.status(201).json({
       success: true,
@@ -116,7 +116,7 @@ exports.getUserByEmail = async (req, res) => {
 // Update user
 exports.updateUser = async (req, res) => {
   try {
-    const { email, name, role, status, password } = req.body;
+    const { email, name, role, status, password, permissions } = req.body;
     const userId = req.params.id;
 
     const updateData = {};
@@ -124,6 +124,7 @@ exports.updateUser = async (req, res) => {
     if (name) updateData.name = name;
     if (role) updateData.role = role;
     if (status) updateData.status = status;
+    if (permissions !== undefined) updateData.permissions = permissions;
     if (password) {
       updateData.password = await bcrypt.hash(password, 10); // Hash password
     }

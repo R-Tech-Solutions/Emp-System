@@ -22,6 +22,7 @@
     "express-fileupload": "^1.5.1",
     "firebase-admin": "^13.4.0",
     "gitignore": "^0.7.0",
+    "jsonwebtoken": "^9.0.2",
     "jspdf": "^3.0.1",
     "multer": "^2.0.0",
     "nodemailer": "^6.10.0",

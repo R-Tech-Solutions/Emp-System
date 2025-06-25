@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { PlusIcon, FilterIcon, CheckCircleIcon, ExclamationCircleIcon } from "../icons.jsx"
 import axios from "axios";
-import { backEndURL } from "../Backendurl";
+import { backEndURL } from "../Backendurl.jsx";
 
 function LeaveRequestSystem() {
   const [leaveRequests, setLeaveRequests] = useState([

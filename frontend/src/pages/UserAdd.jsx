@@ -1,14 +1,11 @@
 import { useState, useEffect } from "react";
 import axios from "axios"; // Import axios for API calls
-import { PlusIcon, SearchIcon, PencilIcon, TrashIcon, XIcon } from "lucide-react"
+import { PlusIcon, SearchIcon, PencilIcon, TrashIcon, XIcon, EyeIcon, EyeOffIcon } from "lucide-react"
 import { backEndURL } from "../Backendurl";
-export default function UserManagementPage() {
-  // Sample user data - in a real app, this would come from an API
-  const initialUsers = [
-    
-  ]
 
-  // State
+export default function UserManagementPage() {
+  const initialUsers = [
+  ]
   const [users, setUsers] = useState(initialUsers)
   const [filteredUsers, setFilteredUsers] = useState(initialUsers)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -19,12 +16,46 @@ export default function UserManagementPage() {
   const [roleFilter, setRoleFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
   const [toast, setToast] = useState({ show: false, message: "", type: "" })
+  const [showPassword, setShowPassword] = useState(false)
+  const [showEditPassword, setShowEditPassword] = useState(false)
+  
+  // Define sidebar permissions structure
+  const sidebarPermissions = {
+    "Human Resource": {
+      sections: true,
+      employees: true,
+      tasks: true,
+      timesheets: true,
+      attendance: true,
+      "leave-requests": true,
+      payroll: true,
+      messages: true,
+      assets: true,
+      user: true,
+      my: true,
+      reports: true
+    },
+    "Sales & Inventory": {
+      salesdashboard: true,
+      crm: true,
+      products: true,
+      quatation: true,
+      purchase: true,
+      inventory: true,
+      supplier: true,
+      cashbook: true,
+      income: true,
+      invoice: true
+    }
+  }
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     name: "",
     role: "user",
     status: "active",
+    permissions: {}
   })
   const [formErrors, setFormErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
@@ -102,6 +133,71 @@ export default function UserManagementPage() {
     if (formErrors[name]) {
       setFormErrors((prev) => ({ ...prev, [name]: null }))
     }
+
+    // Handle role change
+    if (name === "role") {
+      if (value === "admin") {
+        // Admin gets all permissions
+        setFormData((prev) => ({ 
+          ...prev, 
+          [name]: value,
+          permissions: {} // Empty object means all permissions for admin
+        }))
+      } else {
+        // User role - initialize with no permissions
+        setFormData((prev) => ({ 
+          ...prev, 
+          [name]: value,
+          permissions: {}
+        }))
+      }
+    }
+  }
+
+  // Handle permission changes
+  const handlePermissionChange = (category, permission, checked) => {
+    setFormData((prev) => ({
+      ...prev,
+      permissions: {
+        ...prev.permissions,
+        [permission]: checked
+      }
+    }))
+  }
+
+  // Handle category permission changes (select all/none for a category)
+  const handleCategoryPermissionChange = (category, checked) => {
+    const categoryPermissions = sidebarPermissions[category]
+    const newPermissions = { ...formData.permissions }
+    
+    Object.keys(categoryPermissions).forEach(permission => {
+      newPermissions[permission] = checked
+    })
+    
+    setFormData((prev) => ({
+      ...prev,
+      permissions: newPermissions
+    }))
+  }
+
+  // Check if all permissions in a category are selected
+  const isCategoryFullySelected = (category) => {
+    const categoryPermissions = sidebarPermissions[category]
+    return Object.keys(categoryPermissions).every(permission => 
+      formData.permissions[permission] === true
+    )
+  }
+
+  // Check if any permissions in a category are selected
+  const isCategoryPartiallySelected = (category) => {
+    const categoryPermissions = sidebarPermissions[category]
+    const hasSelected = Object.keys(categoryPermissions).some(permission => 
+      formData.permissions[permission] === true
+    )
+    const hasUnselected = Object.keys(categoryPermissions).some(permission => 
+      formData.permissions[permission] !== true
+    )
+    return hasSelected && hasUnselected
   }
 
   // Show toast notification
@@ -184,6 +280,7 @@ export default function UserManagementPage() {
       name: user.name,
       role: user.role,
       status: user.status,
+      permissions: user.permissions || {}
     })
     setIsEditModalOpen(true)
   }
@@ -202,8 +299,11 @@ export default function UserManagementPage() {
       name: "",
       role: "user",
       status: "active",
+      permissions: {}
     })
     setFormErrors({})
+    setShowPassword(false)
+    setShowEditPassword(false)
   }
 
   return (
@@ -374,7 +474,7 @@ export default function UserManagementPage() {
               <div className="absolute inset-0 bg-black/50"></div>
             </div>
 
-            <div className="inline-block align-bottom bg-surface rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-border">
+            <div className="inline-block align-bottom bg-surface rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-border">
               <div className="flex justify-between items-center px-6 py-4 bg-primary-light">
                 <h3 className="text-lg font-medium text-text-primary">Add New User</h3>
                 <button className="text-text-secondary hover:text-text-primary" onClick={() => setIsAddModalOpen(false)}>
@@ -407,17 +507,30 @@ export default function UserManagementPage() {
                       <label htmlFor="password" className="block text-sm font-medium text-text-secondary mb-1">
                         Password
                       </label>
-                      <input
-                        id="password"
-                        name="password"
-                        type="password"
-                        value={formData.password}
-                        onChange={handleChange}
-                        className={`w-full px-4 py-2 rounded-md bg-background border ${
-                          formErrors.password ? "border-accent" : "border-border"
-                        } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
-                        placeholder="••••••••"
-                      />
+                      <div className="relative">
+                        <input
+                          id="password"
+                          name="password"
+                          type={showPassword ? "text" : "password"}
+                          value={formData.password}
+                          onChange={handleChange}
+                          className={`w-full px-4 py-2 pr-10 rounded-md bg-background border ${
+                            formErrors.password ? "border-accent" : "border-border"
+                          } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
+                          placeholder="••••••••"
+                        />
+                        <button
+                          type="button"
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOffIcon className="h-5 w-5 text-text-muted hover:text-text-secondary" />
+                          ) : (
+                            <EyeIcon className="h-5 w-5 text-text-muted hover:text-text-secondary" />
+                          )}
+                        </button>
+                      </div>
                       {formErrors.password && <p className="mt-1 text-sm text-accent">{formErrors.password}</p>}
                     </div>
 
@@ -454,6 +567,48 @@ export default function UserManagementPage() {
                         <option value="admin">Admin</option>
                       </select>
                     </div>
+
+                    {/* Permissions Section - Only show for user role */}
+                    {formData.role === "user" && (
+                      <div>
+                        <label className="block text-sm font-medium text-text-secondary mb-3">
+                          User Permissions
+                        </label>
+                        <div className="space-y-4">
+                          {Object.entries(sidebarPermissions).map(([category, permissions]) => (
+                            <div key={category} className="border border-border rounded-lg p-4">
+                              <div className="flex items-center justify-between mb-3">
+                                <h4 className="text-sm font-medium text-text-primary">{category}</h4>
+                                <div className="flex items-center space-x-2">
+                                  <label className="flex items-center text-xs text-text-secondary">
+                                    <input
+                                      type="checkbox"
+                                      checked={isCategoryFullySelected(category)}
+                                      onChange={(e) => handleCategoryPermissionChange(category, e.target.checked)}
+                                      className="mr-1 rounded border-border text-primary focus:ring-primary/20"
+                                    />
+                                    Select All
+                                  </label>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-4 gap-2">
+                                {Object.entries(permissions).map(([permission, _]) => (
+                                  <label key={permission} className="flex items-center text-xs text-text-secondary">
+                                    <input
+                                      type="checkbox"
+                                      checked={formData.permissions[permission] === true}
+                                      onChange={(e) => handlePermissionChange(category, permission, e.target.checked)}
+                                      className="mr-2 rounded border-border text-primary focus:ring-primary/20"
+                                    />
+                                    {permission.charAt(0).toUpperCase() + permission.slice(1).replace('-', ' ')}
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     <div>
                       <label htmlFor="status" className="block text-sm font-medium text-text-secondary mb-1">
@@ -503,7 +658,7 @@ export default function UserManagementPage() {
               <div className="absolute inset-0 bg-black/50"></div>
             </div>
 
-            <div className="inline-block align-bottom bg-surface rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-border">
+            <div className="inline-block align-bottom bg-surface rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-border">
               <div className="flex justify-between items-center px-6 py-4 bg-primary-light">
                 <h3 className="text-lg font-medium text-text-primary">Edit User</h3>
                 <button className="text-text-secondary hover:text-text-primary" onClick={() => setIsEditModalOpen(false)}>
@@ -564,6 +719,48 @@ export default function UserManagementPage() {
                       </select>
                     </div>
 
+                    {/* Permissions Section - Only show for user role */}
+                    {formData.role === "user" && (
+                      <div>
+                        <label className="block text-sm font-medium text-text-secondary mb-3">
+                          User Permissions
+                        </label>
+                        <div className="space-y-4">
+                          {Object.entries(sidebarPermissions).map(([category, permissions]) => (
+                            <div key={category} className="border border-border rounded-lg p-4">
+                              <div className="flex items-center justify-between mb-3">
+                                <h4 className="text-sm font-medium text-text-primary">{category}</h4>
+                                <div className="flex items-center space-x-2">
+                                  <label className="flex items-center text-xs text-text-secondary">
+                                    <input
+                                      type="checkbox"
+                                      checked={isCategoryFullySelected(category)}
+                                      onChange={(e) => handleCategoryPermissionChange(category, e.target.checked)}
+                                      className="mr-1 rounded border-border text-primary focus:ring-primary/20"
+                                    />
+                                    Select All
+                                  </label>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-4 gap-2">
+                                {Object.entries(permissions).map(([permission, _]) => (
+                                  <label key={permission} className="flex items-center text-xs text-text-secondary">
+                                    <input
+                                      type="checkbox"
+                                      checked={formData.permissions[permission] === true}
+                                      onChange={(e) => handlePermissionChange(category, permission, e.target.checked)}
+                                      className="mr-2 rounded border-border text-primary focus:ring-primary/20"
+                                    />
+                                    {permission.charAt(0).toUpperCase() + permission.slice(1).replace('-', ' ')}
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div>
                       <label htmlFor="status" className="block text-sm font-medium text-text-secondary mb-1">
                         Status
@@ -612,7 +809,7 @@ export default function UserManagementPage() {
               <div className="absolute inset-0 bg-black/50"></div>
             </div>
 
-            <div className="inline-block align-bottom bg-surface rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-border">
+            <div className="inline-block align-bottom bg-surface rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-border">
               <div className="px-6 py-4">
                 <div className="text-center sm:text-left">
                   <h3 className="text-lg leading-6 font-medium text-text-primary mb-2">Delete User</h3>

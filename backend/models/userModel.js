@@ -14,6 +14,7 @@ class User {
         name: userData.name,
         role: userData.role || 'user',
         status: userData.status || 'active',
+        permissions: userData.permissions || {},
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };

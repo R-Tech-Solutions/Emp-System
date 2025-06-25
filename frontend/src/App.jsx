@@ -10,7 +10,7 @@ import AttendanceTracking from "./pages/AttendanceTracking.jsx";
 import LeaveRequestSystem from "./pages/LeaveRequestSystem.jsx";
 import MessagingSystem from "./pages/MessagingSystem.jsx";
 import Report from "./pages/Report.jsx";
-import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import ProtectedRoute, { InitialRedirect } from "./components/ProtectedRoute.jsx";
 import UserAdd from "./pages/UserAdd.jsx";
 import Mysettings from "./pages/Mine.jsx";
 import Assets from "./pages/Stocks.jsx";
@@ -28,7 +28,7 @@ import Invoice from "./pages/Invoice.jsx";
 import Income from "./pages/Income.jsx";
 import SalesDashboard from "./pages/SalesDashboard.jsx";
 import BuisnessSettings from "./pages/BuisnessSettings.jsx";
-
+import salesReport from "./pages/SalesReport.jsx";
 function App() {
   const isLoggedIn = sessionStorage.getItem("isLoggedIn") === "true";
 
@@ -38,7 +38,7 @@ function App() {
         <Route
           path="/login"
           element={
-            isLoggedIn ? <Navigate to="/dashboard" replace /> : <Login />
+            isLoggedIn ? <InitialRedirect /> : <Login />
           }
         />
         <Route path="/" element={<Layout />}>
@@ -46,7 +46,7 @@ function App() {
             index
             element={
               <ProtectedRoute>
-                <Navigate to="/dashboard" replace />
+                <InitialRedirect />
               </ProtectedRoute>
             }
           />
@@ -116,6 +116,14 @@ function App() {
           />
           <Route
             path="user"
+            element={
+              <ProtectedRoute>
+                <UserAdd />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="sales-user"
             element={
               <ProtectedRoute>
                 <UserAdd />
@@ -250,8 +258,16 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="sales-report"
+            element={
+              <ProtectedRoute>
+                <salesReport />
+              </ProtectedRoute>
+            }
+          />
         </Route>
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<InitialRedirect />} />
       </Routes>
     </div>
   );

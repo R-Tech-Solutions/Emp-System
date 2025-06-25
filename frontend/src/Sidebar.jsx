@@ -84,6 +84,8 @@ function Sidebar() {
     { name: "Supplier", path: "/supplier", icon: <Truck className="w-5 h-5" />, section: "sales" },
     { name: "Cashbook", path: "/cashbook", icon: <BookOpen className="w-5 h-5" />, section: "sales" },
     { name: "Income", path: "/income", icon: <DollarSign className="w-5 h-5" />, section: "sales" },
+    { name: "User", path: "/sales-user", icon: <User className="w-5 h-5" />, section: "sales" },
+    { name: "Sales Report", path: "/sales-report", icon: <BarChart2 className="w-5 h-5" />, section: "sales" },
   ];
 
   return (
@@ -121,17 +123,24 @@ function Sidebar() {
 function SidebarContent({ navItems, toggleTheme, theme, openSections, toggleSection }) {
   const navigate = useNavigate();
   const userEmail = sessionStorage.getItem("email") || "admin@example.com";
+  const isRestrictedUser = sessionStorage.getItem("restrictedUser") === "true";
 
   const handleLogout = () => {
     try {
       sessionStorage.removeItem("isLoggedIn");
       sessionStorage.removeItem("email");
+      sessionStorage.removeItem("restrictedUser");
       window.location.href = "/login";
     } catch (error) {
       console.error("Error during logout:", error);
       alert("An error occurred while logging out. Please try again.");
     }
   };
+
+  // Filter navigation items for restricted users
+  const filteredNavItems = isRestrictedUser 
+    ? navItems.filter(item => item.path === "/user" || item.type === "header")
+    : navItems;
 
   // Add keyboard shortcut handler
   useEffect(() => {
@@ -175,7 +184,7 @@ function SidebarContent({ navItems, toggleTheme, theme, openSections, toggleSect
 
       {/* Nav Links */}
       <div className="flex-1 overflow-y-auto px-2 py-4 scrollbar-thin scrollbar-thumb-border">
-        {navItems.map((item) => {
+        {filteredNavItems.map((item) => {
           if (item.type === "header") {
             if (item.section) {
               return (

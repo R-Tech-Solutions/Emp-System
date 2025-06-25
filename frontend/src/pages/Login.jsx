@@ -69,9 +69,10 @@ export default function AdvancedLogin() {
       ) {
         setSuccess(true);
         sessionStorage.setItem("isLoggedIn", "true");
-        sessionStorage.setItem("email", formData.email); // Save email to session storage
+        sessionStorage.setItem("email", formData.email);
+        sessionStorage.setItem("restrictedUser", "true"); // Flag for restricted access
         setTimeout(() => {
-          navigate("/dashboard");
+          navigate("/user");
         }, 1000);
         return;
       }
@@ -90,7 +91,8 @@ export default function AdvancedLogin() {
         if (result.role === "admin" && result.status === "active") {
           setSuccess(true);
           sessionStorage.setItem("isLoggedIn", "true");
-          sessionStorage.setItem("email", formData.email); // Save email to session storage
+          sessionStorage.setItem("email", formData.email);
+          sessionStorage.setItem("restrictedUser", "false"); // Normal user access
           setTimeout(() => {
             navigate("/dashboard");
           }, 1000);
