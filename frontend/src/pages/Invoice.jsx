@@ -478,7 +478,7 @@ const generateInvoiceHTML = async (invoice, format) => {
 
 const FastSpinner = () => (
   <div className="flex items-center justify-center">
-    <div className="spinner"></div>
+    <DotSpinner />
     <span className="ml-2 text-sm text-gray-600">Loading...</span>
   </div>
 )
@@ -2490,6 +2490,20 @@ const EnhancedBillingPOSSystem = () => {
     description: ''
   });
 
+  const [showCashInModal, setShowCashInModal] = useState(false);
+  const [cashInData, setCashInData] = useState({
+    cashInBy: '',
+    amount: '',
+    description: ''
+  });
+
+  // Autofill cashInBy with session email when modal opens
+  useEffect(() => {
+    if (showCashInModal) {
+      setCashInData((prev) => ({ ...prev, cashInBy: sessionStorage.getItem('email') || '' }));
+    }
+  }, [showCashInModal]);
+
   const handleCashOutSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return; // Prevent multiple submissions
@@ -2532,6 +2546,44 @@ const EnhancedBillingPOSSystem = () => {
     } catch (error) {
       console.error('Error recording cash out:', error);
       showToast(error.message || 'Failed to record cash out', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCashInSubmit = async (e) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      const cashInDataToSubmit = {
+        ...cashInData,
+        amount: Number(cashInData.amount),
+        date: new Date().toISOString(),
+        recordedBy: sessionStorage.getItem('email') || ''
+      };
+
+      const response = await axios.post(`${backEndURL}/api/cashin`, cashInDataToSubmit, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+      });
+
+      if (response.data.success) {
+        showToast('Cash in recorded successfully', 'success');
+        setShowCashInModal(false);
+        setCashInData({
+          cashInBy: '',
+          amount: '',
+          description: ''
+        });
+      } else {
+        throw new Error(response.data.message || 'Failed to record cash in');
+      }
+    } catch (error) {
+      console.error('Error recording cash in:', error);
+      showToast(error.message || 'Failed to record cash in', 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -2620,6 +2672,16 @@ const EnhancedBillingPOSSystem = () => {
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+        </button>
+        {/* Cash In Button */}
+        <button
+          onClick={() => setShowCashInModal(true)}
+          className="bg-green-500 hover:bg-green-600 text-white rounded-full p-3 card-shadow transition-all duration-150 hover:scale-105"
+          title="Cash In"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
         </button>
 
@@ -2788,7 +2850,7 @@ const EnhancedBillingPOSSystem = () => {
                   />
                   {isSearchingBarcode && (
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <div className="spinner"></div>
+                      <DotSpinner />
                     </div>
                   )}
 
@@ -3201,6 +3263,72 @@ const EnhancedBillingPOSSystem = () => {
                   className={`px-4 py-2 text-sm font-medium text-white rounded-md flex items-center gap-2 ${isSubmitting
                     ? 'bg-red-400 cursor-not-allowed'
                     : 'bg-red-600 hover:bg-red-700'
+                    }`}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <DotSpinner />
+                      <span>Processing...</span>
+                    </>
+                  ) : (
+                    'Submit'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Cash In Modal */}
+      {showCashInModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            <form onSubmit={handleCashInSubmit} className="space-y-4">
+              <h3 className="text-lg font-semibold mb-4">Cash In</h3>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cash In By</label>
+                <input
+                  type="text"
+                  value={cashInData.cashInBy}
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                <input
+                  type="number"
+                  value={cashInData.amount}
+                  onChange={(e) => setCashInData({ ...cashInData, amount: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  value={cashInData.description}
+                  onChange={(e) => setCashInData({ ...cashInData, description: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows="3"
+                />
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowCashInModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`px-4 py-2 text-sm font-medium text-white rounded-md flex items-center gap-2 ${isSubmitting
+                    ? 'bg-green-400 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700'
                     }`}
                 >
                   {isSubmitting ? (
@@ -3774,7 +3902,7 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
                       }`}
                   >
                     {isProcessing ? (
-                      <FastSpinner />
+                      <DotSpinner />
                     ) : (
                       <>
                         {paymentMethod === "cash" ? "💵 Complete Cash Payment" : "💳 Complete Card Payment"}
@@ -4040,7 +4168,7 @@ const EnhancedCustomerModal = ({ customers, selectedCustomer, setSelectedCustome
                 disabled={isProcessing}
                 className="flex-1 btn-success px-4 py-3 rounded-lg font-semibold flex items-center justify-center gap-2"
               >
-                {isProcessing ? <FastSpinner /> : "✅ Add Customer"}
+                {isProcessing ? <DotSpinner /> : "✅ Add Customer"}
               </button>
             </div>
           </form>
@@ -4441,7 +4569,7 @@ const IdentifierSelectionModal = ({
     const handleKeyDown = (e) => {
       if (!filteredIdentifiers.length) return;
       if (e.key === "ArrowDown") {
-        e.preventDefault();
+    e.preventDefault();
         setHighlightedIndex((prev) => (prev + 1) % filteredIdentifiers.length);
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
@@ -4520,7 +4648,7 @@ const IdentifierSelectionModal = ({
         </div>
         {isLoadingIdentifiers ? (
           <div className="flex justify-center py-8">
-            <FastSpinner />
+            <DotSpinner />
           </div>
         ) : (
           <>
@@ -4689,7 +4817,7 @@ const downloadInvoiceAsPDF = async (invoice, format = 'a4') => {
     await AdvanceA4Invoice(modifiedInvoice); // assumes it handles pdf generation and saving
   } else if (format === 'pos') {
     await AdvanceThermalInvoice(modifiedInvoice); // assumes it handles pdf generation and saving
-  } else {
+      } else {
     console.error('Unsupported format:', format);
   }
 };

@@ -36,6 +36,7 @@ const invoiceRoutes = require('./routes/InvoiceRoutes');
 const additionalRoutes = require('./routes/AdditionalRoutes');
 const IdentifiersRoutes = require('./routes/IdentifiersRoutes');
 const buisnessSettingsRoutes = require('./routes/BuisnessSettingsRoutes');
+const cashInRoutes = require('./routes/CashInRoutes');
 
 dotenv.config();
 
@@ -93,6 +94,7 @@ app.use('/api/invoices', invoiceRoutes);
 app.use('/api/additional', additionalRoutes);
 app.use('/api/identifiers', IdentifiersRoutes);
 app.use('/api/business-settings', buisnessSettingsRoutes);
+app.use('/api/cashin', cashInRoutes);
 
 app.get('/', (req, res) => {
     res.send('Hello World!'); 
