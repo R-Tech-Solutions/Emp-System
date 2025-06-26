@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { backEndURL } from "../Backendurl";
+import { getUserData } from "../utils/auth";
 
 export default function UserProfile() {
   const [user, setUser] = useState({
@@ -17,7 +18,8 @@ export default function UserProfile() {
   const [activeTab, setActiveTab] = useState("profile")
 
   useEffect(() => {
-    const email = sessionStorage.getItem("email")
+    const userData = getUserData();
+    const email = userData?.email;
     if (email) {
       fetch(`${backEndURL}/api/users/email/${email}`)
         .then((res) => res.json())

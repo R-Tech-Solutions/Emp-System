@@ -25,6 +25,7 @@ import {
 } from "@react-pdf/renderer";
 
 import { backEndURL } from "../Backendurl";
+import { hasPermission } from '../utils/auth';
 
 // Adjust styles to fit content on one page
 const styles = StyleSheet.create({
@@ -1430,42 +1431,44 @@ function App() {
           </button>
         </div>
 
-        {/* Admin Controls */}
-        <div className="mb-6 flex justify-between items-center">
-          <div className="relative w-full md:w-64">
-            <input
-              type="text"
-              placeholder="Search employees..."
-              className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-
-          <button
-            className="ml-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2"
-            onClick={() => setShowAdminForm(true)}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              fill="none"
-              viewBox={svgViewBox} // Use the corrected viewBox
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+        {/* Admin Controls - Only show for users with payroll permission */}
+        {hasPermission('payroll') && (
+          <div className="mb-6 flex justify-between items-center">
+            <div className="relative w-full md:w-64">
+              <input
+                type="text"
+                placeholder="Search employees..."
+                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
-            </svg>
-            Set Total Hours
-          </button>
-        </div>
+            </div>
 
-        {/* Admin Form Modal */}
-        {showAdminForm && monthsData[currentMonthId] && (
+            <button
+              className="ml-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2"
+              onClick={() => setShowAdminForm(true)}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox={svgViewBox}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                />
+              </svg>
+              Set Total Hours
+            </button>
+          </div>
+        )}
+
+        {/* Admin Form Modal - Only show for users with payroll permission */}
+        {hasPermission('payroll') && showAdminForm && monthsData[currentMonthId] && (
           <AdminHoursForm
             month={currentMonthName}
             year={currentYear}

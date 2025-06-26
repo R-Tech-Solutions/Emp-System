@@ -25,6 +25,7 @@ import {
 } from "lucide-react"
 import axios from "axios"
 import { backEndURL } from "../Backendurl";
+import { hasPermission } from '../utils/auth';
 
 // Replace dynamic imports with React.lazy
 const LineChart = lazy(() => import('react-apexcharts').then(mod => ({ default: mod.default })));
@@ -365,28 +366,38 @@ export default function AdminDashboard() {
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
           <div className="flex items-center gap-4">
             <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
-            <button 
-              onClick={() => setShowWidgetSettings(!showWidgetSettings)}
-              className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition"
-              title="Customize Dashboard"
-            >
-              <Settings className="h-5 w-5" />
-            </button>
+            {hasPermission('user') && (
+              <button 
+                onClick={() => setShowWidgetSettings(!showWidgetSettings)}
+                className="p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition"
+                title="Customize Dashboard"
+              >
+                <Settings className="h-5 w-5" />
+              </button>
+            )}
           </div>
           
           <div className="flex flex-wrap gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition">
-              <PlusCircle className="h-5 w-5" />
-              <span>Add Employee</span>
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-green-600 rounded-lg hover:bg-green-700 transition">
-              <Mail className="h-5 w-5" />
-              <span>Send Announcement</span>
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-purple-600 rounded-lg hover:bg-purple-700 transition">
-              <Download className="h-5 w-5" />
-              <span>Export Data</span>
-            </button>
+            {hasPermission('employees') && (
+              <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition">
+                <PlusCircle className="h-5 w-5" />
+                <span>Add Employee</span>
+              </button>
+            )}
+            
+            {hasPermission('messages') && (
+              <button className="flex items-center gap-2 px-4 py-2 bg-green-600 rounded-lg hover:bg-green-700 transition">
+                <Mail className="h-5 w-5" />
+                <span>Send Announcement</span>
+              </button>
+            )}
+            
+            {hasPermission('reports') && (
+              <button className="flex items-center gap-2 px-4 py-2 bg-purple-600 rounded-lg hover:bg-purple-700 transition">
+                <Download className="h-5 w-5" />
+                <span>Export Data</span>
+              </button>
+            )}
           </div>
         </div>
 

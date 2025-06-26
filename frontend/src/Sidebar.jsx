@@ -34,6 +34,8 @@ import {
   FileText 
 } from "lucide-react";
 
+import { logout, getUserData, hasPermission } from './utils/auth';
+
 function Sidebar() {
   const { theme, toggleTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -70,8 +72,6 @@ function Sidebar() {
     { name: "Payroll", path: "/payroll", icon: <Wallet className="w-5 h-5" />, section: "hrm" },
     { name: "Messages", path: "/messages", icon: <MessageCircle className="w-5 h-5" />, section: "hrm" },
     { name: "Assets", path: "/assets", icon: <Boxes className="w-5 h-5" />, section: "hrm" },
-    { name: "User", path: "/user", icon: <User className="w-5 h-5" />, section: "hrm" },
-    { name: "Profile", path: "/my", icon: <User className="w-5 h-5" />, section: "hrm" },
     { name: "Reports", path: "/reports", icon: <BarChart2 className="w-5 h-5" />, section: "hrm" },
 
     { name: "Sales Overview", path: "/salesdashboard", icon: <Home className="w-5 h-5" /> },
@@ -84,7 +84,6 @@ function Sidebar() {
     { name: "Supplier", path: "/supplier", icon: <Truck className="w-5 h-5" />, section: "sales" },
     { name: "Cashbook", path: "/cashbook", icon: <BookOpen className="w-5 h-5" />, section: "sales" },
     { name: "Income", path: "/income", icon: <DollarSign className="w-5 h-5" />, section: "sales" },
-    { name: "User", path: "/sales-user", icon: <User className="w-5 h-5" />, section: "sales" },
     { name: "Sales Report", path: "/sales-report", icon: <BarChart2 className="w-5 h-5" />, section: "sales" },
   ];
 
@@ -122,25 +121,88 @@ function Sidebar() {
 
 function SidebarContent({ navItems, toggleTheme, theme, openSections, toggleSection }) {
   const navigate = useNavigate();
-  const userEmail = sessionStorage.getItem("email") || "admin@example.com";
-  const isRestrictedUser = sessionStorage.getItem("restrictedUser") === "true";
+  const userData = getUserData();
+  const userEmail = userData?.email || sessionStorage.getItem("email") || "admin@example.com";
 
   const handleLogout = () => {
     try {
-      sessionStorage.removeItem("isLoggedIn");
-      sessionStorage.removeItem("email");
-      sessionStorage.removeItem("restrictedUser");
-      window.location.href = "/login";
+      logout();
     } catch (error) {
       console.error("Error during logout:", error);
       alert("An error occurred while logging out. Please try again.");
     }
   };
 
-  // Filter navigation items for restricted users
-  const filteredNavItems = isRestrictedUser 
-    ? navItems.filter(item => item.path === "/user" || item.type === "header")
-    : navItems;
+  // Filter navigation items based on user permissions
+  const filteredNavItems = navItems.filter(item => {
+    // Admin sees everything
+    if (userData?.role === "admin") return true;
+    
+    // For regular users, check permissions based on path
+    const pathToPermissionMap = {
+      "/dashboard": "dashboard",
+      "/sections": "sections", 
+      "/employees": "employees",
+      "/tasks": "tasks",
+      "/timesheets": "timesheets",
+      "/attendance": "attendance",
+      "/leave-requests": "leave-requests",
+      "/payroll": "payroll",
+      "/messages": "messages",
+      "/assets": "assets",
+      "/user": "user",
+      "/my": "my",
+      "/reports": "reports",
+      "/salesdashboard": "salesdashboard",
+      "/crm": "crm",
+      "/products": "products",
+      "/quatation": "quatation",
+      "/purchase": "purchase",
+      "/inventory": "inventory",
+      "/supplier": "supplier",
+      "/cashbook": "cashbook",
+      "/income": "income",
+      "/invoice": "invoice",
+      "/sales-report": "sales-report"
+    };
+    
+    const requiredPermission = pathToPermissionMap[item.path];
+    if (!requiredPermission) return true; // Show items without specific permission mapping
+    
+    return hasPermission(requiredPermission);
+  });
+
+  // Group items by section and filter out empty sections
+  const groupedItems = {};
+  filteredNavItems.forEach(item => {
+    if (item.type === "header") {
+      if (item.section) {
+        groupedItems[item.section] = {
+          header: item,
+          items: []
+        };
+      }
+    } else if (item.section && groupedItems[item.section]) {
+      groupedItems[item.section].items.push(item);
+    } else if (!item.section) {
+      // Items without section go to a special group
+      if (!groupedItems['main']) {
+        groupedItems['main'] = { header: null, items: [] };
+      }
+      groupedItems['main'].items.push(item);
+    }
+  });
+
+  // Filter out sections with no items
+  const finalItems = [];
+  Object.entries(groupedItems).forEach(([section, group]) => {
+    if (group.items.length > 0) {
+      if (group.header) {
+        finalItems.push(group.header);
+      }
+      finalItems.push(...group.items);
+    }
+  });
 
   // Add keyboard shortcut handler
   useEffect(() => {
@@ -149,7 +211,9 @@ function SidebarContent({ navItems, toggleTheme, theme, openSections, toggleSect
       if (event.shiftKey) {
         switch (event.key.toLowerCase()) {
           case 'p':
-            navigate('/invoice');
+            if (hasPermission('invoice')) {
+              navigate('/invoice');
+            }
             break;
           case 'l':
             handleLogout();
@@ -184,7 +248,7 @@ function SidebarContent({ navItems, toggleTheme, theme, openSections, toggleSect
 
       {/* Nav Links */}
       <div className="flex-1 overflow-y-auto px-2 py-4 scrollbar-thin scrollbar-thumb-border">
-        {filteredNavItems.map((item) => {
+        {finalItems.map((item) => {
           if (item.type === "header") {
             if (item.section) {
               return (
@@ -230,17 +294,35 @@ function SidebarContent({ navItems, toggleTheme, theme, openSections, toggleSect
         })}
       </div>
       <div className="px-4 py-3 border-t border-border">
+        {/* User/Profile buttons outside main nav, above logout/settings */}
+        <div className="flex flex-col gap-2 mb-4">
+          {hasPermission('user') && (
+            <NavLink to="/user" className="flex items-center px-4 py-2 text-sm font-medium rounded-lg text-blue-600 hover:bg-blue-50">
+              <User className="w-5 h-5 mr-2" /> User Management
+            </NavLink>
+          )}
+          {hasPermission('my') && (
+            <NavLink to="/my" className="flex items-center px-4 py-2 text-sm font-medium rounded-lg text-green-600 hover:bg-green-50">
+              <User className="w-5 h-5 mr-2" /> Profile
+            </NavLink>
+          )}
+        </div>
         <div className="flex space-x-4">
-          <button
-            onClick={() => navigate('/invoice')}
-            className="flex items-center px-4 py-2 text-sm font-medium text-green-600 rounded-md hover:bg-red-50 relative group"
-            title="POS (Shift + P)"
-          >
-            <Receipt className="w-5 h-5 mr-3" />
-            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              Shift + P
-            </span>
-          </button>
+          {/* Only show POS button if user has invoice permission */}
+          {hasPermission('invoice') && (
+            <button
+              onClick={() => navigate('/invoice')}
+              className="flex items-center px-4 py-2 text-sm font-medium text-green-600 rounded-md hover:bg-red-50 relative group"
+              title="POS (Shift + P)"
+            >
+              <Receipt className="w-5 h-5 mr-3" />
+              <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                Shift + P
+              </span>
+            </button>
+          )}
+          
+          {/* Logout button - always visible */}
           <button
             onClick={handleLogout}
             className="flex items-center px-4 py-2 text-sm font-medium text-red-600 rounded-md hover:bg-red-50 relative group"
@@ -251,6 +333,8 @@ function SidebarContent({ navItems, toggleTheme, theme, openSections, toggleSect
               Shift + L
             </span>
           </button>
+          
+          {/* Settings button - always visible */}
           <button
             onClick={() => navigate('/buisness')}
             className="flex items-center px-4 py-2 text-sm font-medium text-blue-600 rounded-md hover:bg-red-50 relative group"

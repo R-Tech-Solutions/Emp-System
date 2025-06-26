@@ -1,14 +1,15 @@
 import React from "react"
 import { Navigate, useLocation } from "react-router-dom"
+import { getAuthToken, getUserData } from "../utils/auth"
 
-// Check session storage for authentication status
+// Check if user is authenticated (has JWT token and user data)
 const isAuthenticated = () => {
-  return sessionStorage.getItem("isLoggedIn") === "true"
+  return sessionStorage.getItem("isLoggedIn") === "true";
 }
 
 // Check if user is restricted (can only access /user)
 const isRestrictedUser = () => {
-  return sessionStorage.getItem("restrictedUser") === "true"
+  return sessionStorage.getItem("restrictedUser") === "true";
 }
 
 const ProtectedRoute = ({ children }) => {
@@ -37,7 +38,7 @@ export const InitialRedirect = () => {
     return <Navigate to="/user" replace />
   }
   
-  // Normal users go to dashboard
+  // All other users go to dashboard
   return <Navigate to="/dashboard" replace />
 }
 

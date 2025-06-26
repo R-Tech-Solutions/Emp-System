@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios"; // Import axios for API calls
 import { PlusIcon, SearchIcon, PencilIcon, TrashIcon, XIcon, EyeIcon, EyeOffIcon } from "lucide-react"
 import { backEndURL } from "../Backendurl";
+import { hasPermission } from "../utils/auth";
 
 export default function UserManagementPage() {
   const initialUsers = [
@@ -31,8 +32,6 @@ export default function UserManagementPage() {
       payroll: true,
       messages: true,
       assets: true,
-      user: true,
-      my: true,
       reports: true
     },
     "Sales & Inventory": {
@@ -60,6 +59,9 @@ export default function UserManagementPage() {
   const [formErrors, setFormErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
 
+  // Check if user has permission to access this page
+  const canAccessUserManagement = hasPermission('user');
+
   // Fetch users from the backend
   useEffect(() => {
     const fetchUsers = async () => {
@@ -68,11 +70,16 @@ export default function UserManagementPage() {
         setUsers(response.data.data);
       } catch (error) {
         console.error("Error fetching users:", error);
+        if (error.response?.status === 403) {
+          showToast("You don't have permission to access user management", "error");
+        }
       }
     };
 
-    fetchUsers();
-  }, []);
+    if (canAccessUserManagement) {
+      fetchUsers();
+    }
+  }, [canAccessUserManagement]);
 
   // Filter users based on search term and filters
   useEffect(() => {

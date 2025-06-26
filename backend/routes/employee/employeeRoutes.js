@@ -1,6 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const EmployeeController = require('../../controllers/employee/employeeController');
+const authenticateJWT = require('../../middleware/authMiddleware');
+const { checkPermission } = require('../../middleware/permissionMiddleware');
+
+// All employee routes require authentication and 'employees' permission
+router.use(authenticateJWT);
+router.use(checkPermission('employees'));
 
 // Create a new employee
 router.post('/', EmployeeController.createEmployee);

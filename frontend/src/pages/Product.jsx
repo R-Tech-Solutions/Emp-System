@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { Plus, Search, X, Edit, Trash2, ChevronDown, ChevronUp, Eye } from "lucide-react";
+import { Plus, Search, X, Edit, Trash2, ChevronDown, ChevronUp, Eye, Download, Upload } from "lucide-react";
 import { backEndURL } from "../Backendurl";
+import { hasPermission } from '../utils/auth';
+import * as XLSX from 'xlsx';
 
 export default function ProductManagement() {
   // State management
@@ -39,6 +41,12 @@ export default function ProductManagement() {
   const [editProduct, setEditProduct] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+
+  // New states for import/export
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [importErrors, setImportErrors] = useState([]);
+  const [isImporting, setIsImporting] = useState(false);
 
   // Activity logs
   const [activities, setActivities] = useState([
@@ -389,6 +397,131 @@ export default function ProductManagement() {
     }
   };
 
+  const handleExport = () => {
+    addActivity("Generating product export...");
+    const headers = [
+      "name", "description", "salesPrice", "costPrice", "sku", "category",
+      "reference", "internalNotes", "productType", "barcode", "toWeighWithScale",
+      "marginPrice", "retailPrice", "productIdentifierType"
+    ];
+    
+    const wsData = filteredProducts.map(p => {
+      let row = {};
+      headers.forEach(header => {
+        row[header] = p[header];
+      });
+      return row;
+    });
+
+    const ws = XLSX.utils.json_to_sheet(wsData, { header: headers });
+    
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Products");
+
+    XLSX.writeFile(wb, "products_export.xlsx");
+    addActivity("Product export downloaded.");
+  };
+
+  const handleDownloadTemplate = () => {
+    const headers = [
+        "name", "description", "salesPrice", "costPrice", "sku", "category",
+        "reference", "internalNotes", "productType", "barcode", "toWeighWithScale",
+        "marginPrice", "retailPrice", "productIdentifierType"
+    ];
+    const ws = XLSX.utils.json_to_sheet([], { header: headers });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Product Template");
+    XLSX.writeFile(wb, "product_template.xlsx");
+  };
+
+  const handleImportFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImportFile(file);
+      setImportErrors([]);
+    }
+  };
+
+  const handleImport = async () => {
+    if (!importFile) {
+      setImportErrors(["Please select a file to import."]);
+      return;
+    }
+
+    setIsImporting(true);
+    setImportErrors([]);
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet);
+
+        const productsToImport = json.map(row => ({
+          name: row.name || "",
+          description: row.description || "",
+          salesPrice: parseFloat(row.salesPrice) || 0,
+          costPrice: parseFloat(row.costPrice) || 0,
+          sku: row.sku || "",
+          category: row.category || "General",
+          reference: row.reference || "",
+          internalNotes: row.internalNotes || "",
+          productType: row.productType || "Goods",
+          barcode: row.barcode || "",
+          toWeighWithScale: String(row.toWeighWithScale).toLowerCase() === 'true',
+          marginPrice: parseFloat(row.marginPrice) || 0,
+          retailPrice: parseFloat(row.retailPrice) || 0,
+          productIdentifierType: row.productIdentifierType || "none",
+        }));
+
+        const validationErrors = productsToImport.reduce((acc, p, index) => {
+          if (!p.name) acc.push(`Row ${index + 2}: Product name is required.`);
+          if (!p.sku) acc.push(`Row ${index + 2}: SKU is required.`);
+          return acc;
+        }, []);
+
+        if (validationErrors.length > 0) {
+          setImportErrors(validationErrors);
+          setIsImporting(false);
+          return;
+        }
+
+        const res = await axios.post(`${backEndURL}/api/products/bulk`, { products: productsToImport });
+
+        fetchProducts(); // Refresh the product list
+
+        if (res.status === 207 && res.data.errors.length > 0) {
+          addActivity(`Import partially successful. ${res.data.success.length} created, ${res.data.errors.length} failed.`);
+          const backendErrors = res.data.errors.map(e => `SKU ${e.product.sku}: ${e.error}`);
+          setImportErrors(backendErrors);
+        } else {
+          addActivity(`Successfully imported ${res.data.success.length} products.`);
+          setImportModalOpen(false);
+          setImportFile(null);
+        }
+
+      } catch (err) {
+        console.error("Error importing products:", err);
+        addActivity("Failed to import products.");
+        if (err.response && err.response.data && err.response.data.errors) {
+          const backendErrors = err.response.data.errors.map(e => `SKU ${e.product.sku}: ${e.error}`);
+          setImportErrors(backendErrors);
+        } else if (err.response && err.response.data && err.response.data.error) {
+          setImportErrors([err.response.data.error]);
+        }
+        else {
+          setImportErrors(["An unexpected error occurred. See console for details."]);
+        }
+      } finally {
+        setIsImporting(false);
+      }
+    };
+    reader.readAsArrayBuffer(importFile);
+  };
+
   // Render helpers
   const renderSortIcon = (key) => {
     if (sortConfig.key !== key) return null;
@@ -655,7 +788,7 @@ export default function ProductManagement() {
                           <input
                             type="number"
                             min="0"
-                            step="1"
+                            step="0.01"
                             value={newProduct.retailPrice}
                             onChange={e => syncPricePercent('retailPrice', parseFloat(e.target.value) || 0, false)}
                             className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-8 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -827,6 +960,23 @@ export default function ProductManagement() {
                   ))}
                 </select>
               </div>
+              {/* Import/Export Buttons */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setImportModalOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 transition-colors"
+                >
+                  <Upload size={16} />
+                  Import
+                </button>
+                <button
+                  onClick={handleExport}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 transition-colors"
+                >
+                  <Download size={16} />
+                  Export
+                </button>
+              </div>
             </div>
 
             {/* Products table */}
@@ -936,27 +1086,35 @@ export default function ProductManagement() {
                         </td>
                         <td className="py-4">
                           <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleViewIdentifiers(product)}
-                            className="text-blue-400 hover:text-blue-300"
-                            title="View Identifiers"
-                          >
-                            <Eye size={16} />
-                          </button>
                             <button
-                              onClick={() => handleEditProduct(product)}
+                              onClick={() => handleViewIdentifiers(product)}
                               className="text-blue-400 hover:text-blue-300"
-                              title="Edit"
+                              title="View Identifiers"
                             >
-                              <Edit size={16} />
+                              <Eye size={16} />
                             </button>
-                            <button
-                              onClick={() => handleDeleteProduct(product.id)}
-                              className="text-red-400 hover:text-red-300"
-                              title="Delete"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                            
+                            {/* Only show edit button if user has products permission */}
+                            {hasPermission('products') && (
+                              <button
+                                onClick={() => handleEditProduct(product)}
+                                className="text-blue-400 hover:text-blue-300"
+                                title="Edit"
+                              >
+                                <Edit size={16} />
+                              </button>
+                            )}
+                            
+                            {/* Only show delete button if user has products permission */}
+                            {hasPermission('products') && (
+                              <button
+                                onClick={() => handleDeleteProduct(product.id)}
+                                className="text-red-400 hover:text-red-300"
+                                title="Delete"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -1378,6 +1536,82 @@ export default function ProductManagement() {
                 {isLoading ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Products Modal */}
+      {importModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-lg">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-semibold">Import Products</h2>
+              <button
+                onClick={() => setImportModalOpen(false)}
+                className="text-gray-400 hover:text-gray-200"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-300 mb-2">
+                  Download the template, fill it out, and upload it to bulk-import products.
+                </p>
+                <button
+                  onClick={handleDownloadTemplate}
+                  className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+                >
+                  Download Template.xlsx
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Upload File</label>
+                <div className="flex items-center justify-center w-full">
+                    <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-700 hover:bg-gray-600">
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                            <Upload size={24} className="mb-2 text-gray-400"/>
+                            <p className="mb-2 text-sm text-gray-400">
+                              {importFile ? importFile.name : <><span className="font-semibold">Click to upload</span> or drag and drop</>}
+                            </p>
+                            <p className="text-xs text-gray-500">XLSX or CSV file</p>
+                        </div>
+                        <input id="dropzone-file" type="file" className="hidden" onChange={handleImportFileChange} accept=".xlsx, .csv" />
+                    </label>
+                </div> 
+              </div>
+
+              {importErrors.length > 0 && (
+                <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-md">
+                  <h3 className="font-bold">Import Errors</h3>
+                  <ul className="mt-2 list-disc list-inside text-sm">
+                    {importErrors.map((error, i) => (
+                      <li key={i}>{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-8">
+              <button
+                onClick={() => setImportModalOpen(false)}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleImport}
+                disabled={isImporting || !importFile}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isImporting ? 'Importing...' : 'Start Import'}
+              </button>
+            </div>
+
           </div>
         </div>
       )}

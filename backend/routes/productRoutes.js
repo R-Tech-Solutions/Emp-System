@@ -4,6 +4,7 @@ const productController = require("../controllers/productController");
 
 // Use the multer middleware in controller for create and update
 router.post("/", productController.createProduct);
+router.post("/bulk", productController.createBulkProducts);
 router.get("/", productController.getProducts);
 router.get("/:id", productController.getProduct);
 router.get("/barcode/:barcode", productController.getProductByBarcode);

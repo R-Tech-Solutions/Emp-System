@@ -7,6 +7,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { fetchGroups, fetchAnnouncements, addGroup, updateGroup, addAnnouncement } from '../redux/groupSlice';
 import DotSpinner from "../loaders/Loader"; // Import the loader
 import { backEndURL } from "../Backendurl";
+import { hasPermission } from '../utils/auth';
 
 export default function AdminDashboard() {
   const dispatch = useDispatch();
@@ -449,22 +450,24 @@ export default function AdminDashboard() {
           </div>
         ) : (
           <>
-            {/* Action Buttons */}
-            <div className="flex flex-wrap gap-4 mb-8 justify-start">
-              <button
-                onClick={() => setAddGroupDialogOpen(true)}
-                className="flex items-center px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-md"
-              >
-                <Plus className="mr-2 h-4 w-4" /> Add Groups
-              </button>
+            {/* Action Buttons - Only show for users with messages permission */}
+            {hasPermission('messages') && (
+              <div className="flex flex-wrap gap-4 mb-8 justify-start">
+                <button
+                  onClick={() => setAddGroupDialogOpen(true)}
+                  className="flex items-center px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-md"
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Add Groups
+                </button>
 
-              <button
-                onClick={() => setSendAnnouncementDialogOpen(true)}
-                className="flex items-center px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-md"
-              >
-                <Plus className="mr-2 h-4 w-4" /> Send Announcement
-              </button>
-            </div>
+                <button
+                  onClick={() => setSendAnnouncementDialogOpen(true)}
+                  className="flex items-center px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-md"
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Send Announcement
+                </button>
+              </div>
+            )}
 
             {/* Tabs for Groups and Announcements */}
             <div className="mb-6">

@@ -164,6 +164,58 @@ exports.deleteProduct = async (req, res) => {
   }
 };
 
+// Bulk Create Products
+exports.createBulkProducts = async (req, res) => {
+  try {
+    const { products } = req.body;
+    if (!products || !Array.isArray(products)) {
+      return res.status(400).json({ error: "Products array is required." });
+    }
+
+    const results = {
+      success: [],
+      errors: [],
+    };
+
+    const productCollection = db.collection(COLLECTION_NAME);
+
+    for (const product of products) {
+      try {
+        const data = productData({ ...product });
+        const sku = data.sku && data.sku.trim();
+
+        if (!sku) {
+          results.errors.push({ product, error: "SKU is required." });
+          continue;
+        }
+
+        const existing = await productCollection.doc(sku).get();
+        if (existing.exists) {
+          results.errors.push({ product, error: `Product with SKU ${sku} already exists.` });
+          continue;
+        }
+
+        await productCollection.doc(sku).set(data);
+        results.success.push({ id: sku, ...data });
+
+      } catch (innerErr) {
+        results.errors.push({ product, error: innerErr.message });
+      }
+    }
+
+    productCache.clear();
+    
+    if (results.errors.length > 0) {
+      return res.status(207).json(results);
+    }
+
+    res.status(201).json(results);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 // Get Product by Barcode with caching
 exports.getProductByBarcode = async (req, res) => {
   try {

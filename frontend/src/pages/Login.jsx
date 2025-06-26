@@ -54,6 +54,7 @@ export default function AdvancedLogin() {
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
+  
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) {
@@ -63,6 +64,7 @@ export default function AdvancedLogin() {
     }
     setIsLoading(true);
     try {
+      // Superuser login
       if (
         formData.email === VALID_EMAIL &&
         formData.password === VALID_PASSWORD
@@ -70,12 +72,14 @@ export default function AdvancedLogin() {
         setSuccess(true);
         sessionStorage.setItem("isLoggedIn", "true");
         sessionStorage.setItem("email", formData.email);
-        sessionStorage.setItem("restrictedUser", "true"); // Flag for restricted access
+        sessionStorage.setItem("restrictedUser", "true");
         setTimeout(() => {
           navigate("/user");
         }, 1000);
         return;
       }
+  
+      // Normal user login (check database)
       const response = await fetch(`${backEndURL}/api/users/login`, {
         method: "POST",
         headers: {
@@ -87,29 +91,28 @@ export default function AdvancedLogin() {
         }),
       });
       const result = await response.json();
-      if (response.ok) {
-        if (result.role === "admin" && result.status === "active") {
-          setSuccess(true);
-          sessionStorage.setItem("isLoggedIn", "true");
-          sessionStorage.setItem("email", formData.email);
-          sessionStorage.setItem("restrictedUser", "false"); // Normal user access
-          setTimeout(() => {
-            navigate("/dashboard");
-          }, 1000);
-        } else if (result.role !== "admin") {
-          setErrors({ form: "You don't have authorization to access this page." });
-        } else if (result.status !== "active") {
-          setErrors({ form: "Your status is inactive. Please contact support." });
-        }
+      if (response.ok && result.user && result.user.status === "active") {
+        setSuccess(true);
+        sessionStorage.setItem("isLoggedIn", "true");
+        sessionStorage.setItem("email", formData.email);
+        sessionStorage.setItem("restrictedUser", "false");
+        sessionStorage.setItem("jwtToken", result.token);
+        sessionStorage.setItem("userData", JSON.stringify(result.user));
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 1000);
+      } else if (result.user && result.user.status !== "active") {
+        setErrors({ form: "Your status is inactive. Please contact support." });
       } else {
-        setErrors({ form: result.message || "Invalid request. Please try again." });
+        setErrors({ form: "Invalid email or password." });
       }
     } catch (error) {
       setErrors({ form: "An error occurred. Please try again." });
     } finally {
       setIsLoading(false);
     }
-  };
+  }; 
+
   const handleTabChange = (tab) => {
     setActiveTab(tab)
     setErrors({})

@@ -44,7 +44,22 @@ const port = process.env.PORT || 3001;
 
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
-app.use(cors({ origin: process.env.CORS_ORIGIN || '*' })); 
+
+// CORS configuration to allow both development and production origins
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000,http://3.92.180.32').split(',');
+app.use(cors({
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
 app.use(express.json());
 
 app.use("/api/departments", DepartmentRoutes);

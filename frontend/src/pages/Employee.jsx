@@ -7,6 +7,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { fetchEmployees, deleteEmployee } from "../redux/employeeSlice";
 import DotSpinner from "../loaders/Loader"; // Import the loader
 import { backEndURL } from "../Backendurl";
+import { hasPermission } from '../utils/auth';
 
 export default function Employee() {
     const dispatch = useDispatch();
@@ -807,20 +808,28 @@ export default function Employee() {
                                                         >
                                                             <Eye className="h-4 w-4" />
                                                         </button>
-                                                        <button
-                                                            onClick={() => handleEditEmployee(employee)}
-                                                            className="p-1 rounded-md bg-secondary hover:bg-primary text-primary hover:text-white transition"
-                                                            title="Edit"
-                                                        >
-                                                            <Edit2 className="h-4 w-4" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDeleteEmployee(employee.id)}
-                                                            className="p-1 rounded-md bg-accent hover:bg-primary text-primary hover:text-white transition"
-                                                            title="Delete"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </button>
+                                                        
+                                                        {/* Only show edit button if user has employees permission */}
+                                                        {hasPermission('employees') && (
+                                                            <button
+                                                                onClick={() => handleEditEmployee(employee)}
+                                                                className="p-1 rounded-md bg-secondary hover:bg-primary text-primary hover:text-white transition"
+                                                                title="Edit"
+                                                            >
+                                                                <Edit2 className="h-4 w-4" />
+                                                            </button>
+                                                        )}
+                                                        
+                                                        {/* Only show delete button if user has employees permission */}
+                                                        {hasPermission('employees') && (
+                                                            <button
+                                                                onClick={() => handleDeleteEmployee(employee.id)}
+                                                                className="p-1 rounded-md bg-accent hover:bg-primary text-primary hover:text-white transition"
+                                                                title="Delete"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>

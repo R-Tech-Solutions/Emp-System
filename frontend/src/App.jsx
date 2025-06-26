@@ -1,5 +1,7 @@
 "use client";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { useEffect } from "react";
+import { setupAuthInterceptor, hasPermission } from "./utils/auth";
 import Login from "./pages/Login.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Departments from "./pages/Departments.jsx";
@@ -28,9 +30,23 @@ import Invoice from "./pages/Invoice.jsx";
 import Income from "./pages/Income.jsx";
 import SalesDashboard from "./pages/SalesDashboard.jsx";
 import BuisnessSettings from "./pages/BuisnessSettings.jsx";
-import salesReport from "./pages/SalesReport.jsx";
+import SalesReport from "./pages/SalesReport.jsx";
+
+// Permission-based route component
+const PermissionRoute = ({ permission, children }) => {
+  if (hasPermission(permission)) {
+    return children;
+  }
+  return <Navigate to="/dashboard" replace />;
+};
+
 function App() {
   const isLoggedIn = sessionStorage.getItem("isLoggedIn") === "true";
+
+  // Setup auth interceptor for JWT tokens
+  useEffect(() => {
+    setupAuthInterceptor();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-text-primary">
@@ -62,7 +78,9 @@ function App() {
             path="sections"
             element={
               <ProtectedRoute>
-                <Departments />
+                <PermissionRoute permission="sections">
+                  <Departments />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -70,7 +88,9 @@ function App() {
             path="employees"
             element={
               <ProtectedRoute>
-                <Employee />
+                <PermissionRoute permission="employees">
+                  <Employee />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -78,7 +98,9 @@ function App() {
             path="tasks"
             element={
               <ProtectedRoute>
-                <TaskManagement />
+                <PermissionRoute permission="tasks">
+                  <TaskManagement />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -86,7 +108,9 @@ function App() {
             path="attendance"
             element={
               <ProtectedRoute>
-                <AttendanceTracking />
+                <PermissionRoute permission="attendance">
+                  <AttendanceTracking />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -94,7 +118,9 @@ function App() {
             path="leave-requests"
             element={
               <ProtectedRoute>
-                <LeaveRequestSystem />
+                <PermissionRoute permission="leave-requests">
+                  <LeaveRequestSystem />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -102,7 +128,9 @@ function App() {
             path="messages"
             element={
               <ProtectedRoute>
-                <MessagingSystem />
+                <PermissionRoute permission="messages">
+                  <MessagingSystem />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -110,7 +138,9 @@ function App() {
             path="reports"
             element={
               <ProtectedRoute>
-                <Report />
+                <PermissionRoute permission="reports">
+                  <Report />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -126,7 +156,9 @@ function App() {
             path="sales-user"
             element={
               <ProtectedRoute>
-                <UserAdd />
+                <PermissionRoute permission="user">
+                  <UserAdd />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -134,7 +166,9 @@ function App() {
             path="my"
             element={
               <ProtectedRoute>
-                <Mysettings />
+                <PermissionRoute permission="my">
+                  <Mysettings />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -142,7 +176,9 @@ function App() {
             path="assets"
             element={
               <ProtectedRoute>
-                <Assets />
+                <PermissionRoute permission="assets">
+                  <Assets />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -150,7 +186,9 @@ function App() {
             path="timesheets"
             element={
               <ProtectedRoute>
-                <Timesheets />
+                <PermissionRoute permission="timesheets">
+                  <Timesheets />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -166,7 +204,9 @@ function App() {
             path="payroll"
             element={
               <ProtectedRoute>
-                <Payrol />
+                <PermissionRoute permission="payroll">
+                  <Payrol />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -174,7 +214,9 @@ function App() {
             path="crm"
             element={
               <ProtectedRoute>
-                <Crm />
+                <PermissionRoute permission="crm">
+                  <Crm />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -182,7 +224,9 @@ function App() {
             path="products"
             element={
               <ProtectedRoute>
-                <Products />
+                <PermissionRoute permission="products">
+                  <Products />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -190,7 +234,9 @@ function App() {
             path="quatation"
             element={
               <ProtectedRoute>
-                <Quatation />
+                <PermissionRoute permission="quatation">
+                  <Quatation />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -198,7 +244,9 @@ function App() {
             path="purchase"
             element={
               <ProtectedRoute>
-                <Purchase />
+                <PermissionRoute permission="purchase">
+                  <Purchase />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -206,7 +254,9 @@ function App() {
             path="inventory"
             element={
               <ProtectedRoute>
-                <InventoryManagement />
+                <PermissionRoute permission="inventory">
+                  <InventoryManagement />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -214,7 +264,9 @@ function App() {
             path="supplier"
             element={
               <ProtectedRoute>
-                <SupplierManagement />
+                <PermissionRoute permission="supplier">
+                  <SupplierManagement />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -222,7 +274,9 @@ function App() {
             path="cashbook"
             element={
               <ProtectedRoute>
-                <Cashbook />
+                <PermissionRoute permission="cashbook">
+                  <Cashbook />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -230,7 +284,9 @@ function App() {
             path="invoice"
             element={
               <ProtectedRoute>
-                <Invoice />
+                <PermissionRoute permission="invoice">
+                  <Invoice />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -238,7 +294,9 @@ function App() {
             path="income"
             element={
               <ProtectedRoute>
-                <Income />
+                <PermissionRoute permission="income">
+                  <Income />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -246,7 +304,9 @@ function App() {
             path="salesdashboard"
             element={
               <ProtectedRoute>
-                <SalesDashboard />
+                <PermissionRoute permission="salesdashboard">
+                  <SalesDashboard />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />
@@ -262,7 +322,9 @@ function App() {
             path="sales-report"
             element={
               <ProtectedRoute>
-                <salesReport />
+                <PermissionRoute permission="sales-report">
+                  <SalesReport />
+                </PermissionRoute>
               </ProtectedRoute>
             }
           />

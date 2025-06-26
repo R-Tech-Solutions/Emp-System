@@ -37,6 +37,7 @@ import {
   Legend,
   CartesianGrid,
 } from "recharts";
+// import PermissionDebug from '../components/PermissionDebug';
 
 export default function AdminDashboard() {
   const [assets, setAssets] = useState([]);
@@ -427,7 +428,20 @@ export default function AdminDashboard() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background text-text-primary p-4 md:p-6">
+    <div className="min-h-screen bg-background text-text-primary">
+      {/* Debug Component - Remove this after testing */}
+      {/* <PermissionDebug /> */}
+      
+      {/* Header */}
+      <header className="bg-surface shadow-md border-b border-border">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <h1 className="text-3xl font-bold text-text-primary">Dashboard</h1>
+          <p className="text-text-secondary mt-2">Welcome back! Here's what's happening today.</p>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="max-w-7xl mx-auto">
         {/* Dashboard Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
@@ -1189,6 +1203,7 @@ export default function AdminDashboard() {
           )}
         </div>
       </div>
+      </main>
     </div>
   );
 }
