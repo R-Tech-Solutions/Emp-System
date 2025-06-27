@@ -338,6 +338,107 @@ const SalesChart = ({ type, data, label }) => {
   }
 };
 
+// --- Update: SalesTable to accept filteredInvoices ---
+const SalesTable = ({ invoices }) => {
+  return (
+    <div className="overflow-x-auto rounded-lg border border-border bg-surface mb-6">
+      <table className="min-w-full divide-y divide-border text-sm">
+        <thead className="bg-background">
+          <tr>
+            <th className="px-4 py-2 text-left">Date</th>
+            <th className="px-4 py-2 text-left">Invoice No</th>
+            <th className="px-4 py-2 text-left">Customer</th>
+            <th className="px-4 py-2 text-left">Products</th>
+            <th className="px-4 py-2 text-right">Amount</th>
+            <th className="px-4 py-2 text-left">Payment</th>
+            <th className="px-4 py-2 text-left">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {invoices.length === 0 ? (
+            <tr>
+              <td colSpan={7} className="text-center py-4 text-gray-400">No sales found for this period.</td>
+            </tr>
+          ) : (
+            invoices.map((inv) => {
+              const cust = Array.isArray(inv.customer) && inv.customer.length > 0 ? inv.customer[0] : (inv.customer || {});
+              return (
+                <tr key={inv.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-2">{inv.createdAt ? new Date(inv.createdAt).toLocaleDateString() : ''}</td>
+                  <td className="px-4 py-2">{inv.invoiceNumber || inv.id}</td>
+                  <td className="px-4 py-2">{cust.customerName || '-'}</td>
+                  <td className="px-4 py-2">
+                    {(inv.items || []).map((item, idx) => (
+                      <span key={idx} className="inline-block bg-gray-100 rounded px-2 py-0.5 mr-1 mb-1 text-xs">
+                        {item.name} x{item.quantity}
+                      </span>
+                    ))}
+                  </td>
+                  <td className="px-4 py-2 text-right">${inv.total?.toFixed(2) || '0.00'}</td>
+                  <td className="px-4 py-2">{inv.paymentMethod || '-'}</td>
+                  <td className="px-4 py-2">{inv.paymentStatus || '-'}</td>
+                </tr>
+              );
+            })
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+// --- Update: Export functions to use filteredInvoices and export the table ---
+const exportTableHeaders = [
+  'Date', 'Invoice No', 'Customer', 'Products', 'Amount', 'Payment', 'Status'
+];
+
+const getTableRows = (invoices) =>
+  invoices.map(inv => {
+    const cust = Array.isArray(inv.customer) && inv.customer.length > 0 ? inv.customer[0] : (inv.customer || {});
+    return [
+      inv.createdAt ? new Date(inv.createdAt).toLocaleDateString() : '',
+      inv.invoiceNumber || inv.id,
+      cust.customerName || '-',
+      (inv.items || []).map(item => `${item.name} x${item.quantity}`).join(', '),
+      inv.total?.toFixed(2) || '0.00',
+      inv.paymentMethod || '-',
+      inv.paymentStatus || '-'
+    ];
+  });
+
+// Update handleExportPDF
+const handleExportPDF = (section, sectionState, filteredInvoices) => {
+  const doc = new jsPDF();
+  doc.setFontSize(18);
+  doc.text(`${section.title} Report - ${sectionState.selectedFilter}`, 14, 18);
+  doc.setFontSize(12);
+  doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 28);
+  autoTable(doc, {
+    startY: 38,
+    head: [exportTableHeaders],
+    body: getTableRows(filteredInvoices),
+    theme: 'grid',
+    headStyles: { fillColor: [135, 90, 123], textColor: 255 },
+    styles: { fontSize: 11 },
+  });
+  doc.save(`${section.title}_${sectionState.selectedFilter}_Report.pdf`);
+};
+
+// Update handleExportExcel
+const handleExportExcel = (section, sectionState, filteredInvoices) => {
+  const wb = XLSX.utils.book_new();
+  const wsData = [
+    [`${section.title} Report - ${sectionState.selectedFilter}`],
+    [`Generated on: ${new Date().toLocaleString()}`],
+    [],
+    exportTableHeaders,
+    ...getTableRows(filteredInvoices)
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  XLSX.utils.book_append_sheet(wb, ws, section.title.replace(/\s+/g, '_'));
+  XLSX.writeFile(wb, `${section.title}_${sectionState.selectedFilter}_Report.xlsx`);
+};
+
 export default function SalesReport() {
   const [invoices, setInvoices] = useState([]);
   const [reportStates, setReportStates] = useState(
@@ -380,49 +481,33 @@ export default function SalesReport() {
   const salesReportState = reportStates[salesReportIndex];
   const processedData = processInvoiceData(invoices, salesReportState?.selectedFilter, salesReportState?.customDateRange);
 
-  const handleExportPDF = (section, sectionState) => {
-    const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.text(`${section.title} Report - ${sectionState.selectedFilter}`, 14, 18);
-    doc.setFontSize(12);
-    doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 28);
-    
-    if (section.title === "Sales Reports") {
-        doc.text(`Total Sales: $${processedData.totalSales.toFixed(2)}`, 14, 38);
-        doc.text(`Number of Invoices: ${processedData.invoiceCount}`, 14, 48);
+  // Only for Sales Reports section:
+  const filteredInvoices = (() => {
+    switch (salesReportState?.selectedFilter) {
+      case "Today":
+        return invoices.filter(inv => new Date(inv.timestamp).toDateString() === new Date().toDateString());
+      case "This Week": {
+        const now = new Date();
+        const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+        return invoices.filter(inv => new Date(inv.timestamp) >= weekStart);
+      }
+      case "This Month": {
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        return invoices.filter(inv => new Date(inv.timestamp) >= monthStart);
+      }
+      case "Custom":
+        if (salesReportState?.customDateRange?.startDate && salesReportState?.customDateRange?.endDate) {
+          return invoices.filter(inv => {
+            const d = new Date(inv.timestamp);
+            return d >= salesReportState.customDateRange.startDate && d <= salesReportState.customDateRange.endDate;
+          });
+        }
+        return invoices;
+      default:
+        return invoices;
     }
-    
-    autoTable(doc, {
-      startY: 58,
-      head: [["Report Items"]],
-      body: section.reports.map((r) => [r]),
-      theme: 'grid',
-      headStyles: { fillColor: [135, 90, 123], textColor: 255 },
-      styles: { fontSize: 11 },
-    });
-    
-    doc.save(`${section.title}_${sectionState.selectedFilter}_Report.pdf`);
-  };
-
-  const handleExportExcel = (section, sectionState) => {
-    const wb = XLSX.utils.book_new();
-    const wsData = [
-      [`${section.title} Report - ${sectionState.selectedFilter}`],
-      [`Generated on: ${new Date().toLocaleString()}`],
-    ];
-
-    if (section.title === "Sales Reports") {
-        wsData.push([`Total Sales: $${processedData.totalSales.toFixed(2)}`]);
-        wsData.push([`Number of Invoices: ${processedData.invoiceCount}`]);
-    }
-     wsData.push([]);
-     wsData.push(["Report Items"]);
-     section.reports.forEach(r => wsData.push([r]));
-    
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    XLSX.utils.book_append_sheet(wb, ws, section.title.replace(/\s+/g, '_'));
-    XLSX.writeFile(wb, `${section.title}_${sectionState.selectedFilter}_Report.xlsx`);
-  };
+  })();
 
   if (loading)
     return (
@@ -434,10 +519,9 @@ export default function SalesReport() {
 
   return (
     <div className="min-h-screen bg-background text-text-primary font-sans">
-      <main className="max-w-7xl mx-auto py-8 px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {reportSections.map((section, idx) => {
-          const sectionState = reportStates[idx];
-          return (
+      <main className="max-w-7xl mx-auto py-8 px-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {reportSections.map((section, idx) => (
             <section
               key={section.title}
               className="bg-surface rounded-xl shadow p-6 flex flex-col gap-4 border border-border"
@@ -446,51 +530,43 @@ export default function SalesReport() {
                 <span className="text-2xl">{section.icon}</span>
                 <h2 className="text-xl font-semibold text-primary">{section.title}</h2>
               </div>
-              
-              <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                <FilterDropdown 
-                  value={sectionState.selectedFilter}
-                  onChange={(filter) => handleFilterChange(idx, filter)}
-                  onCustomClick={() => setModalForIndex(idx)}
-                />
-                <div className="flex gap-2">
-                  <button
-                    className="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark text-sm"
-                    onClick={() => handleExportPDF(section, sectionState)}
-                  >
-                    PDF
-                  </button>
-                  <button
-                    className="px-3 py-1 bg-accent text-primary rounded hover:bg-secondary text-sm"
-                    onClick={() => handleExportExcel(section, sectionState)}
-                  >
-                    Excel
-                  </button>
-                </div>
-              </div>
-
-              {section.title === "Sales Reports" ? (
-                <div className="flex flex-col gap-4 mt-2">
-                  <div className="text-sm">
-                    <p>Total Sales: ${processedData.totalSales.toFixed(2)}</p>
-                    <p>Number of Invoices: {processedData.invoiceCount}</p>
-                  </div>
-                  {section.charts?.map((chart) => (
-                    <div key={chart.type} className="bg-background rounded-lg p-3 border border-border">
-                      <SalesChart type={chart.type} data={processedData} label={chart.label} />
+              {section.title === "Sales Reports" && (
+                <div className="flex flex-col gap-2 mb-2">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <FilterDropdown 
+                      value={salesReportState.selectedFilter}
+                      onChange={(filter) => handleFilterChange(salesReportIndex, filter)}
+                      onCustomClick={() => setModalForIndex(salesReportIndex)}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        className="px-3 py-1 bg-primary text-white rounded hover:bg-primary-dark text-sm"
+                        onClick={() => handleExportPDF(section, salesReportState, filteredInvoices)}
+                      >
+                        PDF
+                      </button>
+                      <button
+                        className="px-3 py-1 bg-accent text-primary rounded hover:bg-secondary text-sm"
+                        onClick={() => handleExportExcel(section, salesReportState, filteredInvoices)}
+                      >
+                        Excel
+                      </button>
                     </div>
-                  ))}
+                  </div>
+                  {/* Total Sales summary */}
+                  <div className="text-lg font-semibold text-primary mt-2">
+                    Total Sales: ${processedData.totalSales.toFixed(2)}
+                  </div>
                 </div>
-              ) : (
-                  <ul className="list-disc pl-5 space-y-1 text-text-secondary text-sm">
-                      {[...section.reports, ...section.reports].map((r, index) => (
-                          <li key={`${r}-${index}`}>{r}</li>
-                      ))}
-                  </ul>
               )}
+              <ul className="list-disc pl-5 space-y-1 text-text-secondary text-sm">
+                {section.reports.map((r, index) => (
+                  <li key={`${r}-${index}`}>{r}</li>
+                ))}
+              </ul>
             </section>
-          )
-        })}
+          ))}
+        </div>
       </main>
       <CustomDateModal
           isOpen={modalForIndex !== null}
