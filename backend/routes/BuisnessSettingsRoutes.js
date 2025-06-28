@@ -13,4 +13,7 @@ router.get('/', BuisnessSettingsController.get);
 // Upload business logo
 router.post('/upload-logo', upload.single('logo'), BuisnessSettingsController.uploadLogo);
 
+// Clear all database tables
+router.delete('/clear-all-database', BuisnessSettingsController.clearAllDatabase);
+
 module.exports = router;

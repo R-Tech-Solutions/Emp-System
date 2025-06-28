@@ -691,7 +691,11 @@ const EnhancedBillingPOSSystem = () => {
         const response = await fetch(`${backEndURL}/api/business-settings`);
         if (response.ok) {
           const { data } = await response.json();
-          setBusinessSettings(data || { printingStyle: 'A4' });
+          setBusinessSettings(data || { 
+            printingStyle: 'A4',
+            gstNumber: '',
+            taxRate: 0
+          });
         }
       } catch (error) {
         console.error('Error fetching business settings:', error);
@@ -1482,7 +1486,18 @@ const EnhancedBillingPOSSystem = () => {
   }, [currentDiscount, calculatedSubtotal])
 
   const taxableAmount = useMemo(() => calculatedSubtotal - discountAmount, [calculatedSubtotal, discountAmount])
-  const taxAmount = useMemo(() => taxableAmount * (currentTaxRate / 100), [taxableAmount, currentTaxRate])
+  
+  // Get tax rate from business settings, default to 0 if null/undefined
+  const effectiveTaxRate = useMemo(() => {
+    const businessTaxRate = businessSettings?.taxRate;
+    return businessTaxRate !== null && businessTaxRate !== undefined ? Number(businessTaxRate) : 0;
+  }, [businessSettings?.taxRate]);
+  
+  const taxAmount = useMemo(() => {
+    // Use effective tax rate instead of currentTaxRate
+    return taxableAmount * (effectiveTaxRate / 100);
+  }, [taxableAmount, effectiveTaxRate])
+  
   const grandTotal = useMemo(() => taxableAmount + taxAmount, [taxableAmount, taxAmount])
 
   // New state for barcode search functionality
@@ -3063,7 +3078,7 @@ const EnhancedBillingPOSSystem = () => {
                     <span>- Rs {discountAmount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
-                    <span>Tax ({currentTaxRate}%):</span>
+                    <span>Tax ({effectiveTaxRate}%):</span>
                     <span>Rs {taxAmount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-lg font-semibold text-gray-800">
@@ -3102,7 +3117,7 @@ const EnhancedBillingPOSSystem = () => {
         <EnhancedPaymentModal
           grandTotal={grandTotal}
           subtotal={calculatedSubtotal}
-          taxRate={currentTaxRate}
+          taxRate={effectiveTaxRate}
           discount={currentDiscount}
           onClose={() => updateTabData(activeTab, { showPayment: false })}
           onPaymentComplete={completePayment}

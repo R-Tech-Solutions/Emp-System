@@ -26,6 +26,7 @@ const fetchInvoice = async (invoiceDocumentId) => {
 
 const AdvanceA4Invoice = ({ invoice: invoiceProp, invoiceDocumentId }) => {
   const [invoice, setInvoice] = useState(invoiceProp);
+  const [businessSettings, setBusinessSettings] = useState({});
   const printRef = useRef();
   const barcodeCanvasRef = useRef(null);
   const headerBarcodeCanvasRef = useRef(null);
@@ -37,6 +38,23 @@ const AdvanceA4Invoice = ({ invoice: invoiceProp, invoiceDocumentId }) => {
       });
     }
   }, [invoiceDocumentId, invoiceProp]);
+
+  // Fetch business settings
+  useEffect(() => {
+    const fetchBusinessSettings = async () => {
+      try {
+        const response = await fetch(`${backEndURL}/api/business-settings`);
+        if (response.ok) {
+          const { data } = await response.json();
+          setBusinessSettings(data || {});
+        }
+      } catch (error) {
+        console.error('Error fetching business settings:', error);
+      }
+    };
+
+    fetchBusinessSettings();
+  }, []);
 
   useEffect(() => {
     if (invoice) {
@@ -142,9 +160,12 @@ const AdvanceA4Invoice = ({ invoice: invoiceProp, invoiceDocumentId }) => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: 20, marginBottom: 30, borderBottom: '4px solid #1e40af' }}>
           <div style={{ flex: 1 }}>
             {COMPANY.logo && <img src={COMPANY.logo} alt="Logo" style={{ width: 100, marginBottom: 10 }} />}
-            <div style={{ fontSize: 28, fontWeight: 'bold', color: '#1e40af' }}>{COMPANY.name}</div>
-            <div style={{ fontSize: 14, color: '#555' }}>{COMPANY.email}</div>
-            <div style={{ fontSize: 14, color: '#555' }}>{COMPANY.phone}</div>
+            <div style={{ fontSize: 28, fontWeight: 'bold', color: '#1e40af' }}>{businessSettings.businessName || COMPANY.name}</div>
+            <div style={{ fontSize: 14, color: '#555' }}>{businessSettings.contact || COMPANY.email}</div>
+            <div style={{ fontSize: 14, color: '#555' }}>{businessSettings.address || COMPANY.phone}</div>
+            {businessSettings.gstNumber && (
+              <div style={{ fontSize: 14, color: '#555', fontWeight: 'bold' }}>GST: {businessSettings.gstNumber}</div>
+            )}
           </div>
           <div style={{ flex: 1, textAlign: 'right' }}>
             <div style={{ fontSize: 42, fontWeight: 'bold', color: '#333', marginBottom: 10 }}>INVOICE</div>
@@ -199,7 +220,10 @@ const AdvanceA4Invoice = ({ invoice: invoiceProp, invoiceDocumentId }) => {
           <div style={{ width: 350 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, padding: '8px 0' }}><span>Subtotal:</span><span>Rs {(invoice.subtotal || 0).toFixed(2)}</span></div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, padding: '8px 0' }}><span>Discount:</span><span>- Rs {(invoice.discountAmount || 0).toFixed(2)}</span></div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, padding: '8px 0' }}><span>Tax:</span><span>Rs {(invoice.taxAmount || 0).toFixed(2)}</span></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, padding: '8px 0' }}>
+              <span>Tax ({businessSettings.taxRate || 0}%):</span>
+              <span>Rs {(invoice.taxAmount || 0).toFixed(2)}</span>
+            </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: 18, borderTop: '2px solid #333', marginTop: 10, paddingTop: 10, color: '#1e40af' }}><span>Total:</span><span>Rs {(invoice.total || 0).toFixed(2)}</span></div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, padding: '8px 0', borderTop: '1px solid #eee', marginTop: 10 }}><span>Amount Paid:</span><span>Rs {(invoice.amountPaid || 0).toFixed(2)}</span></div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 15, padding: '8px 0' }}><span>Change Due:</span><span>Rs {(invoice.changeDue || 0).toFixed(2)}</span></div>

@@ -668,21 +668,6 @@ export default function PurchaseApp() {
                     <p className="text-gray-400">Manage and track all your purchases</p>
                 </div>
                 <div className="flex space-x-4">
-                    <label className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                        Import
-                        <input
-                            type="file"
-                            accept=".xlsx,.xls"
-                            onChange={handleImport}
-                            className="hidden"
-                        />
-                    </label>
-                    <button
-                        onClick={handleExport}
-                        className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    >
-                        Export
-                    </button>
                     <button
                         onClick={() => setCurrentView("create")}
                         className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1672,23 +1657,6 @@ export default function PurchaseApp() {
     doc.save(`purchase-${selectedPurchase.purchaseId}.pdf`);
 };
 
-const handleImport = (event) => {
-    const file = event.target.files[0];
-    const reader = new FileReader();
-    
-    reader.onload = (e) => {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-        
-        // Process the imported data
-        console.log('Imported data:', jsonData);
-        // Add your import logic here
-    };
-    
-    reader.readAsArrayBuffer(file);
-};
 
 const handleExport = () => {
     // Create a worksheet

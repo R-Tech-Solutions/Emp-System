@@ -3,7 +3,6 @@ import axios from "axios";
 import { backEndURL } from "../Backendurl";
 
 const STORAGE_KEY = "businessSettings";
-const languages = ["English", "Hindi", "German", "Japanese", "Other"];
 
 const BuisnessSettings = () => {
   const [form, setForm] = useState({
@@ -14,6 +13,7 @@ const BuisnessSettings = () => {
     contact: "",
     businessType: "Retail",
     gstNumber: "",
+    taxRate: "0",
     registrationNumber: "",
     financialYearStart: "",
     currency: "",
@@ -137,6 +137,60 @@ const BuisnessSettings = () => {
       .finally(() => setNotesLoading(false));
   };
 
+  const handleClearAll = () => {
+    // Clear main form
+    setForm({
+      businessName: "",
+      printingStyle: "A4",
+      openCash: "",
+      address: "",
+      contact: "",
+      businessType: "Retail",
+      gstNumber: "",
+      taxRate: "0",
+      registrationNumber: "",
+      financialYearStart: "",
+      currency: "",
+      country: "",
+      website: "",
+      logo: "",
+      enableInventory: false,
+      language: "English",
+    });
+    
+    // Clear logo preview
+    setLogoPreview("");
+    
+    // Clear notes and terms
+    setNotes("");
+    setTerms([""]);
+    
+    // Reset edit states
+    setIsEdit(false);
+    setNotesEditing(false);
+    
+    // Clear success messages
+    setSuccess("");
+    setNotesSuccessMsg("");
+  };
+
+  const handleClearAllDatabase = async () => {
+    if (window.confirm("⚠️ WARNING: This will permanently delete ALL operational data from the database including employees, tasks, invoices, products, etc. Business settings will be preserved. This action cannot be undone. Are you sure you want to continue?")) {
+      try {
+        const response = await axios.delete(`${backEndURL}/api/business-settings/clear-all-database`);
+        if (response.data.success) {
+          alert("✅ All operational data cleared successfully! Business settings preserved.");
+          // Refresh the page to reflect the cleared state
+          window.location.reload();
+        } else {
+          alert("❌ Error clearing database: " + response.data.message);
+        }
+      } catch (error) {
+        alert("❌ Error clearing database: " + (error.response?.data?.message || error.message));
+      }
+    }
+  };
+
   return (
     <div className="max-w-xl mx-auto mt-10 bg-white p-8 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6 text-primary">Business Settings</h2>
@@ -161,6 +215,20 @@ const BuisnessSettings = () => {
             value={form.gstNumber}
             onChange={handleChange}
             className="w-full border border-border rounded px-3 py-2"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-text-primary mb-1">Tax Rate (%)</label>
+          <input
+            type="number"
+            name="taxRate"
+            value={form.taxRate}
+            onChange={handleChange}
+            className="w-full border border-border rounded px-3 py-2"
+            placeholder="e.g. 18 for 18% GST"
+            min="0"
+            max="100"
+            step="0.01"
           />
         </div>
         <div>
@@ -297,12 +365,28 @@ const BuisnessSettings = () => {
             required
           />
         </div>
-        <button
-          type="submit"
-          className="w-full bg-primary text-white py-2 rounded hover:bg-primary-dark transition"
-        >
-          {isEdit ? "Update Settings" : "Save Settings"}
-        </button>
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            className="flex-1 bg-primary text-white py-2 rounded hover:bg-primary-dark transition"
+          >
+            {isEdit ? "Update Settings" : "Save Settings"}
+          </button>
+          <button
+            type="button"
+            onClick={handleClearAll}
+            className="flex-1 bg-orange-500 text-white py-2 rounded hover:bg-orange-600 transition"
+          >
+            Clear Form
+          </button>
+          <button
+            type="button"
+            onClick={handleClearAllDatabase}
+            className="flex-1 bg-red-600 text-white py-2 rounded hover:bg-red-700 transition"
+          >
+            Clear All DB
+          </button>
+        </div>
         {success && <div className="text-green-600 text-center mt-2">{success}</div>}
       </form>
       {/* Notes & Terms Section */}

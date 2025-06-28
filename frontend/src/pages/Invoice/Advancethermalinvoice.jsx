@@ -21,6 +21,7 @@ const fetchInvoice = async (invoiceDocumentId) => {
 
 const AdvanceThermalInvoice = ({ invoice: invoiceProp, invoiceDocumentId }) => {
   const [invoice, setInvoice] = useState(invoiceProp);
+  const [businessSettings, setBusinessSettings] = useState({});
   const printRef = useRef();
   const [barcodeDataUrl, setBarcodeDataUrl] = useState('');
 
@@ -31,6 +32,23 @@ const AdvanceThermalInvoice = ({ invoice: invoiceProp, invoiceDocumentId }) => {
       });
     }
   }, [invoiceDocumentId, invoiceProp]);
+
+  // Fetch business settings
+  useEffect(() => {
+    const fetchBusinessSettings = async () => {
+      try {
+        const response = await fetch(`${backEndURL}/api/business-settings`);
+        if (response.ok) {
+          const { data } = await response.json();
+          setBusinessSettings(data || {});
+        }
+      } catch (error) {
+        console.error('Error fetching business settings:', error);
+      }
+    };
+
+    fetchBusinessSettings();
+  }, []);
 
   useEffect(() => {
     if (invoice) {
@@ -96,9 +114,12 @@ const AdvanceThermalInvoice = ({ invoice: invoiceProp, invoiceDocumentId }) => {
         <img src="/images/logo1.jpg" alt="Logo" style={{ width: '48px', height: '48px', objectFit: 'contain', filter: 'grayscale(100%) contrast(120%)', margin: '0 auto' }} />
       </div>
       {/* Store Name */}
-      <div style={{ textAlign: 'center', fontWeight: 700, fontSize: '16px', marginBottom: '2px', letterSpacing: '1.2px', color: '#111' }}>{COMPANY.name.toUpperCase()}</div>
-      <div style={{ textAlign: 'center', fontSize: '10.5px', marginBottom: '2px', color: '#444' }}>{COMPANY.phone}</div>
-      <div style={{ textAlign: 'center', fontSize: '10.5px', marginBottom: '2px', color: '#444' }}>{COMPANY.email}</div>
+      <div style={{ textAlign: 'center', fontWeight: 700, fontSize: '16px', marginBottom: '2px', letterSpacing: '1.2px', color: '#111' }}>{(businessSettings.businessName || COMPANY.name).toUpperCase()}</div>
+      <div style={{ textAlign: 'center', fontSize: '10.5px', marginBottom: '2px', color: '#444' }}>{businessSettings.contact || COMPANY.phone}</div>
+      <div style={{ textAlign: 'center', fontSize: '10.5px', marginBottom: '2px', color: '#444' }}>{businessSettings.address || COMPANY.email}</div>
+      {businessSettings.gstNumber && (
+        <div style={{ textAlign: 'center', fontSize: '10.5px', marginBottom: '2px', color: '#444', fontWeight: 'bold' }}>GST: {businessSettings.gstNumber}</div>
+      )}
       <div style={{ borderBottom: '1px dashed #bbb', margin: '10px 0' }} />
 
       {/* PAID/UNPAID Stamp */}
@@ -181,7 +202,7 @@ const AdvanceThermalInvoice = ({ invoice: invoiceProp, invoiceDocumentId }) => {
       <div style={{ fontWeight: 700, fontSize: '11.5px', margin: '8px 0 2px 0', color: '#111', letterSpacing: '1px' }}>SUMMARY</div>
       <div style={{ margin: '10px 0', padding: '7px 10px', border: '1px solid #bbb', borderRadius: '4px', background: '#fff' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}><span>Subtotal</span><span style={{ textAlign: 'right', minWidth: 50 }}>{(invoice.subtotal || 0).toFixed(2)}</span></div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}><span>Tax</span><span style={{ textAlign: 'right', minWidth: 50 }}>{(invoice.taxAmount || 0).toFixed(2)}</span></div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}><span>Tax ({(businessSettings.taxRate || 0)}%)</span><span style={{ textAlign: 'right', minWidth: 50 }}>{(invoice.taxAmount || 0).toFixed(2)}</span></div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}><span>Discount</span><span style={{ textAlign: 'right', minWidth: 50 }}>-{(invoice.discountAmount || 0).toFixed(2)}</span></div>
         <div style={{ borderBottom: '1px dashed #bbb', margin: '4px 0' }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 900, fontSize: '13px', background: '#fff', padding: '2px 0', borderRadius: '2px', color: '#111' }}><span>Total</span><span style={{ textAlign: 'right', minWidth: 50 }}>{(invoice.total || 0).toFixed(2)}</span></div>
