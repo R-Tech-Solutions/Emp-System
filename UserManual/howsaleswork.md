@@ -35,8 +35,6 @@ The Dashboard serves as the central hub of your Employee Management System, prov
 3. Toggle Widgets: Click on widget headers to show/hide specific sections
 4. Quick Navigation: Use the sidebar to access different modules
 
-
-
  Sales & Inventory Management
 
 The Sales & Inventory module integrates sales operations with inventory tracking for seamless business management.
