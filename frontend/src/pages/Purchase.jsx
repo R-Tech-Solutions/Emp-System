@@ -664,13 +664,14 @@ export default function PurchaseApp() {
             {/* Header */}
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">Purchase Management</h1>
+                    <h1 className="text-3xl font-bold text-textPrimary mb-2">
+Purchase Management</h1>
                     <p className="text-gray-400">Manage and track all your purchases</p>
                 </div>
                 <div className="flex space-x-4">
                     <button
                         onClick={() => setCurrentView("create")}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="bg-primary hover:bg-primaryDark text-white font-semibold py-3 px-6 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         Create New Purchase
                     </button>
@@ -679,11 +680,11 @@ export default function PurchaseApp() {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div className="bg-gray-800 rounded-lg p-6">
+                <div className="bg-surface rounded-lg p-6">
                     <div className="text-2xl font-bold text-white">{purchases.length}</div>
                     <div className="text-gray-400">Total Purchases</div>
                 </div>
-                <div className="bg-gray-800 rounded-lg p-6">
+                <div className="bg-surface rounded-lg p-6">
                     <div className="text-2xl font-bold text-white">
                         Rs {purchases.reduce((sum, p) => sum + p.total, 0).toFixed(2)}
                     </div>
@@ -702,7 +703,7 @@ export default function PurchaseApp() {
                         <div className="text-gray-400 text-lg mb-4">No purchases found</div>
                         <button
                             onClick={() => setCurrentView("create")}
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
+                            className="bg-primary hover:bg-primaryDark text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
                         >
                             Create Your First Purchase
                         </button>
@@ -834,7 +835,7 @@ export default function PurchaseApp() {
                     </div>
                     <button
                         type="button"
-                        className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-md transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="mt-6 w-full bg-primary hover:bg-primaryDark text-white font-semibold py-3 px-4 rounded-md transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         onClick={() => {
                             setCardModalOpen(false)
                             document.getElementById('purchase-form').requestSubmit()
@@ -890,7 +891,7 @@ export default function PurchaseApp() {
                             <button
                                 type="button"
                                 onClick={() => setAddProductModalOpen(true)}
-                                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
+                                className="bg-primary hover:bg-primaryDark text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
                             >
                                 Add Product
                             </button>
@@ -898,7 +899,7 @@ export default function PurchaseApp() {
                             <button
                                 type="button"
                                 onClick={() => setViewProductsModalOpen(true)}
-                                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
+                                className="bg-primary hover:bg-primaryDark text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
                             >
                                 View All Products
                             </button>
@@ -1004,7 +1005,7 @@ export default function PurchaseApp() {
                                             <div className="space-x-2">
                                                 <button
                                                     type="button"
-                                                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                                                    className="bg-primary hover:bg-primaryDark text-white px-3 py-1 rounded text-sm"
                                                     onClick={handleEditCustomer}
                                                 >
                                                     Edit
@@ -1314,7 +1315,7 @@ export default function PurchaseApp() {
                                 {newProductError && <div className="text-red-500 text-sm">{newProductError}</div>}
                                 <button
                                     type="submit"
-                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-md transition duration-200"
+                                    className="w-full bg-primary hover:bg-primaryDark text-white font-semibold py-3 px-4 rounded-md transition duration-200"
                                     disabled={newProductLoading}
                                 >
                                     {newProductLoading ? "Creating..." : "Create Product & Add to Cart"}
@@ -1423,7 +1424,7 @@ export default function PurchaseApp() {
                                 <div className="mt-4 pt-4 border-t border-gray-700">
                                     <button
                                         type="submit"
-                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200"
+                                        className="w-full bg-primary hover:bg-primaryDark text-white font-semibold py-2 px-4 rounded-md transition duration-200"
                                     >
                                         Save Identifiers
                                     </button>
@@ -1562,7 +1563,7 @@ export default function PurchaseApp() {
                             </div>
 
                             <div className="space-y-3 no-print">
-                                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200" onClick={handlePrintInvoice}>
+                                <button className="w-full bg-primary hover:bg-primaryDark text-white font-semibold py-2 px-4 rounded-md transition duration-200" onClick={handlePrintInvoice}>
                                     Print Invoice
                                 </button>
                                 <button className="w-full bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200" onClick={handleDownloadPDF}>
