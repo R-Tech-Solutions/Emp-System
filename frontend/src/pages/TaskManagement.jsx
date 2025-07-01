@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { fetchTasks, addTask, editTask, updateTaskStatus, deleteTask } from "../redux/taskSlice";
+import { fetchTasks, addTask, editTask, updateTaskStatus, deleteTask, clearError } from "../redux/taskSlice";
 import DotSpinner from "../loaders/Loader";
 import axios from "axios";
 import Swal from "sweetalert2";
@@ -8,10 +8,11 @@ import "sweetalert2/dist/sweetalert2.min.css";
 import { backEndURL } from "../Backendurl";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { getAuthToken } from "../utils/auth";
 
 function App() {
   const dispatch = useDispatch();
-  const { tasks, loading } = useSelector((state) => state.tasks);
+  const { tasks, loading, error } = useSelector((state) => state.tasks);
   const [departments, setDepartments] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [positions, setPositions] = useState([]);
@@ -90,7 +91,10 @@ function App() {
 
     // Fetch the supervisor's email
     try {
-      const response = await axios.get(`${backEndURL}/api/employees/${selectedSupervisorId}`);
+      const token = getAuthToken();
+      const response = await axios.get(`${backEndURL}/api/employees/${selectedSupervisorId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       const supervisorData = response.data.data;
       if (supervisorData) {
         setNewTask((prev) => ({
@@ -114,7 +118,10 @@ function App() {
   // Handle employee assignment (single selection)
   const handleEmployeeSelect = async (employeeId) => {
     try {
-      const response = await axios.get(`${backEndURL}/api/employees/${employeeId}`);
+      const token = getAuthToken();
+      const response = await axios.get(`${backEndURL}/api/employees/${employeeId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       const selectedEmployee = response.data.data;
       if (selectedEmployee) {
         setNewTask((prev) => ({
@@ -135,7 +142,6 @@ function App() {
       });
     }
   };
-
 
   // Handle attachment addition
   const handleAddAttachment = () => {
@@ -169,14 +175,12 @@ function App() {
 
       try {
         if (isEditMode && editingTaskId) {
-          await axios.put(`${backEndURL}/api/tasks/${editingTaskId}`, taskData);
-          dispatch(editTask({ id: editingTaskId, taskData })); // Dispatch editTask action
+          const result = await dispatch(editTask({ id: editingTaskId, taskData })).unwrap();
           toast.success("Task updated successfully!", { theme: "dark" }); // Toast for editing
           setIsEditMode(false);
           setEditingTaskId(null);
         } else {
-          const response = await axios.post(`${backEndURL}/api/tasks`, taskData);
-          dispatch(addTask(response.data)); // Dispatch addTask action
+          const result = await dispatch(addTask(taskData)).unwrap();
           toast.success("Task added successfully!", { theme: "dark" }); // Toast for adding
         }
         setNewTask({
@@ -194,14 +198,11 @@ function App() {
           supervisorEmail: "", 
         });
         setShowTaskForm(false);
-
-        // Refresh the page
-        window.location.reload();
       } catch (error) {
         console.error("Error submitting task:", error);
         Swal.fire({
           title: "Error",
-          text: "Failed to submit task. Please try again.",
+          text: error || "Failed to submit task. Please try again.",
           icon: "error",
           background: "#1a202c",
           color: "#fff",
@@ -218,14 +219,21 @@ function App() {
     dispatch(fetchTasks());
   }, [dispatch]);
 
+  // Handle errors
+  useEffect(() => {
+    if (error) {
+      toast.error(error, { theme: "dark" });
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
+
   const handleDeleteTask = async (taskId) => {
     try {
-      await axios.delete(`${backEndURL}/api/tasks/${taskId}`);
-      dispatch(deleteTask(taskId)); 
+      await dispatch(deleteTask(taskId)).unwrap();
       toast.success("Task deleted successfully!", { theme: "dark" }); 
     } catch (error) {
       console.error("Error deleting task:", error);
-      toast.error("Failed to delete task. Please try again.", { theme: "dark" }); 
+      toast.error(error || "Failed to delete task. Please try again.", { theme: "dark" }); 
     }
   };
 
@@ -243,8 +251,7 @@ function App() {
       return;
     }
     try {
-      await axios.patch(`${backEndURL}/api/tasks/${taskId}`, { status: "completed" });
-      dispatch(updateTaskStatus({ id: taskId, status: "completed" })); // Dispatch Redux action to update task status
+      await dispatch(updateTaskStatus({ id: taskId, status: "completed" })).unwrap();
       Swal.fire({
         title: "Success",
         text: "Task marked as completed.",
@@ -255,6 +262,7 @@ function App() {
       });
     } catch (error) {
       console.error("Error marking task as done:", error);
+      toast.error(error || "Failed to update task status.", { theme: "dark" });
     }
   };
 
@@ -272,8 +280,7 @@ function App() {
       return;
     }
     try {
-      await axios.patch(`${backEndURL}/api/tasks/${taskId}`, { status: "overtime" });
-      dispatch(updateTaskStatus({ id: taskId, status: "overtime" })); // Dispatch Redux action to update task status
+      await dispatch(updateTaskStatus({ id: taskId, status: "overtime" })).unwrap();
       Swal.fire({
         title: "Success",
         text: "Task marked as overtime.",
@@ -284,6 +291,7 @@ function App() {
       });
     } catch (error) {
       console.error("Error marking task as overtime:", error);
+      toast.error(error || "Failed to update task status.", { theme: "dark" });
     }
   };
 
@@ -370,7 +378,10 @@ function App() {
   useEffect(() => {
     const fetchDepartments = async () => {
       try {
-        const response = await axios.get(`${backEndURL}/api/departments`);
+        const token = getAuthToken();
+        const response = await axios.get(`${backEndURL}/api/departments`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         setDepartments(response.data.map((department) => department.name));
       } catch (error) {
         console.error("Error fetching departments:", error);
@@ -379,7 +390,10 @@ function App() {
 
     const fetchEmployees = async () => {
       try {
-        const response = await axios.get(`${backEndURL}/api/employees`);
+        const token = getAuthToken();
+        const response = await axios.get(`${backEndURL}/api/employees`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         const employeesArray = Array.isArray(response.data) ? response.data : response.data.data;
         setEmployees(
           employeesArray.map((employee) => ({
@@ -399,7 +413,10 @@ function App() {
 
     const fetchPositions = async () => {
       try {
-        const response = await axios.get(`${backEndURL}/api/positions`);
+        const token = getAuthToken();
+        const response = await axios.get(`${backEndURL}/api/positions`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         setPositions(response.data.map((position) => ({ id: position.id, title: position.title })));
       } catch (error) {
         console.error("Error fetching positions:", error);

@@ -20,19 +20,27 @@ exports.getAllTasks = async (req, res) => {
     // Ensure assignedTo field is processed correctly
     for (const task of tasks) {
       if (task.assignedTo && typeof task.assignedTo === 'string' && task.assignedTo.trim() !== '') {
-        const employeeDoc = await db.collection('employees').doc(task.assignedTo).get();
-        if (employeeDoc.exists) {
-          const employeeData = employeeDoc.data(); 
-          task.assignedTo = {
-            id: task.assignedTo,
-            name: `${employeeData.firstName} ${employeeData.lastName}`,
-            profileImage: employeeData.profileImage
-              ? `${employeeData.profileImage}`
-              : "/placeholder.svg",
-          };
+        try {
+          const employeeDoc = await db.collection('employees').doc(task.assignedTo).get();
+          if (employeeDoc.exists) {
+            const employeeData = employeeDoc.data(); 
+            task.assignedTo = {
+              id: task.assignedTo,
+              name: `${employeeData.firstName} ${employeeData.lastName}`,
+              profileImage: employeeData.profileImage
+                ? `${employeeData.profileImage}`
+                : "/placeholder.svg",
+            };
+          } else {
+            // If employee not found, keep as string ID
+            task.assignedTo = task.assignedTo;
+          }
+        } catch (error) {
+          console.error(`Error fetching employee ${task.assignedTo}:`, error);
+          // Keep as string ID if there's an error
+          task.assignedTo = task.assignedTo;
         }
       }
-      
     }
 
     res.status(200).json(tasks);
@@ -74,12 +82,17 @@ exports.createTask = async (req, res) => {
 
     // Fetch supervisor name using supervisor ID
     if (taskData.supervisor) {
-      const supervisorDoc = await db.collection('employees').doc(taskData.supervisor).get();
-      if (supervisorDoc.exists) {
-        const supervisorData = supervisorDoc.data();
-        taskData.supervisor = `${supervisorData.firstName} ${supervisorData.lastName}`; // Save supervisor name
-      } else {
-        taskData.supervisor = "Unknown Supervisor"; // Fallback if supervisor not found
+      try {
+        const supervisorDoc = await db.collection('employees').doc(taskData.supervisor).get();
+        if (supervisorDoc.exists) {
+          const supervisorData = supervisorDoc.data();
+          taskData.supervisor = `${supervisorData.firstName} ${supervisorData.lastName}`; // Save supervisor name
+        } else {
+          taskData.supervisor = "Unknown Supervisor"; // Fallback if supervisor not found
+        }
+      } catch (error) {
+        console.error("Error fetching supervisor:", error);
+        taskData.supervisor = "Unknown Supervisor";
       }
     }
 
@@ -97,11 +110,16 @@ exports.createTask = async (req, res) => {
     const docRef = await taskRef.add({ ...task });
 
     // Send email notifications
-    if (task.email) {
-      await sendTaskNotification(task.email, task.assignedTo.name || "Employee", task);
-    }
-    if (task.supervisorEmail) {
-      await sendTaskNotification(task.supervisorEmail, task.supervisor || "Supervisor", task);
+    try {
+      if (task.email) {
+        await sendTaskNotification(task.email, task.assignedTo || "Employee", task);
+      }
+      if (task.supervisorEmail) {
+        await sendTaskNotification(task.supervisorEmail, task.supervisor || "Supervisor", task);
+      }
+    } catch (emailError) {
+      console.error("Error sending email notifications:", emailError);
+      // Don't fail the task creation if email fails
     }
 
     res.status(201).json({ id: docRef.id, taskId: task.taskId, ...task });
@@ -120,19 +138,27 @@ exports.updateTask = async (req, res) => {
 
     // Fetch supervisor name using supervisor ID
     if (updateData.supervisor) {
-      const supervisorDoc = await db.collection('employees').doc(updateData.supervisor).get();
-      if (supervisorDoc.exists) {
-        const supervisorData = supervisorDoc.data();
-        updateData.supervisor = `${supervisorData.firstName} ${supervisorData.lastName}`; // Save supervisor name
+      try {
+        const supervisorDoc = await db.collection('employees').doc(updateData.supervisor).get();
+        if (supervisorDoc.exists) {
+          const supervisorData = supervisorDoc.data();
+          updateData.supervisor = `${supervisorData.firstName} ${supervisorData.lastName}`; // Save supervisor name
+        }
+      } catch (error) {
+        console.error("Error fetching supervisor:", error);
       }
     }
 
     // Fetch employeeId using assignedTo
     if (updateData.assignedTo) {
-      const employeeDoc = await db.collection('employees').doc(updateData.assignedTo).get();
-      if (employeeDoc.exists) {
-        const employeeData = employeeDoc.data();
-        updateData.employee_id = employeeData.employeeId; // Save employeeId
+      try {
+        const employeeDoc = await db.collection('employees').doc(updateData.assignedTo).get();
+        if (employeeDoc.exists) {
+          const employeeData = employeeDoc.data();
+          updateData.employee_id = employeeData.employeeId; // Save employeeId
+        }
+      } catch (error) {
+        console.error("Error fetching employee:", error);
       }
     }
 
@@ -143,11 +169,16 @@ exports.updateTask = async (req, res) => {
     await taskRef.doc(req.params.id).update(updateData);
 
     // Send email notifications
-    if (updateData.email) {
-      await sendTaskNotification(updateData.email, updateData.assignedTo.name, updateData);
-    }
-    if (updateData.supervisorEmail) {
-      await sendTaskNotification(updateData.supervisorEmail, updateData.supervisor, updateData);
+    try {
+      if (updateData.email) {
+        await sendTaskNotification(updateData.email, updateData.assignedTo || "Employee", updateData);
+      }
+      if (updateData.supervisorEmail) {
+        await sendTaskNotification(updateData.supervisorEmail, updateData.supervisor || "Supervisor", updateData);
+      }
+    } catch (emailError) {
+      console.error("Error sending email notifications:", emailError);
+      // Don't fail the task update if email fails
     }
 
     res.status(200).json({ message: "Task updated successfully" });

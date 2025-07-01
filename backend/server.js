@@ -58,7 +58,8 @@ app.use(cors({
       return callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true
+  credentials: true,
+  exposedHeaders: ["Authorization"],
 }));
 
 app.use(express.json());
@@ -71,7 +72,7 @@ app.use("/api/certificate-levels", CertificateLevelRoutes);
 app.use("/api/positions", PositionsRoutes);
 app.use('/api/tasks', TaskRoutes);
 app.use('/api/groups', GroupRoutes);
-app.use('/api/announcements', AnnouncementRoutes);
+app.use('/api/announcements', AnnouncementRoutes);  
 app.use('/api/leave', LeaveRoutes);
 app.use('/api/users', UserRoutes);
 app.use('/api/assets', AssetRoutes);

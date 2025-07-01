@@ -32,6 +32,10 @@ class Employee {
         updatedAt: new Date().toISOString(),
       };
 
+      // Remove the base64 image data from the document to avoid Firestore size limits
+      delete employeeDoc.profileImage; // Remove the base64 data
+      employeeDoc.profileImage = profileImageUrl; // Add only the URL
+
       // Save employee data to Firestore
       const employeeRef = db.collection('employees').doc();
       await employeeRef.set(employeeDoc);
@@ -167,6 +171,11 @@ class Employee {
         bankNumber: updateData.bankNumber || employeeData.bankNumber || "", // Add bankNumber
         updatedAt: new Date().toISOString()
       };
+      
+      // Remove the base64 image data from the document to avoid Firestore size limits
+      delete updateObject.profileImage; // Remove the base64 data
+      updateObject.profileImage = profileImageUrl; // Add only the URL
+      
       Object.keys(updateObject).forEach(key => {
         if (updateObject[key] === undefined) {
           delete updateObject[key];

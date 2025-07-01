@@ -1,0 +1,23 @@
+@media print {
+    body {
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #fff !important;
+    }
+    .thermal-receipt {
+      width: 80mm !important;
+      margin: 0 !important;
+      box-shadow: none !important;
+      border: none !important;
+      background: #fff !important;
+      color: #111 !important;
+      font-family: monospace !important;
+      font-size: 11.5px !important;
+      padding: 0 !important;
+    }
+    .thermal-receipt * {
+      margin: 0 !important;
+      padding: 0 !important;
+      box-sizing: border-box !important;
+    }
+  }

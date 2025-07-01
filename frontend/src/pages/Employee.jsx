@@ -188,7 +188,13 @@ export default function Employee() {
         if (name === 'employeeId') return;
 
         if (type === "file") {
-            if (name === "profileImages" && files[0]) {
+            if (name === "profileImage" && files[0]) {
+                // Check file size (1MB limit)
+                const maxSize = 1024 * 1024; // 1MB in bytes
+                if (files[0].size > maxSize) {
+                    alert("Profile image must be smaller than 1MB. Please choose a smaller image.");
+                    return;
+                }
                 setPreviewImage(URL.createObjectURL(files[0]));
             }
 
@@ -294,12 +300,12 @@ export default function Employee() {
                 const updatedFormData = { ...formData };
 
                 // Convert profile image to Base64 if it exists and is a valid File object
-                if (formData.profileImages instanceof File) {
-                    updatedFormData.profileImages = await new Promise((resolve, reject) => {
+                if (formData.profileImage instanceof File) {
+                    updatedFormData.profileImage = await new Promise((resolve, reject) => {
                         const reader = new FileReader();
                         reader.onloadend = () => resolve(reader.result.split(",")[1]); // Extract Base64 string
                         reader.onerror = reject;
-                        reader.readAsDataURL(formData.profileImages);
+                        reader.readAsDataURL(formData.profileImage);
                     });
                 }
 
@@ -362,7 +368,7 @@ export default function Employee() {
             employmentType: "",
             contractPeriod: "",
             employmentStatus: "",
-            profileImages: null,
+            profileImage: null,
             payMethod: "", // Add pay method field
             hasEpfEtf: "", // Add EPF/ETF field
             hourlyRate: "", // Add hourly rate field
@@ -390,14 +396,14 @@ export default function Employee() {
 
         setFormData({
             ...employee,
-            profileImages: null, // Reset profileImage for new upload
+            profileImage: null, // Reset profileImage for new upload
             bankName: employee.bankName || "", // Populate bank name
             bankBranch: employee.bankBranch || "", // Populate bank branch
             bankNumber: employee.bankNumber || "", // Populate bank number
         });
 
-        if (employee.profileImages) {
-            setPreviewImage(employee.profileImages); // Use the profileImage URL for preview
+        if (employee.profileImage) {
+            setPreviewImage(employee.profileImage); // Use the profileImage URL for preview
         }
     };
 
@@ -538,9 +544,9 @@ export default function Employee() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             {/* Profile Header */}
                             <div className="md:col-span-2 flex items-center gap-6 border-b border-border pb-6 mb-6">
-                                {selectedEmployee.profileImages && (
+                                {selectedEmployee.profileImage && (
                                     <img
-                                        src={selectedEmployee.profileImages}
+                                        src={selectedEmployee.profileImage}
                                         alt="Profile"
                                         className="w-28 h-28 rounded-full border-4 border-primary shadow-md"
                                     />
@@ -691,6 +697,663 @@ export default function Employee() {
                                 </div>
 
                                 {/* Form fields will be updated in the next edit */}
+                                
+                                {/* Basic Info Tab */}
+                                {activeTab === "basic" && (
+                                    <div className="space-y-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Employee ID
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="employeeId"
+                                                    value={formData.employeeId}
+                                                    onChange={handleChange}
+                                                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                    readOnly
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    First Name *
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="firstName"
+                                                    value={formData.firstName}
+                                                    onChange={handleChange}
+                                                    required
+                                                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Last Name *
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="lastName"
+                                                    value={formData.lastName}
+                                                    onChange={handleChange}
+                                                    required
+                                                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Email *
+                                                </label>
+                                                <input
+                                                    type="email"
+                                                    name="email"
+                                                    value={formData.email}
+                                                    onChange={handleChange}
+                                                    required
+                                                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Password *
+                                                </label>
+                                                <div className="relative">
+                                                    <input
+                                                        type={passwordVisible ? "text" : "password"}
+                                                        name="password"
+                                                        value={formData.password}
+                                                        onChange={handleChange}
+                                                        required
+                                                        className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary pr-10"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setPasswordVisible(!passwordVisible)}
+                                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-secondary"
+                                                    >
+                                                        {passwordVisible ? "Hide" : "Show"}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Confirm Password *
+                                                </label>
+                                                <input
+                                                    type="password"
+                                                    name="confirmPassword"
+                                                    value={formData.confirmPassword}
+                                                    onChange={handleChange}
+                                                    required
+                                                    className={`w-full px-3 py-2 border rounded-md bg-surface text-text-primary ${
+                                                        errors.confirmPassword ? "border-red-500" : "border-border"
+                                                    }`}
+                                                />
+                                                {errors.confirmPassword && (
+                                                    <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Phone Number *
+                                                </label>
+                                                <input
+                                                    type="tel"
+                                                    name="phoneNumber"
+                                                    value={formData.phoneNumber}
+                                                    onChange={handleChange}
+                                                    required
+                                                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Join Date *
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    name="joinDate"
+                                                    value={formData.joinDate}
+                                                    onChange={handleChange}
+                                                    required
+                                                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Position *
+                                                </label>
+                                                <CustomDropdown
+                                                    name="position"
+                                                    value={formData.position}
+                                                    options={positions}
+                                                    placeholder="Select Position"
+                                                    onChange={handleSelectChange}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Department *
+                                                </label>
+                                                <CustomDropdown
+                                                    name="department"
+                                                    value={formData.department}
+                                                    options={departments}
+                                                    placeholder="Select Department"
+                                                    onChange={handleSelectChange}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-text-primary mb-2">
+                                                Address
+                                            </label>
+                                            <textarea
+                                                name="address"
+                                                value={formData.address}
+                                                onChange={handleChange}
+                                                rows="3"
+                                                className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-text-primary mb-2">
+                                                Profile Image
+                                            </label>
+                                            <div className="flex items-center space-x-4">
+                                                <button
+                                                    type="button"
+                                                    onClick={triggerFileInput}
+                                                    className="flex items-center px-4 py-2 border border-border rounded-md bg-surface text-text-primary hover:bg-primary-light"
+                                                >
+                                                    <Upload className="h-4 w-4 mr-2" />
+                                                    Upload Image
+                                                </button>
+                                                <input
+                                                    ref={fileInputRef}
+                                                    type="file"
+                                                    name="profileImage"
+                                                    onChange={handleChange}
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                />
+                                                {previewImage && (
+                                                    <img
+                                                        src={previewImage}
+                                                        alt="Preview"
+                                                        className="w-16 h-16 rounded-full object-cover border border-border"
+                                                    />
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Employment Info Tab */}
+                                {activeTab === "employment" && (
+                                    <div className="space-y-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Work Address
+                                                </label>
+                                                <textarea
+                                                    name="workAddress"
+                                                    value={formData.workAddress}
+                                                    onChange={handleChange}
+                                                    rows="3"
+                                                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Work Location
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="workLocation"
+                                                    value={formData.workLocation}
+                                                    onChange={handleChange}
+                                                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Employment Type *
+                                                </label>
+                                                <CustomDropdown
+                                                    name="employmentType"
+                                                    value={formData.employmentType}
+                                                    options={employmentTypes}
+                                                    placeholder="Select Employment Type"
+                                                    onChange={handleSelectChange}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Contract Period
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="contractPeriod"
+                                                    value={formData.contractPeriod}
+                                                    onChange={handleChange}
+                                                    placeholder="e.g., 1 year, Permanent"
+                                                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Employment Status *
+                                                </label>
+                                                <CustomDropdown
+                                                    name="employmentStatus"
+                                                    value={formData.employmentStatus}
+                                                    options={employmentStatuses}
+                                                    placeholder="Select Employment Status"
+                                                    onChange={handleSelectChange}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Pay Method
+                                                </label>
+                                                <CustomDropdown
+                                                    name="payMethod"
+                                                    value={formData.payMethod}
+                                                    options={payMethods}
+                                                    placeholder="Select Pay Method"
+                                                    onChange={handleSelectChange}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Hourly Rate
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    name="hourlyRate"
+                                                    value={formData.hourlyRate}
+                                                    onChange={handleChange}
+                                                    placeholder="0.00"
+                                                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Overtime Hourly Rate
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    name="overtimeHourlyRate"
+                                                    value={formData.overtimeHourlyRate}
+                                                    onChange={handleChange}
+                                                    placeholder="0.00"
+                                                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Monthly Salary
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    name="monthlySalary"
+                                                    value={formData.monthlySalary}
+                                                    onChange={handleChange}
+                                                    placeholder="0.00"
+                                                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    EPF/ETF
+                                                </label>
+                                                <div className="space-y-2">
+                                                    <CustomRadio
+                                                        id="epf-yes"
+                                                        name="hasEpfEtf"
+                                                        value="Yes"
+                                                        checked={formData.hasEpfEtf === "Yes"}
+                                                        onChange={handleSelectChange}
+                                                        label="Yes"
+                                                    />
+                                                    <CustomRadio
+                                                        id="epf-no"
+                                                        name="hasEpfEtf"
+                                                        value="No"
+                                                        checked={formData.hasEpfEtf === "No"}
+                                                        onChange={handleSelectChange}
+                                                        label="No"
+                                                    />
+                                                </div>
+                                            </div>
+                                            {formData.hasEpfEtf === "Yes" && (
+                                                <div>
+                                                    <label className="block text-sm font-medium text-text-primary mb-2">
+                                                        EPF Number *
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        name="epfNumber"
+                                                        value={formData.epfNumber}
+                                                        onChange={handleChange}
+                                                        className={`w-full px-3 py-2 border rounded-md bg-surface text-text-primary ${
+                                                            errors.epfNumber ? "border-red-500" : "border-border"
+                                                        }`}
+                                                    />
+                                                    {errors.epfNumber && (
+                                                        <p className="text-red-500 text-sm mt-1">{errors.epfNumber}</p>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-text-primary mb-2">
+                                                Resume
+                                            </label>
+                                            <input
+                                                type="file"
+                                                name="resume"
+                                                onChange={handleChange}
+                                                accept=".pdf,.doc,.docx"
+                                                className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Personal Info Tab */}
+                                {activeTab === "personal" && (
+                                    <div className="space-y-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    NIC/Passport
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="nicPassport"
+                                                    value={formData.nicPassport}
+                                                    onChange={handleChange}
+                                                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Nationality
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="nationality"
+                                                    value={formData.nationality}
+                                                    onChange={handleChange}
+                                                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Gender
+                                                </label>
+                                                <div className="space-y-2">
+                                                    <CustomRadio
+                                                        id="gender-male"
+                                                        name="gender"
+                                                        value="Male"
+                                                        checked={formData.gender === "Male"}
+                                                        onChange={handleSelectChange}
+                                                        label="Male"
+                                                    />
+                                                    <CustomRadio
+                                                        id="gender-female"
+                                                        name="gender"
+                                                        value="Female"
+                                                        checked={formData.gender === "Female"}
+                                                        onChange={handleSelectChange}
+                                                        label="Female"
+                                                    />
+                                                    <CustomRadio
+                                                        id="gender-other"
+                                                        name="gender"
+                                                        value="Other"
+                                                        checked={formData.gender === "Other"}
+                                                        onChange={handleSelectChange}
+                                                        label="Other"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Date of Birth
+                                                </label>
+                                                <input
+                                                    type="date"
+                                                    name="dateOfBirth"
+                                                    value={formData.dateOfBirth}
+                                                    onChange={handleChange}
+                                                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Country
+                                                </label>
+                                                <CustomDropdown
+                                                    name="country"
+                                                    value={formData.country}
+                                                    options={countries}
+                                                    placeholder="Select Country"
+                                                    onChange={handleSelectChange}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Marital Status
+                                                </label>
+                                                <CustomDropdown
+                                                    name="maritalStatus"
+                                                    value={formData.maritalStatus}
+                                                    options={maritalStatuses}
+                                                    placeholder="Select Marital Status"
+                                                    onChange={handleSelectChange}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Guardian Name
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="guardianName"
+                                                    value={formData.guardianName}
+                                                    onChange={handleChange}
+                                                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Guardian Number
+                                                </label>
+                                                <input
+                                                    type="tel"
+                                                    name="guardianNumber"
+                                                    value={formData.guardianNumber}
+                                                    onChange={handleChange}
+                                                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Emergency Contacts */}
+                                        <div>
+                                            <div className="flex justify-between items-center mb-4">
+                                                <label className="block text-sm font-medium text-text-primary">
+                                                    Emergency Contacts
+                                                </label>
+                                                <button
+                                                    type="button"
+                                                    onClick={addEmergencyContact}
+                                                    className="flex items-center text-primary hover:text-primary-dark"
+                                                >
+                                                    <Plus className="h-4 w-4 mr-1" />
+                                                    Add Contact
+                                                </button>
+                                            </div>
+                                            {formData.emergencyContacts.map((contact, index) => (
+                                                <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Contact Name"
+                                                        value={contact.contactName}
+                                                        onChange={(e) => handleEmergencyContactChange(index, "contactName", e.target.value)}
+                                                        className="px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                    />
+                                                    <div className="flex space-x-2">
+                                                        <input
+                                                            type="tel"
+                                                            placeholder="Contact Number"
+                                                            value={contact.contactNumber}
+                                                            onChange={(e) => handleEmergencyContactChange(index, "contactNumber", e.target.value)}
+                                                            className="flex-1 px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                        />
+                                                        {formData.emergencyContacts.length > 1 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removeEmergencyContact(index)}
+                                                                className="px-3 py-2 text-red-500 hover:text-red-700"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Education Details */}
+                                        <div>
+                                            <div className="flex justify-between items-center mb-4">
+                                                <label className="block text-sm font-medium text-text-primary">
+                                                    Education Details
+                                                </label>
+                                                <button
+                                                    type="button"
+                                                    onClick={addEducationDetail}
+                                                    className="flex items-center text-primary hover:text-primary-dark"
+                                                >
+                                                    <Plus className="h-4 w-4 mr-1" />
+                                                    Add Education
+                                                </button>
+                                            </div>
+                                            {formData.educationDetails.map((education, index) => (
+                                                <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                                    <CustomDropdown
+                                                        name={`education-${index}-certificateLevel`}
+                                                        value={education.certificateLevel}
+                                                        options={certificateLevels}
+                                                        placeholder="Certificate Level"
+                                                        onChange={(name, value) => handleEducationChange(index, "certificateLevel", value)}
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Field of Study"
+                                                        value={education.fieldOfStudy}
+                                                        onChange={(e) => handleEducationChange(index, "fieldOfStudy", e.target.value)}
+                                                        className="px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                    />
+                                                    <div className="flex space-x-2">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="School/University"
+                                                            value={education.schoolUniversity}
+                                                            onChange={(e) => handleEducationChange(index, "schoolUniversity", e.target.value)}
+                                                            className="flex-1 px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                        />
+                                                        {formData.educationDetails.length > 1 && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removeEducationDetail(index)}
+                                                                className="px-3 py-2 text-red-500 hover:text-red-700"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Additional Info Tab */}
+                                {activeTab === "additional" && (
+                                    <div className="space-y-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Bank Name
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="bankName"
+                                                    value={formData.bankName}
+                                                    onChange={handleChange}
+                                                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Bank Branch
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="bankBranch"
+                                                    value={formData.bankBranch}
+                                                    onChange={handleChange}
+                                                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-primary mb-2">
+                                                    Bank Account Number
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="bankNumber"
+                                                    value={formData.bankNumber}
+                                                    onChange={handleChange}
+                                                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-text-primary"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Form Actions */}
+                                <div className="flex justify-end space-x-4 pt-6 border-t border-border">
+                                    <button
+                                        type="button"
+                                        onClick={resetForm}
+                                        className="px-6 py-2 border border-border rounded-md bg-surface text-text-primary hover:bg-primary-light"
+                                    >
+                                        Reset
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isLoading}
+                                        className="px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                                    >
+                                        {isLoading ? (
+                                            <>
+                                                <DotSpinner />
+                                                <span className="ml-2">Saving...</span>
+                                            </>
+                                        ) : (
+                                            isEditMode ? "Update Employee" : "Add Employee"
+                                        )}
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     </div>
@@ -752,9 +1415,9 @@ export default function Employee() {
                                             >
                                                 <td className="px-4 py-4">
                                                     <div className="w-10 h-10 rounded-full overflow-hidden bg-primary-light flex items-center justify-center">
-                                                        {employee.profileImages ? (
+                                                        {employee.profileImage ? (
                                                             <img
-                                                                src={employee.profileImages}
+                                                                src={employee.profileImage}
                                                                 alt={`${employee.firstName || ''} ${employee.lastName || ''}`}
                                                                 className="w-full h-full object-cover"
                                                             />
