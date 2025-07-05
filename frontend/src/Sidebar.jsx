@@ -240,6 +240,20 @@ function Sidebar() {
       section: "sales",
       description: "Sales analytics"
     },
+    {
+      name: "RETURN",
+      path: "/return-dashboard",
+      icon: <BarChart2 className="w-5 h-5" />,
+      section: "sales",
+      description: "Manage return dashboard"
+    },
+    {
+      name: "CUSTOMER",
+      path: "/customerAccounts",
+      icon: <BarChart2 className="w-5 h-5" />,
+      section: "sales",
+      description: "Manage customer accounts"
+    },
   ];
 
   // Enhanced keyboard shortcuts

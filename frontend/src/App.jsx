@@ -33,7 +33,8 @@ import BuisnessSettings from "./pages/BuisnessSettings.jsx";
 import SalesReport from "./pages/SalesReport.jsx";
 import UserHrm from "./pages/Usermanual/userHRM.jsx";
 import UserSales from "./pages/Usermanual/userSales.jsx";
-
+import ReturnDashboard from "./pages/Retrundashboard.jsx";
+import CustomerAccounts from "./pages/CustomerAccounts.jsx";
 // Permission-based route component
 const PermissionRoute = ({ permission, children }) => {
   if (hasPermission(permission)) {
@@ -341,15 +342,36 @@ function App() {
             }
           />
           <Route
-          path="User-Sales"
-          element={
-            <ProtectedRoute>
-              <PermissionRoute permission="sales-report">
-                <UserSales />
-              </PermissionRoute>
-            </ProtectedRoute>
-          }
-        />
+            path="User-Sales"
+            element={
+              <ProtectedRoute>
+                <PermissionRoute permission="sales-report">
+                  <UserSales />
+                </PermissionRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="return-dashboard"
+            element={
+              <ProtectedRoute>
+                <PermissionRoute permission="sales-report">
+                  <ReturnDashboard />
+                </PermissionRoute>
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="customerAccounts"
+            element={
+              <ProtectedRoute>
+                <PermissionRoute permission="sales-report">
+                  <CustomerAccounts />
+                </PermissionRoute>
+              </ProtectedRoute>
+            }
+          />
         </Route>
         <Route path="*" element={<InitialRedirect />} />
       </Routes>

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { backEndURL } from "../Backendurl";
+import Swal from "sweetalert2";
+import DotSpinner from "../loaders/Loader";
 
 const STORAGE_KEY = "businessSettings";
 
@@ -32,6 +34,7 @@ const BuisnessSettings = () => {
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesEditing, setNotesEditing] = useState(false);
   const [notesSuccessMsg, setNotesSuccessMsg] = useState("");
+  const [clearDbLoading, setClearDbLoading] = useState(false);
 
   useEffect(() => {
     // Fetch settings from backend
@@ -175,18 +178,49 @@ const BuisnessSettings = () => {
   };
 
   const handleClearAllDatabase = async () => {
-    if (window.confirm("⚠️ WARNING: This will permanently delete ALL operational data from the database including employees, tasks, invoices, products, etc. Business settings will be preserved. This action cannot be undone. Are you sure you want to continue?")) {
+    const result = await Swal.fire({
+      title: '⚠️ WARNING',
+      text: 'This will permanently delete ALL operational data from the database including employees, tasks, invoices, products, etc. Business settings will be preserved. This action cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, clear all data!',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true
+    });
+
+    if (result.isConfirmed) {
+      setClearDbLoading(true);
+      
       try {
         const response = await axios.delete(`${backEndURL}/api/business-settings/clear-all-database`);
         if (response.data.success) {
-          alert("✅ All operational data cleared successfully! Business settings preserved.");
+          await Swal.fire({
+            title: '✅ Success!',
+            text: 'All operational data cleared successfully! Business settings preserved.',
+            icon: 'success',
+            confirmButtonText: 'OK'
+          });
           // Refresh the page to reflect the cleared state
           window.location.reload();
         } else {
-          alert("❌ Error clearing database: " + response.data.message);
+          await Swal.fire({
+            title: '❌ Error',
+            text: 'Error clearing database: ' + response.data.message,
+            icon: 'error',
+            confirmButtonText: 'OK'
+          });
         }
       } catch (error) {
-        alert("❌ Error clearing database: " + (error.response?.data?.message || error.message));
+        await Swal.fire({
+          title: '❌ Error',
+          text: 'Error clearing database: ' + (error.response?.data?.message || error.message),
+          icon: 'error',
+          confirmButtonText: 'OK'
+        });
+      } finally {
+        setClearDbLoading(false);
       }
     }
   };
@@ -379,16 +413,39 @@ const BuisnessSettings = () => {
           >
             Clear Form
           </button>
-          <button
-            type="button"
-            onClick={handleClearAllDatabase}
-            className="flex-1 bg-red-600 text-white py-2 rounded hover:bg-red-700 transition"
-          >
-            Clear All DB
-          </button>
         </div>
         {success && <div className="text-green-600 text-center mt-2">{success}</div>}
       </form>
+
+      {/* Clear All Database Button - Outside Form */}
+      <div className="mt-8 p-6 bg-red-50 border border-red-200 rounded-lg">
+        <h3 className="text-lg font-semibold text-red-800 mb-4">⚠️ Database Management</h3>
+        <p className="text-red-700 mb-4 text-sm">
+          This action will permanently delete all operational data (employees, tasks, invoices, products, etc.) 
+          while preserving business settings. This action cannot be undone.
+        </p>
+        <button
+          type="button"
+          onClick={handleClearAllDatabase}
+          disabled={clearDbLoading}
+          className="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        >
+          {clearDbLoading ? (
+            <>
+              <DotSpinner />
+              <span>Clearing Database...</span>
+            </>
+          ) : (
+            <>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              <span>Clear All Database</span>
+            </>
+          )}
+        </button>
+      </div>
+
       {/* Notes & Terms Section */}
       <div className="bg-surface p-6 rounded-lg shadow-lg max-w-2xl mx-auto border border-border mt-10">
         <h2 className="text-2xl font-bold text-text-primary mb-6">Notes & Terms</h2>

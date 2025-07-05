@@ -11,7 +11,6 @@ export default function CashbookApp() {
   const [error, setError] = useState(null)
   const [openingBalance, setOpeningBalance] = useState(null)
   const [summaryData, setSummaryData] = useState(null)
-  const [showOpeningBalanceModal, setShowOpeningBalanceModal] = useState(false)
 
   const [showModal, setShowModal] = useState(false)
   const [editingEntry, setEditingEntry] = useState(null)
@@ -40,67 +39,59 @@ export default function CashbookApp() {
 
   // Fetch entries from API
   useEffect(() => {
-    const fetchEntriesAndInvoices = async () => {
+    const fetchEntries = async () => {
       try {
         setLoading(true)
-        // Fetch cashbook entries
-        const [cashbookRes, invoicesRes] = await Promise.all([
-          axios.get(`${backEndURL}/api/cashbook`),
-          axios.get(`${backEndURL}/api/invoices`)
-        ])
-        let cashbookEntries = cashbookRes.data
-        let invoiceEntries = []
-        // Fetch contacts for invoices with customer array
-        for (const invoice of invoicesRes.data) {
-          let particulars = null
-          if (Array.isArray(invoice.customer) && invoice.customer.length > 0) {
-            try {
-              const contactId = invoice.customer[0]
-              const contactRes = await axios.get(`${backEndURL}/api/contacts/${contactId}`)
-              particulars = contactRes.data?.email || null
-            } catch {
-              particulars = null
-            }
-          }
-          invoiceEntries.push({
-            date: invoice.date,
-            particulars,
-            voucher: invoice.invoiceNumber,
-            type: 'Cash In',
-            amount: invoice.total,
-            mode: Array.isArray(invoice.payments) && invoice.payments.length > 0 ? invoice.payments[0].method : '',
-            category: 'POS',
-          })
-        }
-        // Merge and sort by date
-        const allEntries = [...cashbookEntries, ...invoiceEntries].sort((a, b) => new Date(a.date) - new Date(b.date))
+        // Fetch cashbook entries (now includes invoices and return invoices)
+        const cashbookRes = await axios.get(`${backEndURL}/api/cashbook`)
+        const allEntries = cashbookRes.data.sort((a, b) => new Date(a.date) - new Date(b.date))
         setEntries(allEntries)
         setError(null)
       } catch (err) {
-        console.error('Error fetching cashbook/invoice entries:', err)
-        setError('Failed to fetch cashbook/invoice entries')
+        console.error('Error fetching cashbook entries:', err)
+        setError('Failed to fetch cashbook entries')
       } finally {
         setLoading(false)
       }
     }
 
-    fetchEntriesAndInvoices()
+    fetchEntries()
   }, [])
 
-  // Fetch summary (Additional) from backend
+  // Fetch opening balance from business settings and summary from backend
   useEffect(() => {
-    const fetchSummary = async () => {
+    const fetchBusinessSettingsAndSummary = async () => {
       try {
-        const res = await axios.get(`${backEndURL}/api/additional`)
-        setSummaryData(res.data)
-        setOpeningBalance(res.data.openingBalance)
-        setShowOpeningBalanceModal(false)
+        // Fetch business settings for opening balance
+        const businessSettingsRes = await axios.get(`${backEndURL}/api/business-settings`)
+        const businessSettings = businessSettingsRes.data?.data
+        const openCash = businessSettings?.openCash ? Number(businessSettings.openCash) : 0
+        setOpeningBalance(openCash)
+
+        // Fetch summary data
+        const summaryRes = await axios.get(`${backEndURL}/api/additional`)
+        setSummaryData(summaryRes.data)
       } catch (err) {
-        // If not set, show modal
-        setShowOpeningBalanceModal(true)
+        console.error('Error fetching business settings or summary:', err)
+        // If summary doesn't exist, create it with opening balance from business settings
+        try {
+          const businessSettingsRes = await axios.get(`${backEndURL}/api/business-settings`)
+          const businessSettings = businessSettingsRes.data?.data
+          const openCash = businessSettings?.openCash ? Number(businessSettings.openCash) : 0
+          setOpeningBalance(openCash)
+          
+          // Create summary with opening balance
+          const summaryRes = await axios.post(`${backEndURL}/api/additional/opening`, { 
+            openingBalance: openCash 
+          })
+          setSummaryData(summaryRes.data)
+        } catch (summaryErr) {
+          console.error('Error creating summary:', summaryErr)
+          setOpeningBalance(0)
+        }
       }
     }
-    fetchSummary()
+    fetchBusinessSettingsAndSummary()
   }, [])
 
   // Filtered and searched entries
@@ -123,19 +114,6 @@ export default function CashbookApp() {
     // Sort chronologically (oldest to newest)
     return filtered.sort((a, b) => new Date(a.date) - new Date(b.date))
   }, [entries, searchTerm, filters])
-
-  // Save opening balance to backend
-  const saveOpeningBalance = async (balance) => {
-    try {
-      const numericBalance = Number(balance)
-      const res = await axios.post(`${backEndURL}/api/additional/opening`, { openingBalance: numericBalance })
-      setSummaryData(res.data)
-      setOpeningBalance(numericBalance)
-      setShowOpeningBalanceModal(false)
-    } catch (err) {
-      alert('Failed to set opening balance. It may already be set.')
-    }
-  }
 
   // Calculate running balance for each entry
   const entriesWithBalance = useMemo(() => {
@@ -215,31 +193,6 @@ export default function CashbookApp() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
-      {/* Opening Balance Modal */}
-      {showOpeningBalanceModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full">
-            <h2 className="text-xl font-semibold mb-4">Set Opening Balance</h2>
-            <p className="text-gray-300 mb-4">Please enter the initial opening balance for your cashbook.</p>
-            <div className="flex flex-col gap-4">
-              <input
-                type="number"
-                value={openingBalance || ''}
-                onChange={(e) => setOpeningBalance(Number(e.target.value) || 0)}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter opening balance"
-              />
-              <button
-                onClick={() => saveOpeningBalance(openingBalance || 0)}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                Save Opening Balance
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="px-6 py-6">
         {/* Balance Summary Card */}
         <div className="bg-gray-800 rounded-lg p-4 mb-6 border border-gray-700">
@@ -301,21 +254,32 @@ export default function CashbookApp() {
                       {new Date(entry.date).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-3 text-sm text-white font-medium">{entry.particulars}</td>
-                    <td className="px-4 py-3 text-sm text-gray-300">{entry.voucher}</td> 
+                    <td className="px-4 py-3 text-sm text-gray-300">
+                      {entry.voucher}
+                      {entry.isReturn && (
+                        <span className="ml-2 text-xs text-red-400">↩️</span>
+                      )}
+                    </td> 
                     <td className="px-4 py-3 text-sm">
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          entry.type === "Cash In"
-                            ? "bg-green-900 text-green-300"
-                            : "bg-red-900 text-red-300"
+                          entry.isReturn 
+                            ? "bg-red-900 text-red-300" // Return invoices in red
+                            : entry.type === "Cash In"
+                              ? "bg-green-900 text-green-300" // Regular invoices in green
+                              : "bg-red-900 text-red-300" // Other cash out in red
                         }`}
                       >
-                        {entry.type}
+                        {entry.isReturn ? "Return" : entry.type}
                       </span>
                     </td>
                     <td
                       className={`px-4 py-3 text-sm font-medium ${
-                        entry.type === "Cash In" ? "text-green-400" : "text-red-400"
+                        entry.isReturn 
+                          ? "text-red-400" // Return invoices in red
+                          : entry.type === "Cash In" 
+                            ? "text-green-400" // Regular invoices in green
+                            : "text-red-400" // Other cash out in red
                       }`}
                     >
                       Rs {(entry.amount || 0).toLocaleString()}

@@ -122,6 +122,54 @@ class IdentifiersController {
             res.status(500).json({ error: 'Failed to delete identifiers' });
         }
     }
+
+    async markAsDamaged(req, res) {
+        try {
+            const { productId, identifier, type } = req.body;
+            if (!productId || !identifier || !type) {
+                return res.status(400).json({ error: 'Missing required fields' });
+            }
+            let result;
+            if (type === 'imei') {
+                result = await ImeiModel.markAsDamaged(productId, identifier);
+            } else if (type === 'serial') {
+                result = await SerialModel.markAsDamaged(productId, identifier);
+            } else {
+                return res.status(400).json({ error: 'Invalid identifier type' });
+            }
+            if (!result) {
+                return res.status(404).json({ error: 'Identifier not found' });
+            }
+            res.status(200).json({ message: 'Identifier marked as damaged' });
+        } catch (error) {
+            console.error('Error marking identifier as damaged:', error);
+            res.status(500).json({ error: 'Failed to mark identifier as damaged' });
+        }
+    }
+
+    async markAsOpened(req, res) {
+        try {
+            const { productId, identifier, type } = req.body;
+            if (!productId || !identifier || !type) {
+                return res.status(400).json({ error: 'Missing required fields' });
+            }
+            let result;
+            if (type === 'imei') {
+                result = await ImeiModel.markAsOpened(productId, identifier);
+            } else if (type === 'serial') {
+                result = await SerialModel.markAsOpened(productId, identifier);
+            } else {
+                return res.status(400).json({ error: 'Invalid identifier type' });
+            }
+            if (!result) {
+                return res.status(404).json({ error: 'Identifier not found' });
+            }
+            res.status(200).json({ message: 'Identifier marked as opened' });
+        } catch (error) {
+            console.error('Error marking identifier as opened:', error);
+            res.status(500).json({ error: 'Failed to mark identifier as opened' });
+        }
+    }
 }
 
 module.exports = new IdentifiersController();

@@ -20,6 +20,9 @@ exports.getCashbookEntries = async (req, res) => {
     // Fetch expense entries
     const expenses = await ExpenseModel.getAll();
 
+    // Fetch all invoices (both regular and return)
+    const invoicesSnapshot = await db.collection('invoices').get();
+
     // Format purchase entries
     const purchaseEntries = purchasesSnapshot.docs.map(doc => {
       const purchase = doc.data();
@@ -75,12 +78,30 @@ exports.getCashbookEntries = async (req, res) => {
       category: "Expense"
     }));
 
+    // Format invoice entries (regular invoices as Cash In, return invoices as Cash Out)
+    const invoiceEntries = invoicesSnapshot.docs.map(doc => {
+      const invoice = doc.data();
+      const isReturn = invoice.isReturn || false;
+      
+      return {
+        date: invoice.createdAt || invoice.date,
+        particulars: isReturn ? `Return - ${invoice.originalInvoiceId}` : `Invoice - ${invoice.customerName || 'Customer'}`,
+        voucher: invoice.invoiceNumber,
+        type: isReturn ? "Cash Out" : "Cash In", // Return invoices are Cash Out (red), regular invoices are Cash In (green)
+        amount: Math.abs(invoice.total), // Use absolute value for display
+        mode: invoice.paymentMethod || '',
+        category: isReturn ? "Return" : "POS",
+        isReturn: isReturn // Add flag for frontend styling
+      };
+    });
+
     // Combine and sort all entries by date
     const allEntries = [
       ...purchaseEntries, 
       ...supplierEntries,
       ...incomeEntries,
-      ...expenseEntries
+      ...expenseEntries,
+      ...invoiceEntries
     ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
     res.json(allEntries);

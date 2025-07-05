@@ -37,6 +37,8 @@ const additionalRoutes = require('./routes/AdditionalRoutes');
 const IdentifiersRoutes = require('./routes/IdentifiersRoutes');
 const buisnessSettingsRoutes = require('./routes/BuisnessSettingsRoutes');
 const cashInRoutes = require('./routes/CashInRoutes');
+const returnRoutes = require('./routes/ReturnRoute');
+const InvoiceModel = require('./models/InvoiceModel');
 
 dotenv.config();
 
@@ -96,6 +98,7 @@ app.use('/api/additional', additionalRoutes);
 app.use('/api/identifiers', IdentifiersRoutes);
 app.use('/api/business-settings', buisnessSettingsRoutes);
 app.use('/api/cashin', cashInRoutes);
+app.use('/api/returns', returnRoutes);
 
 app.get('/', (req, res) => {
     res.send('Hello World!'); 
@@ -115,6 +118,15 @@ app.use((req, res, next) => {
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
     console.log('Firebase connected with configuration');
+    
+    // Run invoice migration on server start
+    InvoiceModel.migrateExistingInvoices()
+        .then(count => {
+            console.log(`Invoice migration completed. ${count} invoices processed.`);
+        })
+        .catch(error => {
+            console.error('Invoice migration failed:', error);
+        });
 });
 
 module.exports = { app, db };

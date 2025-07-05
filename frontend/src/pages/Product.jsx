@@ -1650,6 +1650,8 @@ export default function ProductManagement() {
                             <th className="pb-2">Status</th>
                             <th className="pb-2">Purchase ID</th>
                             <th className="pb-2">Created At</th>
+                            <th className="pb-2">Damaged</th>
+                            <th className="pb-2">Opened</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1669,10 +1671,17 @@ export default function ProductManagement() {
                                 <td className="py-2">{item.purchaseId || '-'}</td>
                                 <td className="py-2">
                                   {item.createdAt ? (
-                                    typeof item.createdAt === 'string' 
-                                      ? item.createdAt
-                                      : typeof item.createdAt.toDate === 'function'
-                                        ? item.createdAt.toDate().toLocaleString('en-US', {
+                                    (() => {
+                                      let dateObj;
+                                      if (typeof item.createdAt === 'string' || typeof item.createdAt === 'number') {
+                                        dateObj = new Date(item.createdAt);
+                                      } else if (item.createdAt && typeof item.createdAt.toDate === 'function') {
+                                        dateObj = item.createdAt.toDate();
+                                      } else {
+                                        dateObj = null;
+                                      }
+                                      return dateObj && !isNaN(dateObj.getTime())
+                                        ? dateObj.toLocaleString('en-US', {
                                             year: 'numeric',
                                             month: 'long',
                                             day: 'numeric',
@@ -1681,16 +1690,23 @@ export default function ProductManagement() {
                                             second: '2-digit',
                                             hour12: false
                                           })
-                                        : new Date(item.createdAt).toLocaleString('en-US', {
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit',
-                                            second: '2-digit',
-                                            hour12: false
-                                          })
+                                        : '-';
+                                    })()
                                   ) : '-'}
+                                </td>
+                                <td className="py-2">
+                                  {item.damaged ? (
+                                    <span className="px-2 py-1 rounded-full text-xs bg-red-800 text-red-200">Damaged</span>
+                                  ) : (
+                                    <span className="px-2 py-1 rounded-full text-xs bg-gray-700 text-gray-400">No</span>
+                                  )}
+                                </td>
+                                <td className="py-2">
+                                  {item.opened ? (
+                                    <span className="px-2 py-1 rounded-full text-xs bg-yellow-700 text-yellow-200">Opened</span>
+                                  ) : (
+                                    <span className="px-2 py-1 rounded-full text-xs bg-gray-700 text-gray-400">No</span>
+                                  )}
                                 </td>
                               </tr>
                             );
@@ -1713,6 +1729,8 @@ export default function ProductManagement() {
                             <th className="pb-2">Status</th>
                             <th className="pb-2">Purchase ID</th>
                             <th className="pb-2">Created At</th>
+                            <th className="pb-2">Damaged</th>
+                            <th className="pb-2">Opened</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1732,10 +1750,17 @@ export default function ProductManagement() {
                                 <td className="py-2">{item.purchaseId || '-'}</td>
                                 <td className="py-2">
                                   {item.createdAt ? (
-                                    typeof item.createdAt === 'string' 
-                                      ? item.createdAt
-                                      : typeof item.createdAt.toDate === 'function'
-                                        ? item.createdAt.toDate().toLocaleString('en-US', {
+                                    (() => {
+                                      let dateObj;
+                                      if (typeof item.createdAt === 'string' || typeof item.createdAt === 'number') {
+                                        dateObj = new Date(item.createdAt);
+                                      } else if (item.createdAt && typeof item.createdAt.toDate === 'function') {
+                                        dateObj = item.createdAt.toDate();
+                                      } else {
+                                        dateObj = null;
+                                      }
+                                      return dateObj && !isNaN(dateObj.getTime())
+                                        ? dateObj.toLocaleString('en-US', {
                                             year: 'numeric',
                                             month: 'long',
                                             day: 'numeric',
@@ -1744,16 +1769,23 @@ export default function ProductManagement() {
                                             second: '2-digit',
                                             hour12: false
                                           })
-                                        : new Date(item.createdAt).toLocaleString('en-US', {
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric',
-                                            hour: '2-digit',
-                                            minute: '2-digit',
-                                            second: '2-digit',
-                                            hour12: false
-                                          })
+                                        : '-';
+                                    })()
                                   ) : '-'}
+                                </td>
+                                <td className="py-2">
+                                  {item.damaged ? (
+                                    <span className="px-2 py-1 rounded-full text-xs bg-red-800 text-red-200">Damaged</span>
+                                  ) : (
+                                    <span className="px-2 py-1 rounded-full text-xs bg-gray-700 text-gray-400">No</span>
+                                  )}
+                                </td>
+                                <td className="py-2">
+                                  {item.opened ? (
+                                    <span className="px-2 py-1 rounded-full text-xs bg-yellow-700 text-yellow-200">Opened</span>
+                                  ) : (
+                                    <span className="px-2 py-1 rounded-full text-xs bg-gray-700 text-gray-400">No</span>
+                                  )}
                                 </td>
                               </tr>
                             );

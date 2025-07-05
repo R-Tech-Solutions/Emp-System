@@ -36,21 +36,45 @@ const FinanceDashboard = () => {
         getAllExpenses(),
         getAllInvoices()
       ])
-      // Map invoices to income-like objects
-      const mappedInvoices = (invoicesResponse || []).map(inv => ({
+      
+      // Separate regular invoices and return invoices
+      const regularInvoices = (invoicesResponse || []).filter(inv => !inv.isReturn)
+      const returnInvoices = (invoicesResponse || []).filter(inv => inv.isReturn)
+      
+      // Map regular invoices to income-like objects (positive amounts)
+      const mappedRegularInvoices = regularInvoices.map(inv => ({
         id: inv.id || inv.invoiceNumber,
         date: inv.date || inv.createdAt || '',
         title: inv.invoiceNumber,
         category: 'invoice',
-        amount: inv.total || 0,
+        amount: Math.abs(inv.total) || 0, // Use absolute value for regular invoices
         receivedFrom: 'invoice',
         paymentMethod: Array.isArray(inv.payments) && inv.payments.length > 0 ? inv.payments[0].method : '',
         status: 'Received',
         project: '',
         description: '',
-        isRecurring: false
+        isRecurring: false,
+        isInvoice: true
       }))
-      setIncomes([...(incomesResponse.data || []), ...mappedInvoices])
+      
+      // Map return invoices to income-like objects (negative amounts for deduction)
+      const mappedReturnInvoices = returnInvoices.map(inv => ({
+        id: inv.id || inv.invoiceNumber,
+        date: inv.date || inv.createdAt || '',
+        title: `Return - ${inv.originalInvoiceId}`,
+        category: 'return',
+        amount: Math.abs(inv.total) || 0, // Use absolute value for display
+        receivedFrom: 'return',
+        paymentMethod: inv.paymentMethod || '',
+        status: 'Refunded',
+        project: '',
+        description: inv.returnReason || '',
+        isRecurring: false,
+        isReturn: true,
+        originalInvoiceId: inv.originalInvoiceId
+      }))
+      
+      setIncomes([...(incomesResponse.data || []), ...mappedRegularInvoices, ...mappedReturnInvoices])
       setExpenses(expensesResponse.data || [])
     } catch (err) {
       setError(err.message || 'Error fetching data')
@@ -257,23 +281,52 @@ const FinanceDashboard = () => {
 
   // Calculate summary statistics
   const incomeSummary = useMemo(() => {
-    const total = incomes.reduce((sum, income) => sum + income.amount, 0)
-    const received = incomes.filter((i) => i.status === "Received").reduce((sum, income) => sum + income.amount, 0)
-    const pending = incomes.filter((i) => i.status === "Pending").reduce((sum, income) => sum + income.amount, 0)
-    const recurring = incomes
+    // Separate regular incomes and return invoices
+    const regularIncomes = incomes.filter(income => !income.isReturn)
+    const returnInvoices = incomes.filter(income => income.isReturn)
+    
+    // Calculate regular income totals
+    const regularTotal = regularIncomes.reduce((sum, income) => sum + income.amount, 0)
+    const regularReceived = regularIncomes.filter((i) => i.status === "Received").reduce((sum, income) => sum + income.amount, 0)
+    const regularPending = regularIncomes.filter((i) => i.status === "Pending").reduce((sum, income) => sum + income.amount, 0)
+    const regularRecurring = regularIncomes
       .filter((i) => i.isRecurring && i.status === "Received")
       .reduce((sum, income) => sum + income.amount, 0)
 
+    // Calculate return invoice totals (these are deductions)
+    const returnTotal = returnInvoices.reduce((sum, income) => sum + income.amount, 0)
+    
+    // Net total = regular income - return deductions
+    const netTotal = regularTotal - returnTotal
+    const netReceived = regularReceived - returnTotal // Returns are always "refunded"
+    
     const currentMonth = new Date().getMonth()
     const currentYear = new Date().getFullYear()
-    const thisMonth = incomes
+    const thisMonthRegular = regularIncomes
       .filter((i) => {
         const incomeDate = new Date(i.date)
         return incomeDate.getMonth() === currentMonth && incomeDate.getFullYear() === currentYear
       })
       .reduce((sum, income) => sum + income.amount, 0)
+    
+    const thisMonthReturns = returnInvoices
+      .filter((i) => {
+        const incomeDate = new Date(i.date)
+        return incomeDate.getMonth() === currentMonth && incomeDate.getFullYear() === currentYear
+      })
+      .reduce((sum, income) => sum + income.amount, 0)
+    
+    const thisMonth = thisMonthRegular - thisMonthReturns
 
-    return { total, received, pending, thisMonth, recurring }
+    return { 
+      total: netTotal, 
+      received: netReceived, 
+      pending: regularPending, 
+      thisMonth, 
+      recurring: regularRecurring,
+      regularTotal,
+      returnTotal
+    }
   }, [incomes])
 
   const expenseSummary = useMemo(() => {
@@ -515,7 +568,7 @@ const FinanceDashboard = () => {
   }
 
   // Calculate net profit
-  const netProfit = incomeSummary.received - expenseSummary.approved
+  const netProfit = incomeSummary.total - expenseSummary.approved
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -536,7 +589,7 @@ const FinanceDashboard = () => {
       <div className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-            <h3 className="text-sm text-gray-400">💰 Total Income</h3>
+            <h3 className="text-sm text-gray-400">💰 Net Income</h3>
             <p className="text-2xl font-bold text-green-400">Rs {incomeSummary.total.toLocaleString()}</p>
           </div>
           <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
@@ -585,14 +638,18 @@ const FinanceDashboard = () => {
         {activeTab === "income" && (
           <div>
             {/* Income Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
               <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h3 className="text-sm text-gray-400">💰 Total Income</h3>
+                <h3 className="text-sm text-gray-400">💰 Net Income</h3>
                 <p className="text-2xl font-bold text-green-400">Rs {incomeSummary.total.toLocaleString()}</p>
               </div>
               <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h3 className="text-sm text-gray-400">✅ Received</h3>
-                <p className="text-2xl font-bold text-blue-400">Rs {incomeSummary.received.toLocaleString()}</p>
+                <h3 className="text-sm text-gray-400">📈 Gross Sales</h3>
+                <p className="text-2xl font-bold text-blue-400">Rs {incomeSummary.regularTotal.toLocaleString()}</p>
+              </div>
+              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                <h3 className="text-sm text-gray-400">↩️ Returns</h3>
+                <p className="text-2xl font-bold text-red-400">Rs {incomeSummary.returnTotal.toLocaleString()}</p>
               </div>
               <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                 <h3 className="text-sm text-gray-400">🕗 Pending</h3>
@@ -668,25 +725,29 @@ const FinanceDashboard = () => {
                           )}
                         </td>
                         <td className="px-4 py-3">{income.category}</td>
-                        <td className="px-4 py-3 font-semibold text-green-400">Rs {income.amount.toLocaleString()}</td>
+                        <td className={`px-4 py-3 font-semibold ${income.isReturn ? 'text-red-400' : 'text-green-400'}`}>
+                          {income.isReturn ? '-' : '+'}Rs {income.amount.toLocaleString()}
+                        </td>
                         <td className="px-4 py-3">{income.receivedFrom}</td>
                         <td className="px-4 py-3">{income.paymentMethod}</td>
                         <td className="px-4 py-3">
                           <span
                             className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              income.status === "Received"
-                                ? "bg-green-900 text-green-300"
-                                : income.status === "Pending"
-                                  ? "bg-yellow-900 text-yellow-300"
-                                  : "bg-red-900 text-red-300"
+                              income.isReturn
+                                ? "bg-red-900 text-red-300"
+                                : income.status === "Received"
+                                  ? "bg-green-900 text-green-300"
+                                  : income.status === "Pending"
+                                    ? "bg-yellow-900 text-yellow-300"
+                                    : "bg-red-900 text-red-300"
                             }`}
                           >
-                            {income.status}
+                            {income.isReturn ? "Return" : income.status}
                           </span>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex gap-2">
-                            {income.category !== 'invoice' && (
+                            {income.category !== 'invoice' && income.category !== 'return' && (
                               <>
                                 <button
                                   onClick={() => handleIncomeEdit(income)}
@@ -702,6 +763,9 @@ const FinanceDashboard = () => {
                                 </button>
                                 <button className="text-gray-400 hover:text-gray-300 text-sm">View</button>
                               </>
+                            )}
+                            {(income.category === 'invoice' || income.category === 'return') && (
+                              <button className="text-gray-400 hover:text-gray-300 text-sm">View</button>
                             )}
                           </div>
                         </td>

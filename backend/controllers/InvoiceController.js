@@ -104,9 +104,30 @@ exports.createInvoice = async (req, res) => {
 
 exports.getAllInvoices = async (req, res) => {
   try {
-    const invoices = await InvoiceModel.getAll();
+    const { type } = req.query;
+    let invoices;
+    
+    if (type === 'return') {
+      // Get only return invoices
+      invoices = await InvoiceModel.getReturnInvoices();
+    } else if (type === 'regular') {
+      // Get only regular invoices (exclude return invoices)
+      try {
+        invoices = await InvoiceModel.getMainInvoices();
+      } catch (error) {
+        console.error('Error fetching main invoices:', error);
+        // Fallback: get all invoices and filter out returns manually
+        const allInvoices = await InvoiceModel.getAll();
+        invoices = allInvoices.filter(invoice => !invoice.isReturn);
+      }
+    } else {
+      // Get all invoices (both regular and return)
+      invoices = await InvoiceModel.getAll();
+    }
+    
     res.status(200).json(invoices);
   } catch (err) {
+    console.error('Error in getAllInvoices:', err);
     res.status(500).json({ error: 'Failed to fetch invoices.' });
   }
 };
@@ -119,6 +140,76 @@ exports.getInvoiceById = async (req, res) => {
     res.status(200).json(invoice);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch invoice.' });
+  }
+};
+
+// New method to get return invoices for a specific original invoice
+exports.getReturnInvoicesByOriginalInvoice = async (req, res) => {
+  try {
+    const { originalInvoiceId } = req.params;
+    const returnInvoices = await InvoiceModel.getReturnInvoicesByOriginalInvoice(originalInvoiceId);
+    res.status(200).json(returnInvoices);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch return invoices.' });
+  }
+};
+
+// New method to get all return invoices
+exports.getAllReturnInvoices = async (req, res) => {
+  try {
+    const returnInvoices = await InvoiceModel.getReturnInvoices();
+    res.status(200).json(returnInvoices);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch return invoices.' });
+  }
+};
+
+// Migration endpoint
+exports.migrateInvoices = async (req, res) => {
+  try {
+    const migratedCount = await InvoiceModel.migrateExistingInvoices();
+    res.status(200).json({ 
+      success: true, 
+      message: `Successfully migrated ${migratedCount} invoices`,
+      migratedCount 
+    });
+  } catch (err) {
+    console.error('Migration error:', err);
+    res.status(500).json({ error: 'Failed to migrate invoices.' });
+  }
+};
+
+// Test endpoint
+exports.testInvoices = async (req, res) => {
+  try {
+    res.status(200).json({ 
+      success: true, 
+      message: 'Invoice API is working',
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Invoice API test failed.' });
+  }
+};
+
+// Index creation helper endpoint
+exports.getIndexUrls = async (req, res) => {
+  try {
+    const urls = InvoiceModel.getIndexCreationUrls();
+    res.status(200).json({
+      success: true,
+      message: 'Index creation URLs',
+      urls,
+      instructions: [
+        '1. Click on each URL above',
+        '2. Sign in to your Firebase console', 
+        '3. Click "Create Index" on each page',
+        '4. Wait for indexes to build (may take a few minutes)',
+        '5. Restart your server after indexes are built'
+      ]
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to get index URLs.' });
   }
 };
 

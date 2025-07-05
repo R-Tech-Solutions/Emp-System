@@ -17,4 +17,10 @@ router.post('/update-purchase-id', IdentifiersController.updatePurchaseId);
 // Delete identifiers
 router.delete('/:type/:productId', IdentifiersController.deleteIdentifiers);
 
+// Mark identifier as damaged
+router.post('/mark-damaged', IdentifiersController.markAsDamaged);
+
+// Mark identifier as opened
+router.post('/mark-opened', IdentifiersController.markAsOpened);
+
 module.exports = router;

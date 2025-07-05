@@ -77,29 +77,33 @@ const InventoryModel = {
           lastUpdated: currentDate
         };
 
-        // If this is a purchase (positive quantity), update totalQuantity and add to purchases array
-        if (quantity > 0 && supplierEmail) {
+        // If this is a purchase or return (positive quantity), update totalQuantity
+        if (quantity > 0) {
           updatedData.totalQuantity = (currentData.totalQuantity || 0) + quantity;
-          updatedData.purchases = [
-            ...(currentData.purchases || []),
-            {
-              quantity,
-              supplierEmail,
-              date: currentDate,
-              purchaseId: reference
-            }
-          ];
-          
-          // Add to transactions array
+          // Only add to purchases if supplierEmail is present (i.e., real purchase)
+          if (supplierEmail) {
+            updatedData.purchases = [
+              ...(currentData.purchases || []),
+              {
+                quantity,
+                supplierEmail,
+                date: currentDate,
+                purchaseId: reference
+              }
+            ];
+          }
+          // Always add to transactions array for audit
           updatedData.transactions = [
             ...(currentData.transactions || []),
             {
-              type: 'purchase',
+              type: supplierEmail ? 'purchase' : 'return',
               quantity: quantity,
               date: currentDate,
               reference: reference,
               supplierEmail: supplierEmail,
-              description: `Purchased ${quantity} units`
+              description: supplierEmail
+                ? `Purchased ${quantity} units`
+                : `Returned ${quantity} units`
             }
           ];
         }
@@ -110,7 +114,6 @@ const InventoryModel = {
             throw new Error('Insufficient stock for sale');
           }
           updatedData.totalQuantity = newQuantity;
-          
           // Add to transactions array
           updatedData.transactions = [
             ...(currentData.transactions || []),

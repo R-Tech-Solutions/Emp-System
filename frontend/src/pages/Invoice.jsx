@@ -401,12 +401,12 @@ const printInvoice = async (invoice, format = "a4") => {
       console.error('Fetched invoice data is empty.');
       return;
     }
-  
+
 
     // 2. Render the correct component to an HTML string with the fetched data
     let printHtmlContent = '';
     const ReactDOMServer = require('react-dom/server');
-    
+
     if (format === "pos") {
       printHtmlContent = ReactDOMServer.renderToStaticMarkup(
         <AdvanceThermalInvoice invoice={fullInvoiceData} />
@@ -437,13 +437,13 @@ const printInvoice = async (invoice, format = "a4") => {
       </html>
     `);
     iframeDoc.close();
-    
+
     iframe.onload = () => {
-        setTimeout(() => {
-            iframe.contentWindow.focus();
-            iframe.contentWindow.print();
-            setTimeout(() => document.body.removeChild(iframe), 500);
-        }, 250); // A short delay to ensure everything is rendered
+      setTimeout(() => {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        setTimeout(() => document.body.removeChild(iframe), 500);
+      }, 250); // A short delay to ensure everything is rendered
     };
 
   } catch (error) {
@@ -691,7 +691,7 @@ const EnhancedBillingPOSSystem = () => {
         const response = await fetch(`${backEndURL}/api/business-settings`);
         if (response.ok) {
           const { data } = await response.json();
-          setBusinessSettings(data || { 
+          setBusinessSettings(data || {
             printingStyle: 'A4',
             gstNumber: '',
             taxRate: 0
@@ -717,6 +717,7 @@ const EnhancedBillingPOSSystem = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [categories, setCategories] = useState(["All"])
   const [invoices, setInvoices] = useState([])
+  const [isLoadingInvoices, setIsLoadingInvoices] = useState(false)
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false)
   const [tabNumberBuffer, setTabNumberBuffer] = useState("")
   const tabNumberTimeoutRef = useRef(null)
@@ -1235,7 +1236,7 @@ const EnhancedBillingPOSSystem = () => {
   // Enhanced addToCart function with identifier support
   const addToCart = useCallback(
     async (product) => {
-     
+
 
       // Check if product has identifier type
       if (product.productIdentifierType && product.productIdentifierType !== 'none') {
@@ -1249,11 +1250,11 @@ const EnhancedBillingPOSSystem = () => {
 
           if (response.ok) {
             const data = await response.json()
-           
+
             if (data && data.identifiers) {
               // Filter only available (not sold) identifiers
               const available = data.identifiers.filter(item => !item.sold)
-             
+
               setAvailableIdentifiers(available)
               setSelectedIdentifiers([])
               setShowIdentifierModal(true)
@@ -1305,6 +1306,7 @@ const EnhancedBillingPOSSystem = () => {
           discountType: "none",
           discountValue: 0,
           discountedPrice: price,
+          costPrice: product.cost !== undefined ? product.cost : (product.costPrice !== undefined ? product.costPrice : 0), // <-- Add this line
         }
         updateTabData(activeTab, { cart: [...currentCart, newItem] })
       }
@@ -1328,6 +1330,17 @@ const EnhancedBillingPOSSystem = () => {
 
     // Create cart items for each selected identifier
     selectedIds.forEach(identifierId => {
+      // Prevent duplicate IMEI/Serial in cart
+      const alreadyInCart = currentCart.some(
+        item =>
+          item.identifierType === selectedProductForIdentifier.productIdentifierType &&
+          item.identifierValue === identifierId
+      );
+      if (alreadyInCart) {
+        showToast(`Identifier ${identifierId} is already in the cart`, "warning");
+        return;
+      }
+
       const identifier = availableIdentifiers.find(item =>
         item[selectedProductForIdentifier.productIdentifierType] === identifierId
       )
@@ -1486,18 +1499,18 @@ const EnhancedBillingPOSSystem = () => {
   }, [currentDiscount, calculatedSubtotal])
 
   const taxableAmount = useMemo(() => calculatedSubtotal - discountAmount, [calculatedSubtotal, discountAmount])
-  
+
   // Get tax rate from business settings, default to 0 if null/undefined
   const effectiveTaxRate = useMemo(() => {
     const businessTaxRate = businessSettings?.taxRate;
     return businessTaxRate !== null && businessTaxRate !== undefined ? Number(businessTaxRate) : 0;
   }, [businessSettings?.taxRate]);
-  
+
   const taxAmount = useMemo(() => {
     // Use effective tax rate instead of currentTaxRate
     return taxableAmount * (effectiveTaxRate / 100);
   }, [taxableAmount, effectiveTaxRate])
-  
+
   const grandTotal = useMemo(() => taxableAmount + taxAmount, [taxableAmount, taxAmount])
 
   // New state for barcode search functionality
@@ -1514,7 +1527,6 @@ const EnhancedBillingPOSSystem = () => {
         if (product) {
           // Check if product has identifier type
           if (product.productIdentifierType && product.productIdentifierType !== 'none') {
-            
             // Show identifier selection modal
             setSelectedProductForIdentifier(product)
             setIsLoadingIdentifiers(true)
@@ -1531,8 +1543,17 @@ const EnhancedBillingPOSSystem = () => {
                 if (data && data.identifiers) {
                   // Filter only available (not sold) identifiers
                   const available = data.identifiers.filter(item => !item.sold)
-                  // console.log('Available identifiers:', available)
-                  setAvailableIdentifiers(available)
+                  // Prevent duplicate IMEI/Serial in cart
+                  const filteredAvailable = available.filter(identifier => {
+                    const identifierValue = identifier[product.productIdentifierType];
+                    const alreadyInCart = currentTabData.cart.some(
+                      item =>
+                        item.identifierType === product.productIdentifierType &&
+                        item.identifierValue === identifierValue
+                    );
+                    return !alreadyInCart;
+                  });
+                  setAvailableIdentifiers(filteredAvailable)
                   setSelectedIdentifiers([])
                   setShowIdentifierModal(true)
                 } else {
@@ -1566,7 +1587,7 @@ const EnhancedBillingPOSSystem = () => {
         barcodeRef.current?.focus();
       }, 100);
     },
-    [barcodeInput, products, addToCart, showToast, backEndURL, selectedProductForIdentifier, setIsLoadingIdentifiers, setAvailableIdentifiers, setSelectedIdentifiers, setShowIdentifierModal, setBarcodeSearchResults, setShowBarcodeSearch],
+    [barcodeInput, products, addToCart, showToast, backEndURL, selectedProductForIdentifier, setIsLoadingIdentifiers, setAvailableIdentifiers, setSelectedIdentifiers, setShowIdentifierModal, setBarcodeSearchResults, setShowBarcodeSearch, currentTabData.cart],
   )
 
   // Real-time barcode search function
@@ -1675,7 +1696,7 @@ const EnhancedBillingPOSSystem = () => {
     if (exactProductMatch) {
       // Exact barcode match found - handle automatically
       if (exactProductMatch.productIdentifierType && exactProductMatch.productIdentifierType !== 'none') {
-       
+
         setSelectedProductForIdentifier(exactProductMatch)
         setIsLoadingIdentifiers(true)
 
@@ -1996,6 +2017,17 @@ const EnhancedBillingPOSSystem = () => {
       try {
         // Prepare invoice items with identifier information
         const invoiceItems = cart.map((item) => {
+          // Determine costPrice for this item
+          let costPrice = item.cost !== undefined ? item.cost : (item.costPrice !== undefined ? item.costPrice : 0);
+          if ((!costPrice || costPrice === 0) && item.mainProductId) {
+            const prod = products.find(p => p.id === item.mainProductId);
+            if (prod && prod.cost) costPrice = prod.cost;
+          }
+          if ((!costPrice || costPrice === 0) && item.id) {
+            const prod = products.find(p => p.id === item.id);
+            if (prod && prod.cost) costPrice = prod.cost;
+          }
+
           const baseItem = {
             id: item.id,
             name: item.name,
@@ -2006,6 +2038,7 @@ const EnhancedBillingPOSSystem = () => {
             discountAmount: item.price - (item.discountedPrice || item.price),
             category: item.category,
             barcode: item.barcode,
+            costPrice: costPrice,
           }
 
           // Add identifier information if present
@@ -2023,18 +2056,26 @@ const EnhancedBillingPOSSystem = () => {
           return baseItem
         })
 
+        // Find walk-in customer if no customer is selected
+        let selectedCustomer = currentSelectedCustomer;
+        if (!selectedCustomer) {
+          selectedCustomer = customers.find(
+            c => c.name && /walk[\s-]?in|walking/i.test(c.name)
+          );
+        }
+
         // Create invoice object with ONLY essential data - no customer details
         const invoice = {
           items: invoiceItems,
-          customerId: currentSelectedCustomer ? currentSelectedCustomer.id : null, // Only send customer ID
+          customerId: selectedCustomer ? selectedCustomer.id : null, // Use walk-in customer if no customer selected
           subtotal: calculatedSubtotal,
           discountAmount: discountAmount,
           taxAmount,
           total: grandTotal,
           paymentMethod: paymentData.method,
-          paymentStatus: "Paid",
+          paymentStatus: paymentData.method === 'customer_account' ? 'Pending' : 'Paid',
           date: new Date().toISOString(),
-          amountPaid: paymentData.amount,
+          amountPaid: paymentData.amount, // Use actual amount paid (can be partial for customer_account)
           changeDue: paymentData.change
         }
 
@@ -2103,16 +2144,16 @@ const EnhancedBillingPOSSystem = () => {
 
             if (emailResponse.ok) {
               const emailResult = await emailResponse.json();
-              
+
               // Show detailed results based on the new response format
               if (emailResult.success) {
                 let successMessage = "Digital invoice sent successfully!";
                 const results = emailResult.results;
-                
+
                 // Build detailed success message
                 const successfulMethods = [];
                 const failedMethods = [];
-                
+
                 if (results.email.attempted) {
                   if (results.email.success) {
                     successfulMethods.push("Email");
@@ -2120,7 +2161,7 @@ const EnhancedBillingPOSSystem = () => {
                     failedMethods.push(`Email (${results.email.error})`);
                   }
                 }
-                
+
                 if (results.sms.attempted) {
                   if (results.sms.success) {
                     successfulMethods.push("SMS");
@@ -2128,7 +2169,7 @@ const EnhancedBillingPOSSystem = () => {
                     failedMethods.push(`SMS (${results.sms.error})`);
                   }
                 }
-                
+
                 if (successfulMethods.length > 0) {
                   successMessage = `✅ Sent via: ${successfulMethods.join(", ")}`;
                   if (failedMethods.length > 0) {
@@ -2137,7 +2178,7 @@ const EnhancedBillingPOSSystem = () => {
                 } else {
                   successMessage = "❌ Digital delivery failed for all methods";
                 }
-                
+
                 showToast(successMessage, emailResult.status === 'success' ? "success" : "warning");
               } else {
                 showToast(`❌ Digital delivery failed: ${emailResult.message}`, "error");
@@ -2256,15 +2297,37 @@ const EnhancedBillingPOSSystem = () => {
     ],
   )
 
-  // Fast fetch invoices
+  // Fast fetch invoices - only main invoices
   const fetchInvoices = useCallback(async () => {
     try {
-      const response = await fetch(`${backEndURL}/api/invoices`)
+      setIsLoadingInvoices(true)
+      
+      // First try the new endpoint with type=regular
+      let response = await fetch(`${backEndURL}/api/invoices?type=regular`)
+      
+      // If that fails, try the old endpoint and filter manually
+      if (!response.ok) {
+        console.log('Regular endpoint failed, trying fallback...')
+        response = await fetch(`${backEndURL}/api/invoices`)
+        if (response.ok) {
+          const allInvoices = await response.json()
+          // Filter out return invoices manually
+          const mainInvoices = Array.isArray(allInvoices) ? allInvoices.filter(invoice => !invoice.isReturn) : []
+          setInvoices(mainInvoices)
+          return
+        }
+      }
+      
       const data = await response.json()
-      setInvoices(data)
+      // Ensure data is an array
+      setInvoices(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error("Error fetching invoices:", error)
       showToast("Failed to load invoices", "error")
+      // Set empty array on error
+      setInvoices([])
+    } finally {
+      setIsLoadingInvoices(false)
     }
   }, [showToast])
 
@@ -2303,7 +2366,7 @@ const EnhancedBillingPOSSystem = () => {
 
   // Add interval for silent updates
   useEffect(() => {
-    const intervalId = setInterval(updateProductQuantities, 100);
+    const intervalId = setInterval(updateProductQuantities, 50); // Changed from 100ms to 50ms
 
     // Cleanup interval on unmount
     return () => clearInterval(intervalId);
@@ -2825,7 +2888,7 @@ const EnhancedBillingPOSSystem = () => {
         </div>
       )}
 
-      <div className="container mx-auto px-4 h-screen overflow-hidden">
+      <div className="w-full h-screen overflow-hidden">
         {activeMainTab === "pos" && (
           <FastTabComponent
             tabs={tabs}
@@ -3106,6 +3169,9 @@ const EnhancedBillingPOSSystem = () => {
             setSearchTerm={setInvoiceSearchTerm}
             dateRange={invoiceDateRange}
             setDateRange={setInvoiceDateRange}
+            fetchData={fetchData}
+            fetchInvoices={fetchInvoices}
+            isLoadingInvoices={isLoadingInvoices}
             onInvoiceSelect={(invoice) => {
               setSelectedInvoice(invoice)
               setShowInvoiceDetails(true)
@@ -3121,6 +3187,7 @@ const EnhancedBillingPOSSystem = () => {
           discount={currentDiscount}
           onClose={() => updateTabData(activeTab, { showPayment: false })}
           onPaymentComplete={completePayment}
+          currentSelectedCustomer={currentSelectedCustomer}
         />
       )}
 
@@ -3209,7 +3276,6 @@ const EnhancedBillingPOSSystem = () => {
                 <input
                   type="text"
                   value={cashOutData.date}
-                  readOnly
                   className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
                 />
               </div>
@@ -3218,7 +3284,6 @@ const EnhancedBillingPOSSystem = () => {
                 <input
                   type="text"
                   value={cashOutData.paidBy}
-                  readOnly
                   className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
                 />
               </div>
@@ -3251,7 +3316,6 @@ const EnhancedBillingPOSSystem = () => {
                 <input
                   type="text"
                   value={cashOutData.status}
-                  readOnly
                   className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
                 />
               </div>
@@ -3306,7 +3370,6 @@ const EnhancedBillingPOSSystem = () => {
                 <input
                   type="text"
                   value={cashInData.cashInBy}
-                  readOnly
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
@@ -3656,17 +3719,18 @@ const EnhancedCartItemWithDiscount = ({ item, updateQuantity, removeFromCart, up
 }
 
 // Enhanced Payment Modal Component
-const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose, onPaymentComplete }) => {
-  const [paymentMethod, setPaymentMethod] = useState("cash") // "cash" or "card"
+const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose, onPaymentComplete, currentSelectedCustomer }) => {
+  const [paymentMethod, setPaymentMethod] = useState("cash") // "cash", "card", or "customer_account"
   const [cashAmount, setCashAmount] = useState("")
   const [cardAmount, setCardAmount] = useState("")
+  const [accountAmount, setAccountAmount] = useState(grandTotal.toFixed(2))
   const [cardNumber, setCardNumber] = useState("")
   const [cardHolderName, setCardHolderName] = useState("")
   const [cardExpiry, setCardExpiry] = useState("")
   const [cardCVV, setCardCVV] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [toast, setToast] = useState({ message: "", type: "", isVisible: false })
-  
+
   // Add printing options state
   const [printingOption, setPrintingOption] = useState("default") // "default", "eprint", "both"
 
@@ -3678,6 +3742,9 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
   useEffect(() => {
     if (paymentMethod === "card") {
       setCardAmount(grandTotal.toFixed(2))
+    }
+    if (paymentMethod === "customer_account") {
+      setAccountAmount("0") // Always 0 for customer_account
     }
   }, [paymentMethod, grandTotal])
 
@@ -3702,7 +3769,10 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
   }, [])
 
   // Calculate amounts
-  const currentAmount = paymentMethod === "cash" ? parseFloat(cashAmount) || 0 : parseFloat(cardAmount) || 0
+  let currentAmount = 0;
+  if (paymentMethod === "cash") currentAmount = parseFloat(cashAmount) || 0;
+  else if (paymentMethod === "card") currentAmount = parseFloat(cardAmount) || 0;
+  else if (paymentMethod === "customer_account") currentAmount = parseFloat(accountAmount) || 0;
   const balanceDue = grandTotal - currentAmount
   const changeDue = currentAmount > grandTotal ? currentAmount - grandTotal : 0
 
@@ -3716,15 +3786,14 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
   const handleCompletePayment = useCallback(async () => {
     setIsProcessing(true)
     try {
-      if (currentAmount < grandTotal) {
+      if (paymentMethod !== "customer_account" && currentAmount < grandTotal) {
         showToast("Payment amount is less than the grand total", "error")
         return
       }
-
       const paymentDetails = {
         method: paymentMethod,
         amount: currentAmount,
-        change: changeDue,
+        change: paymentMethod === "customer_account" ? 0 : changeDue,
         printingOption: getPrintingOption(), // Get printing option from checkboxes
         ...(paymentMethod === "card" && {
           cardNumber: cardNumber.slice(-4),
@@ -3732,7 +3801,6 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
           cardExpiry,
         })
       }
-
       await onPaymentComplete(paymentDetails)
       onClose()
     } catch (error) {
@@ -3741,10 +3809,7 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
     } finally {
       setIsProcessing(false)
     }
-  }, [
-    currentAmount, grandTotal, paymentMethod, cardNumber, cardHolderName,
-    cardExpiry, changeDue, printEnabled, emailEnabled, onPaymentComplete, onClose, showToast
-  ])
+  }, [currentAmount, grandTotal, paymentMethod, cardNumber, cardHolderName, cardExpiry, changeDue, printEnabled, emailEnabled, onPaymentComplete, onClose, showToast])
 
   const handleQuickCashAmount = useCallback((amount) => {
     setCashAmount(amount.toFixed(2))
@@ -3771,7 +3836,7 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Payment Method
                   </label>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className={`grid grid-cols-${currentSelectedCustomer ? 3 : 2} gap-4`}>
                     <button
                       type="button"
                       onClick={() => setPaymentMethod("cash")}
@@ -3798,6 +3863,21 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
                         <span className="font-medium">Card</span>
                       </div>
                     </button>
+                    {currentSelectedCustomer && (
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod("customer_account")}
+                        className={`p-4 rounded-lg border-2 transition-colors ${paymentMethod === "customer_account"
+                          ? "border-purple-500 bg-purple-50"
+                          : "border-gray-300 hover:border-purple-500"
+                          }`}
+                      >
+                        <div className="flex items-center justify-center space-x-2">
+                          <span className="text-2xl">🧾</span>
+                          <span className="font-medium">{currentSelectedCustomer.name} Account</span>
+                        </div>
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -3875,6 +3955,25 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
                   </div>
                 )}
 
+                {/* Customer Account Payment Section */}
+                {paymentMethod === "customer_account" && currentSelectedCustomer && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        {currentSelectedCustomer.name} Account Amount
+                      </label>
+                      <input
+                        type="number"
+                        value={accountAmount}
+                        onChange={(e) => setAccountAmount(e.target.value)}
+                        className="w-full p-2 border rounded border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                        placeholder="0.00"
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* Payment Summary */}
                 <div className="mt-6 p-4 bg-gray-50 rounded-lg">
                   <div className="flex justify-between text-base font-semibold mb-2">
@@ -3908,20 +4007,28 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
                   </button>
                   <button
                     onClick={handleCompletePayment}
-                    disabled={isProcessing || currentAmount < grandTotal}
-                    className={`flex-1 px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2 ${isProcessing || currentAmount < grandTotal
+                    disabled={isProcessing || (paymentMethod !== "customer_account" && currentAmount < grandTotal)}
+                    className={`flex-1 px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2 ${isProcessing || (paymentMethod !== "customer_account" && currentAmount < grandTotal)
                       ? "bg-gray-400 cursor-not-allowed"
                       : paymentMethod === "cash"
                         ? "bg-green-600 hover:bg-green-700 text-white"
-                        : "bg-blue-600 hover:bg-blue-700 text-white"
+                        : paymentMethod === "card"
+                          ? "bg-blue-600 hover:bg-blue-700 text-white"
+                          : paymentMethod === "customer_account"
+                            ? "bg-purple-600 hover:bg-purple-700 text-white"
+                            : "bg-gray-600 text-white"
                       }`}
                   >
                     {isProcessing ? (
                       <DotSpinner />
                     ) : (
-                      <>
-                        {paymentMethod === "cash" ? "💵 Complete Cash Payment" : "💳 Complete Card Payment"}
-                      </>
+                      paymentMethod === "cash"
+                        ? "💵 Complete Cash Payment"
+                        : paymentMethod === "card"
+                          ? "💳 Complete Card Payment"
+                          : paymentMethod === "customer_account" && currentSelectedCustomer
+                            ? `🧾 Complete to ${currentSelectedCustomer.name} Account`
+                            : "Complete Payment"
                     )}
                   </button>
                 </div>
@@ -3942,18 +4049,22 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
 
 // Enhanced Invoice Modal Component with Download Options
 const EnhancedInvoiceModal = ({ invoice, onClose }) => {
+  const [returnInvoices, setReturnInvoices] = useState([])
+  const [loadingReturns, setLoadingReturns] = useState(false)
+  const [showReturnModal, setShowReturnModal] = useState(false)
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         onClose()
       } else if (e.altKey && e.key === 'p') {
-        printInvoice(invoice, 'a4')
+        handlePrint('a4')
       } else if (e.altKey && e.key === 'r') {
-        printInvoice(invoice, 'pos')
+        handlePrint('pos')
       } else if (e.altKey && e.key === 'd') {
-        printInvoice(invoice, 'a4')
+        handlePrint('a4')
       } else if (e.altKey && e.key === 's') {
-        printInvoice(invoice, 'pos')
+        handlePrint('pos')
       }
     }
 
@@ -3961,15 +4072,83 @@ const EnhancedInvoiceModal = ({ invoice, onClose }) => {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onClose, invoice])
 
+  // Fetch return invoices for this invoice
+  useEffect(() => {
+    const fetchReturnInvoices = async () => {
+      if (!invoice.invoiceNumber) return
+      
+      setLoadingReturns(true)
+      try {
+        const response = await fetch(`${backEndURL}/api/invoices/returns/original/${invoice.invoiceNumber}`)
+        if (response.ok) {
+          const returns = await response.json()
+          setReturnInvoices(returns)
+        }
+      } catch (error) {
+        console.error('Error fetching return invoices:', error)
+      } finally {
+        setLoadingReturns(false)
+      }
+    }
+
+    fetchReturnInvoices()
+  }, [invoice.invoiceNumber])
+
   const handlePrint = (format) => {
     printInvoice(invoice, format)
   }
 
+  // Calculate return totals
+  const totalReturnAmount = returnInvoices.reduce((sum, ret) => sum + Math.abs(ret.total), 0)
+  const netInvoiceValue = invoice.total - totalReturnAmount
+
+  // Calculate remaining quantities for each item after returns
+  const calculateRemainingItems = () => {
+    if (!invoice.items) return []
+    
+    // Create a map to track returned quantities and return invoice info per item
+    const returnedInfoMap = new Map()
+    
+    // Process all return invoices to get returned quantities and return invoice numbers
+    returnInvoices.forEach(retInvoice => {
+      if (retInvoice.items) {
+        retInvoice.items.forEach(retItem => {
+          const key = retItem.identifierValue ? `${retItem.id}-${retItem.identifierValue}` : retItem.id
+          const currentInfo = returnedInfoMap.get(key) || { quantity: 0, returnInvoices: [] }
+          currentInfo.quantity += (retItem.quantity || 1)
+          currentInfo.returnInvoices.push(retInvoice.invoiceNumber)
+          returnedInfoMap.set(key, currentInfo)
+        })
+      }
+    })
+    
+    // Calculate remaining quantities for each original item
+    return invoice.items.map(item => {
+      const key = item.identifierValue ? `${item.id}-${item.identifierValue}` : item.id
+      const itemReturnedInfo = returnedInfoMap.get(key) || { quantity: 0, returnInvoices: [] }
+      const returnedQty = itemReturnedInfo.quantity
+      const remainingQty = item.quantity - returnedQty
+      const isFullyReturned = remainingQty <= 0
+      const isPartiallyReturned = returnedQty > 0 && remainingQty > 0
+      
+      return {
+        ...item,
+        remainingQty: Math.max(0, remainingQty),
+        returnedQty,
+        returnInvoices: itemReturnedInfo.returnInvoices,
+        isFullyReturned,
+        isPartiallyReturned
+      }
+    })
+  }
+
+  const remainingItems = calculateRemainingItems()
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
+      <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Invoice #{invoice.id}</h2>
+          <h2 className="text-xl font-semibold">Invoice #{invoice.invoiceNumber || invoice.id}</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
@@ -3978,6 +4157,121 @@ const EnhancedInvoiceModal = ({ invoice, onClose }) => {
           </button>
         </div>
 
+        {/* Invoice Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+          <div className="text-center">
+            <div className="text-sm text-gray-600">Original Total</div>
+            <div className="text-lg font-bold text-green-600">Rs {invoice.total?.toLocaleString() || '0'}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-sm text-gray-600">Total Returns</div>
+            <div className="text-lg font-bold text-red-600">Rs {totalReturnAmount.toLocaleString()}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-sm text-gray-600">Net Value</div>
+            <div className={`text-lg font-bold ${netInvoiceValue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              Rs {netInvoiceValue.toLocaleString()}
+            </div>
+          </div>
+        </div>
+
+        {/* Current Items (after returns) */}
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold mb-3">📦 Current Items</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full border border-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left">Product</th>
+                  <th className="px-4 py-2 text-left">Original Qty</th>
+                  <th className="px-4 py-2 text-left">Returned Qty</th>
+                  <th className="px-4 py-2 text-left">Remaining Qty</th>
+                  <th className="px-4 py-2 text-left">Price</th>
+                  <th className="px-4 py-2 text-left">Total</th>
+                  <th className="px-4 py-2 text-left">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {remainingItems.map((item, idx) => (
+                  <tr 
+                    key={idx} 
+                    className={`border-t border-gray-200 ${
+                      item.isFullyReturned ? 'bg-red-50' : 
+                      item.isPartiallyReturned ? 'bg-yellow-50' : ''
+                    }`}
+                  >
+                    <td className={`px-4 py-2 ${
+                      item.isFullyReturned ? 'line-through text-red-600' : 
+                      item.isPartiallyReturned ? 'text-orange-600' : ''
+                    }`}>
+                      {item.name}
+                      {item.identifierValue && (
+                        <div className="text-xs text-gray-500">
+                          {item.identifierType}: {item.identifierValue}
+                        </div>
+                      )}
+                      {item.returnInvoices && item.returnInvoices.length > 0 && (
+                        <div className="text-xs text-red-500 mt-1">
+                          Returned via: {item.returnInvoices.join(', ')}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-2">{item.quantity}</td>
+                    <td className="px-4 py-2 text-red-600">{item.returnedQty}</td>
+                    <td className={`px-4 py-2 font-semibold ${
+                      item.isFullyReturned ? 'text-red-600' : 
+                      item.isPartiallyReturned ? 'text-orange-600' : 'text-green-600'
+                    }`}>
+                      {item.remainingQty}
+                    </td>
+                    <td className="px-4 py-2">Rs {(item.discountedPrice || item.price)?.toFixed(2)}</td>
+                    <td className="px-4 py-2">Rs {((item.discountedPrice || item.price) * item.remainingQty)?.toFixed(2)}</td>
+                    <td className="px-4 py-2">
+                      {item.isFullyReturned ? (
+                        <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">Fully Returned</span>
+                      ) : item.isPartiallyReturned ? (
+                        <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Partially Returned</span>
+                      ) : (
+                        <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Available</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Return Invoices */}
+        {returnInvoices.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold mb-3">↩️ Return Invoices</h3>
+            {loadingReturns ? (
+              <div className="text-center py-4">Loading returns...</div>
+            ) : (
+              <div className="space-y-3">
+                {returnInvoices.map((retInvoice, idx) => (
+                  <div key={idx} className="border border-red-200 bg-red-50 p-4 rounded-lg">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-semibold text-red-800">Return #{retInvoice.invoiceNumber}</div>
+                        <div className="text-sm text-red-600">Amount: Rs {Math.abs(retInvoice.total).toLocaleString()}</div>
+                        {retInvoice.returnReason && (
+                          <div className="text-sm text-gray-600">Reason: {retInvoice.returnReason}</div>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {new Date(retInvoice.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Action Buttons */}
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button
@@ -4008,9 +4302,25 @@ const EnhancedInvoiceModal = ({ invoice, onClose }) => {
               🧾 Download Receipt
               <span className="text-sm text-gray-500">(Alt + S)</span>
             </button>
+            <button
+              onClick={() => setShowReturnModal(true)}
+              className="flex items-center justify-center gap-2 p-3 border border-yellow-300 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 transition-colors"
+            >
+              ↩️ Return Items
+            </button>
           </div>
         </div>
       </div>
+      
+      {/* Return Modal */}
+      {showReturnModal && (
+        <ReturnInvoiceModal
+          invoice={invoice}
+          onClose={() => setShowReturnModal(false)}
+          fetchData={() => {}} // Empty function since we don't need to refetch data here
+          fetchInvoices={() => {}} // Empty function since we don't need to refetch invoices here
+        />
+      )}
     </div>
   )
 }
@@ -4291,13 +4601,18 @@ const HoldBillModal = ({ onClose, onSave }) => {
   );
 };
 // Invoices Page Component
-const InvoicesPage = ({ invoices, searchTerm, setSearchTerm, dateRange, setDateRange, onInvoiceSelect }) => {
+const InvoicesPage = ({ invoices, searchTerm, setSearchTerm, dateRange, setDateRange, onInvoiceSelect, fetchData, fetchInvoices, isLoadingInvoices }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const searchInputRef = useRef(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalInvoice, setModalInvoice] = useState(null);
 
   const filteredInvoices = useMemo(() => {
+    // Ensure invoices is an array
+    if (!Array.isArray(invoices)) {
+      return [];
+    }
+    
     return invoices.filter((invoice) => {
       const invoiceId = (invoice.id || '').toLowerCase();
       const customerName = (invoice.customer?.name || '').toLowerCase();
@@ -4364,7 +4679,7 @@ const InvoicesPage = ({ invoices, searchTerm, setSearchTerm, dateRange, setDateR
   }, [filteredInvoices, selectedIndex, isModalOpen]);
 
   const totalAmount = useMemo(
-    () => filteredInvoices.reduce((sum, invoice) => sum + invoice.total, 0),
+    () => filteredInvoices.reduce((sum, invoice) => sum + (invoice.total || 0), 0),
     [filteredInvoices],
   )
   const totalCount = filteredInvoices.length
@@ -4374,6 +4689,8 @@ const InvoicesPage = ({ invoices, searchTerm, setSearchTerm, dateRange, setDateR
     const minimalInvoice = { id: invoice.id, customerId: invoice.customerId };
     printInvoice(minimalInvoice, format);
   };
+
+
 
   return (
     <div className="space-y-6">
@@ -4452,7 +4769,13 @@ const InvoicesPage = ({ invoices, searchTerm, setSearchTerm, dateRange, setDateR
           <h3 className="text-lg font-medium text-gray-900">📋 Invoice List</h3>
         </div>
         <div className="divide-y divide-gray-200 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100" style={{ maxHeight: 'calc(100vh - 300px)' }}>
-          {filteredInvoices.length === 0 ? (
+          {isLoadingInvoices ? (
+            <div className="text-center py-12">
+              <div className="text-4xl mb-4">⏳</div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Loading invoices...</h3>
+              <p className="text-gray-500">Please wait while we fetch your invoices</p>
+            </div>
+          ) : filteredInvoices.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-4xl mb-4">📄</div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">No invoices found</h3>
@@ -4483,6 +4806,16 @@ const InvoicesPage = ({ invoices, searchTerm, setSearchTerm, dateRange, setDateR
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                             Paid
                           </span>
+                          {invoice.isPartiallyReturned && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                              Partially Returned
+                            </span>
+                          )}
+                          {invoice.isReturn && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              Fully Returned
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center space-x-4 mt-1">
                           <p className="text-sm text-gray-500">📅 {new Date(invoice.createdAt).toLocaleDateString()}</p>
@@ -4492,6 +4825,24 @@ const InvoicesPage = ({ invoices, searchTerm, setSearchTerm, dateRange, setDateR
                             return customerInfo && <p className="text-sm text-gray-500">👤 {customerInfo.customerName}</p>;
                           })()}
                         </div>
+                        {/* Return Invoices Sub-process */}
+                        {invoice.returnInvoices && invoice.returnInvoices.length > 0 && (
+                          <div className="mt-2 pl-4 border-l-2 border-yellow-300">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xs text-yellow-600 font-medium">🔄 Return Invoices:</span>
+                              <div className="flex flex-wrap gap-1">
+                                {invoice.returnInvoices.map((returnInvoiceNumber, index) => (
+                                  <span 
+                                    key={index}
+                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-50 text-red-700 border border-red-200"
+                                  >
+                                    {returnInvoiceNumber}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -4501,26 +4852,6 @@ const InvoicesPage = ({ invoices, searchTerm, setSearchTerm, dateRange, setDateR
                       <p className="text-sm text-gray-500">{invoice.items.length} items</p>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDownloadInvoice(invoice, "a4")
-                        }}
-                        className="px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-1 text-sm"
-                        title="Download A4 Invoice"
-                      >
-                        📄 A4
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDownloadInvoice(invoice, "pos")
-                        }}
-                        className="px-3 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center gap-1 text-sm"
-                        title="Download Receipt"
-                      >
-                        🧾 Receipt
-                      </button>
                       <button className="text-gray-400 hover:text-gray-600" onClick={() => { setModalInvoice(invoice); setIsModalOpen(true); }}>
                         <span className="text-xl">→</span>
                       </button>
@@ -4545,6 +4876,498 @@ const InvoicesPage = ({ invoices, searchTerm, setSearchTerm, dateRange, setDateR
     </div>
   )
 }
+
+// Return Invoice Modal (frontend only, no backend logic)
+const ReturnInvoiceModal = ({ invoice, onClose, fetchData, fetchInvoices }) => {
+  const [returnInvoices, setReturnInvoices] = useState([])
+  const [loadingReturns, setLoadingReturns] = useState(false)
+
+  // Fetch return invoices to determine what's already returned
+  useEffect(() => {
+    const fetchReturnInvoices = async () => {
+      if (!invoice.invoiceNumber) return
+      
+      setLoadingReturns(true)
+      try {
+        const response = await fetch(`${backEndURL}/api/invoices/returns/original/${invoice.invoiceNumber}`)
+        if (response.ok) {
+          const returns = await response.json()
+          setReturnInvoices(returns)
+        }
+      } catch (error) {
+        console.error('Error fetching return invoices:', error)
+      } finally {
+        setLoadingReturns(false)
+      }
+    }
+
+    fetchReturnInvoices()
+  }, [invoice.invoiceNumber])
+
+  // Calculate what items are already returned
+  const calculateReturnedItems = () => {
+    const returnedInfoMap = new Map()
+    
+    returnInvoices.forEach(retInvoice => {
+      if (retInvoice.items) {
+        retInvoice.items.forEach(retItem => {
+          const key = retItem.identifierValue ? `${retItem.id}-${retItem.identifierValue}` : retItem.id
+          const currentInfo = returnedInfoMap.get(key) || { quantity: 0, returnInvoices: [] }
+          currentInfo.quantity += (retItem.quantity || 1)
+          currentInfo.returnInvoices.push(retInvoice.invoiceNumber)
+          returnedInfoMap.set(key, currentInfo)
+        })
+      }
+    })
+    
+    return returnedInfoMap
+  }
+
+  // Flatten items: only break serial/IMEI products into individual lines and filter out fully returned items
+  const flattenItems = (items) => {
+    const returnedInfoMap = calculateReturnedItems()
+    const result = [];
+    
+    items.forEach(item => {
+      // Check if product has serial/IMEI identifiers
+      const hasIdentifiers = item.identifierType && item.identifierValue;
+      
+      if (hasIdentifiers) {
+        // For serial/IMEI products, create individual lines
+        for (let i = 0; i < item.quantity; i++) {
+          const key = `${item.id}-${item.identifierValue}`
+          const itemReturnedInfo = returnedInfoMap.get(key) || { quantity: 0, returnInvoices: [] }
+          const returnedQty = itemReturnedInfo.quantity
+          
+          // Check if this specific unit is returned
+          const isReturned = returnedQty > 0
+          result.push({
+            ...item,
+            quantity: 1, // Each line is for a single unit
+            uniqueLineId: `${item.id}-${item.identifierValue}-${i}`,
+            returnType: 'Good', // Default per row
+            alreadyReturned: isReturned,
+            isDisabled: isReturned,
+            returnedQty: returnedQty,
+            returnInvoices: itemReturnedInfo.returnInvoices
+          });
+        }
+      } else {
+        // For regular products, check if fully returned
+        const key = item.id
+        const itemReturnedInfo = returnedInfoMap.get(key) || { quantity: 0, returnInvoices: [] }
+        const returnedQty = itemReturnedInfo.quantity
+        const remainingQty = item.quantity - returnedQty
+        
+        // Only add if there are remaining items to return
+        if (remainingQty > 0) {
+          result.push({
+            ...item,
+            quantity: remainingQty, // Update quantity to remaining amount
+            uniqueLineId: `${item.id}`,
+            returnType: 'Good', // Default per row
+            alreadyReturned: false,
+            isDisabled: false,
+            originalQuantity: item.quantity,
+            returnedQuantity: returnedQty,
+            returnInvoices: itemReturnedInfo.returnInvoices
+          });
+        }
+      }
+    });
+    return result;
+  };
+
+  const [selectedItems, setSelectedItems] = useState(() =>
+    flattenItems(invoice.items).map(item => ({
+      ...item,
+      returnQty: 0, // Will be set based on selection
+      selected: false, // For checkbox
+      returnType: 'Good', // Default per row
+    }))
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [returnReason, setReturnReason] = useState('');
+  const [toast, setToast] = useState({ message: '', type: '', isVisible: false });
+
+  // Toggle selection for a line
+  const handleSelect = (idx) => {
+    setSelectedItems(items =>
+      items.map((item, i) => {
+        if (i === idx) {
+          const newSelected = !item.selected;
+          // For serial/IMEI products, set returnQty to 1 when selected
+          // For regular products, keep current returnQty or set to 1 if not set
+          const newReturnQty = newSelected 
+            ? (item.identifierType ? 1 : (item.returnQty || 1))
+            : 0;
+          return { ...item, selected: newSelected, returnQty: newReturnQty };
+        }
+        return item;
+      })
+    );
+  };
+
+  // Handle per-row return type change
+  const handleReturnTypeChange = (idx, value) => {
+    setSelectedItems(items =>
+      items.map((item, i) => i === idx ? { ...item, returnType: value } : item)
+    );
+  };
+
+  // Handle quantity change for non-serial/IMEI products
+  const handleQuantityChange = (idx, newQty) => {
+    setSelectedItems(items =>
+      items.map((item, i) => {
+        if (i === idx) {
+          const maxQty = item.quantity;
+          const validQty = Math.min(Math.max(0, newQty), maxQty);
+          return { 
+            ...item, 
+            returnQty: validQty,
+            selected: validQty > 0 // Auto-select if quantity > 0
+          };
+        }
+        return item;
+      })
+    );
+  };
+
+  // For serial/IMEI, allow identifier selection per line (optional: add UI if needed)
+
+  const handleConfirm = async () => {
+    setIsSubmitting(true);
+    const itemsToReturn = selectedItems.filter(item => item.selected);
+    if (itemsToReturn.length === 0) {
+      setToast({ message: 'Select at least one item to return.', type: 'warning', isVisible: true });
+      setIsSubmitting(false);
+      return;
+    }
+    const result = await submitReturnToBackend({
+      invoiceId: invoice.id,
+      returnType: undefined, // Not used, each item has its own
+      items: itemsToReturn.map(item => ({ 
+        ...item, 
+        quantity: item.returnQty || 1, // Use returnQty, default to 1 if not set
+        returnType: item.returnType 
+      })),
+      reason: returnReason,
+    });
+    if (result.success) {
+      // Calculate return amount for display
+      const returnAmount = itemsToReturn.reduce((sum, item) => {
+        const itemPrice = item.discountedPrice || item.price;
+        const itemQuantity = item.returnQty || 1;
+        return sum + (itemPrice * itemQuantity);
+      }, 0);
+      
+      const message = result.data?.returnInvoice 
+        ? `Return processed successfully! Return Invoice: ${result.data.returnInvoice.invoiceNumber}, Amount: Rs ${result.data.returnInvoice.returnAmount.toFixed(2)}`
+        : `Return processed successfully! Return Amount: Rs ${returnAmount.toFixed(2)}`;
+      
+      setToast({ message, type: 'success', isVisible: true });
+      // Re-fetch inventory and product data to update UI
+      if (typeof fetchData === 'function') await fetchData();
+      // Re-fetch invoices to update the list with return information
+      if (typeof fetchInvoices === 'function') await fetchInvoices();
+      setTimeout(() => {
+        setIsSubmitting(false);
+        onClose();
+      }, 1200);
+    } else {
+      setToast({ message: result.error, type: 'error', isVisible: true });
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl card-shadow fade-in">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Return Items for Invoice #{invoice.id}</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+        </div>
+        
+        {loadingReturns ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <p className="text-gray-600">Loading available items...</p>
+          </div>
+        ) : (
+          <>
+            <div className="mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Reason (optional)</label>
+              <input type="text" value={returnReason} onChange={e => setReturnReason(e.target.value)} className="w-full px-2 py-1 border border-gray-300 rounded" />
+            </div>
+            
+            {/* Summary of available vs returned items */}
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Total Items: {selectedItems.length}</span>
+                <span className="text-green-600">Available: {selectedItems.filter(item => !item.isDisabled).length}</span>
+                <span className="text-red-600">Already Returned: {selectedItems.filter(item => item.isDisabled).length}</span>
+              </div>
+            </div>
+            
+            {selectedItems.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>No items found in this invoice.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm mb-4">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="px-2 py-2 text-left">Select</th>
+                      <th className="px-2 py-2 text-left">Product</th>
+                      <th className="px-2 py-2 text-left">Available Qty</th>
+                      <th className="px-2 py-2 text-left">Return Qty</th>
+                      <th className="px-2 py-2 text-left">IMEI/Serial</th>
+                      <th className="px-2 py-2 text-left">Return Type</th>
+                      <th className="px-2 py-2 text-left">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedItems.map((item, idx) => {
+                      // Check if another line with the same identifier is already selected (excluding this line)
+                      const isDuplicateSelected = selectedItems.some(
+                        (other, otherIdx) =>
+                          otherIdx !== idx &&
+                          other.selected &&
+                          ((item.identifierValue && other.identifierValue === item.identifierValue) ||
+                            (!item.identifierValue && !item.identifierType && other.id === item.id && !other.identifierType))
+                      );
+                      return (
+                        <tr key={item.uniqueLineId || idx} className={item.isDisabled ? 'bg-gray-100 opacity-60' : ''}>
+                          <td className="px-2 py-2">
+                            <input
+                              type="checkbox"
+                              checked={!!item.selected}
+                              onChange={() => handleSelect(idx)}
+                              disabled={isDuplicateSelected || item.isDisabled}
+                            />
+                          </td>
+                          <td className={`px-2 py-2 ${item.isDisabled ? 'line-through text-gray-500' : ''}`}>
+                            {item.name}
+                            {item.originalQuantity && item.originalQuantity !== item.quantity && (
+                              <div className="text-xs text-gray-500">
+                                Original: {item.originalQuantity} | Returned: {item.returnedQuantity}
+                              </div>
+                            )}
+                            {item.returnInvoices && item.returnInvoices.length > 0 && (
+                              <div className="text-xs text-red-500 mt-1">
+                                Returned via: {item.returnInvoices.join(', ')}
+                              </div>
+                            )}
+                          </td>
+                          <td className={`px-2 py-2 font-semibold ${item.isDisabled ? 'text-gray-500' : 'text-green-600'}`}>
+                            {item.quantity}
+                          </td>
+                          <td className="px-2 py-2">
+                            {item.identifierType ? (
+                              // For serial/IMEI products, show fixed quantity of 1
+                              <span className="text-gray-500">1</span>
+                            ) : (
+                              // For regular products, allow quantity input
+                              <input
+                                type="number"
+                                min="0"
+                                max={item.quantity}
+                                value={item.returnQty || 0}
+                                onChange={(e) => handleQuantityChange(idx, parseInt(e.target.value) || 0)}
+                                className="w-16 px-1 py-1 border border-gray-300 rounded text-center"
+                                disabled={!item.selected || item.isDisabled}
+                              />
+                            )}
+                          </td>
+                          <td className={`px-2 py-2 ${item.isDisabled ? 'text-gray-500' : ''}`}>
+                            {item.identifierValue || '-'}
+                          </td>
+                          <td className="px-2 py-2">
+                            <select
+                              value={item.returnType}
+                              onChange={e => handleReturnTypeChange(idx, e.target.value)}
+                              className="px-2 py-1 border border-gray-300 rounded"
+                              disabled={!item.selected || item.isDisabled}
+                            >
+                              <option value="Good">Good</option>
+                              <option value="Damaged">Damaged</option>
+                              <option value="Opened">Opened</option>
+                            </select>
+                          </td>
+                          <td className="px-2 py-2">
+                            {item.isDisabled ? (
+                              <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">Already Returned</span>
+                            ) : item.selected ? (
+                              <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">Selected</span>
+                            ) : (
+                              <span className="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">Available</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={onClose}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirm}
+                disabled={isSubmitting || selectedItems.every(item => !item.selected)}
+                className={`flex-1 btn-primary px-4 py-2 rounded-lg font-medium ${isSubmitting ? 'opacity-60 cursor-not-allowed' : ''}`}
+              >
+                {isSubmitting ? 'Processing...' : 'Confirm Return'}
+              </button>
+            </div>
+          </>
+        )}
+        
+        <OptimizedToast message={toast.message} type={toast.type} isVisible={toast.isVisible} onClose={() => setToast({ ...toast, isVisible: false })} />
+      </div>
+    </div>
+  );
+}
+
+const downloadInvoiceAsPDF = async (invoice, format = 'a4') => {
+  if (!invoice) return;
+
+  // console.log('Download PDF invoice data:', {
+  //   originalCustomerId: invoice.customerId,
+  //   originalCustomer: invoice.customer,
+  //   customerName: invoice.customerName,
+  //   customerPhone: invoice.customerPhone,
+  //   customerEmail: invoice.customerEmail,
+  //   format: format
+  // });
+
+  // Extract customerId and customer data
+  let customerId = null;
+  let customerName = null;
+  let customerPhone = null;
+  let customerEmail = null;
+  let customerCompany = null;
+
+  // Get customer info from invoice
+  const customerInfo = getCustomerInfo(invoice);
+  // console.log('Customer info from getCustomerInfo (PDF):', customerInfo);
+
+  if (invoice.customerId) {
+    customerId = invoice.customerId;
+  } else if (customerInfo && customerInfo.customerId) {
+    customerId = customerInfo.customerId;
+  }
+
+  // Extract customer details from customer array or fetch them
+  if (customerInfo) {
+    customerName = customerInfo.customerName;
+    customerPhone = customerInfo.customerPhone;
+    customerEmail = customerInfo.customerEmail;
+    customerCompany = customerInfo.customerCompany;
+    // console.log('Using customer info from getCustomerInfo (PDF):', {
+    //   customerName,
+    //   customerPhone,
+    //   customerEmail,
+    //   customerCompany
+    // });
+  } else if (customerId) {
+    // Fallback: fetch customer details if not in array
+    try {
+      const response = await fetch(`${backEndURL}/api/contacts/${customerId}`);
+      if (response.ok) {
+        const customerDetails = await response.json();
+        customerName = customerDetails.name;
+        customerPhone = customerDetails.phone;
+        customerEmail = customerDetails.email;
+        customerCompany = customerDetails.company;
+      }
+    } catch (error) {
+      console.error('Error fetching customer details for PDF:', error);
+    }
+  }
+
+  // console.log('Extracted customer data (PDF):', {
+  //   customerId,
+  //   customerName,
+  //   customerPhone,
+  //   customerEmail,
+  //   customerCompany
+  // });
+
+  // Create a modified invoice object with customer data as props
+  const modifiedInvoice = {
+    ...invoice,
+    customerId: customerId,
+    customerName: customerName,
+    customerPhone: customerPhone,
+    customerEmail: customerEmail,
+    customerCompany: customerCompany
+  };
+
+  // console.log('Modified invoice for PDF download:', {
+  //   customerId: modifiedInvoice.customerId,
+  //   customerName: modifiedInvoice.customerName,
+  //   customerPhone: modifiedInvoice.customerPhone,
+  //   customerEmail: modifiedInvoice.customerEmail,
+  //   customerCompany: modifiedInvoice.customerCompany
+  // });
+
+  if (format === 'a4') {
+    await AdvanceA4Invoice(modifiedInvoice); // assumes it handles pdf generation and saving
+  } else if (format === 'pos') {
+    await AdvanceThermalInvoice(modifiedInvoice); // assumes it handles pdf generation and saving
+  } else {
+    console.error('Unsupported format:', format);
+  }
+};
+
+// Helper function to extract customer information from customer array
+const getCustomerInfo = (invoice) => {
+  if (!invoice) return null;
+
+  // console.log('getCustomerInfo called with invoice:', {
+  //   id: invoice.id,
+  //   customerId: invoice.customerId,
+  //   customer: invoice.customer,
+  //   customerName: invoice.customerName,
+  //   customerPhone: invoice.customerPhone,
+  //   customerEmail: invoice.customerEmail
+  // });
+
+  // Handle new array structure
+  if (Array.isArray(invoice.customer) && invoice.customer.length > 0) {
+    const customerData = invoice.customer[0];
+    // console.log('getCustomerInfo: Found customer data in array:', customerData);
+    return customerData; // Return first customer in array
+  }
+
+  // Handle old object structure for backward compatibility
+  if (invoice.customer && typeof invoice.customer === 'object' && !Array.isArray(invoice.customer)) {
+    // console.log('getCustomerInfo: Found customer data in object:', invoice.customer);
+    return invoice.customer;
+  }
+
+  // Check if customer data is directly on the invoice object
+  if (invoice.customerName || invoice.customerPhone || invoice.customerEmail) {
+    return {
+      customerId: invoice.customerId,
+      customerName: invoice.customerName,
+      customerPhone: invoice.customerPhone,
+      customerEmail: invoice.customerEmail,
+      customerCompany: invoice.customerCompany
+    };
+  }
+
+  return null;
+};
 
 // Place this component at the end of the file
 const IdentifierSelectionModal = ({
@@ -4584,7 +5407,7 @@ const IdentifierSelectionModal = ({
     const handleKeyDown = (e) => {
       if (!filteredIdentifiers.length) return;
       if (e.key === "ArrowDown") {
-    e.preventDefault();
+        e.preventDefault();
         setHighlightedIndex((prev) => (prev + 1) % filteredIdentifiers.length);
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
@@ -4698,6 +5521,11 @@ const IdentifierSelectionModal = ({
                               Purchase: {identifier.purchaseId}
                             </div>
                           )}
+                          {identifier.productStatus && (
+                            <div className={`text-xs font-semibold ${identifier.productStatus === 'Damaged' ? 'text-red-600' : 'text-blue-600'}`}>
+                              Status: {identifier.productStatus}
+                            </div>
+                          )}
                         </div>
                         {isHighlighted && <div className="ml-2 text-blue-400">⬅️</div>}
                       </div>
@@ -4745,136 +5573,33 @@ const IdentifierSelectionModal = ({
   );
 };
 
-const downloadInvoiceAsPDF = async (invoice, format = 'a4') => {
-  if (!invoice) return;
-
-  // console.log('Download PDF invoice data:', {
-  //   originalCustomerId: invoice.customerId,
-  //   originalCustomer: invoice.customer,
-  //   customerName: invoice.customerName,
-  //   customerPhone: invoice.customerPhone,
-  //   customerEmail: invoice.customerEmail,
-  //   format: format
-  // });
-
-  // Extract customerId and customer data
-  let customerId = null;
-  let customerName = null;
-  let customerPhone = null;
-  let customerEmail = null;
-  let customerCompany = null;
-
-  // Get customer info from invoice
-  const customerInfo = getCustomerInfo(invoice);
-  // console.log('Customer info from getCustomerInfo (PDF):', customerInfo);
-  
-  if (invoice.customerId) {
-    customerId = invoice.customerId;
-  } else if (customerInfo && customerInfo.customerId) {
-    customerId = customerInfo.customerId;
-  }
-
-  // Extract customer details from customer array or fetch them
-  if (customerInfo) {
-    customerName = customerInfo.customerName;
-    customerPhone = customerInfo.customerPhone;
-    customerEmail = customerInfo.customerEmail;
-    customerCompany = customerInfo.customerCompany;
-    // console.log('Using customer info from getCustomerInfo (PDF):', {
-    //   customerName,
-    //   customerPhone,
-    //   customerEmail,
-    //   customerCompany
-    // });
-  } else if (customerId) {
-    // Fallback: fetch customer details if not in array
-    try {
-      const response = await fetch(`${backEndURL}/api/contacts/${customerId}`);
-      if (response.ok) {
-        const customerDetails = await response.json();
-        customerName = customerDetails.name;
-        customerPhone = customerDetails.phone;
-        customerEmail = customerDetails.email;
-        customerCompany = customerDetails.company;
-      }
-    } catch (error) {
-      console.error('Error fetching customer details for PDF:', error);
+// --- Add this helper function at the top-level (after imports) ---
+const submitReturnToBackend = async ({ invoiceId, returnType, items, reason }) => {
+  try {
+    const response = await fetch(`${backEndURL}/api/returns`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        invoiceId,
+        returnType,
+        items,
+        reason,
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to process return');
+    
+    // Handle the new return invoice response
+    if (data.returnInvoice) {
+      console.log('Return invoice created:', data.returnInvoice);
+      // You can add additional logic here to handle the return invoice
+      // For example, show a success message with return amount
     }
+    
+    return { success: true, data };
+  } catch (err) {
+    return { success: false, error: err.message };
   }
-
-  // console.log('Extracted customer data (PDF):', {
-  //   customerId,
-  //   customerName,
-  //   customerPhone,
-  //   customerEmail,
-  //   customerCompany
-  // });
-
-  // Create a modified invoice object with customer data as props
-  const modifiedInvoice = {
-    ...invoice,
-    customerId: customerId,
-    customerName: customerName,
-    customerPhone: customerPhone,
-    customerEmail: customerEmail,
-    customerCompany: customerCompany
-  };
-
-  // console.log('Modified invoice for PDF download:', {
-  //   customerId: modifiedInvoice.customerId,
-  //   customerName: modifiedInvoice.customerName,
-  //   customerPhone: modifiedInvoice.customerPhone,
-  //   customerEmail: modifiedInvoice.customerEmail,
-  //   customerCompany: modifiedInvoice.customerCompany
-  // });
-
-  if (format === 'a4') {
-    await AdvanceA4Invoice(modifiedInvoice); // assumes it handles pdf generation and saving
-  } else if (format === 'pos') {
-    await AdvanceThermalInvoice(modifiedInvoice); // assumes it handles pdf generation and saving
-      } else {
-    console.error('Unsupported format:', format);
-  }
-};
-
-// Helper function to extract customer information from customer array
-const getCustomerInfo = (invoice) => {
-  if (!invoice) return null;
-  
-  // console.log('getCustomerInfo called with invoice:', {
-  //   id: invoice.id,
-  //   customerId: invoice.customerId,
-  //   customer: invoice.customer,
-  //   customerName: invoice.customerName,
-  //   customerPhone: invoice.customerPhone,
-  //   customerEmail: invoice.customerEmail
-  // });
-  
-  // Handle new array structure
-  if (Array.isArray(invoice.customer) && invoice.customer.length > 0) {
-    const customerData = invoice.customer[0];
-    // console.log('getCustomerInfo: Found customer data in array:', customerData);
-    return customerData; // Return first customer in array
-  }
-  
-  // Handle old object structure for backward compatibility
-  if (invoice.customer && typeof invoice.customer === 'object' && !Array.isArray(invoice.customer)) {
-    // console.log('getCustomerInfo: Found customer data in object:', invoice.customer);
-    return invoice.customer;
-  }
-  
-  // Check if customer data is directly on the invoice object
-  if (invoice.customerName || invoice.customerPhone || invoice.customerEmail) {
-    return {
-      customerId: invoice.customerId,
-      customerName: invoice.customerName,
-      customerPhone: invoice.customerPhone,
-      customerEmail: invoice.customerEmail,
-      customerCompany: invoice.customerCompany
-    };
-  }
-  
-  return null;
 };
 
 export default EnhancedBillingPOSSystem
