@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const certificateLevelController = require("../../controllers/system/certificateLevelController");
+const certificateLevelController = require('../../controllers/system/certificateLevelController');
 
 router.get("/", certificateLevelController.getCertificateLevels);
 router.post("/", certificateLevelController.addCertificateLevel);

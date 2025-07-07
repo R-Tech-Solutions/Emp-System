@@ -220,58 +220,71 @@ const AdvanceA4Invoice = ({ invoice: invoiceProp, invoiceDocumentId }) => {
       }}></div>
 
       <div style={{ position: 'relative', zIndex: 1 }}>
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: 20, marginBottom: 30, borderBottom: '4px solid #1e40af' }}>
-          <div style={{ flex: 1 }}>
-            {businessSettings.logo && (
-              <img
-                src={businessSettings.logo}
-                alt="Logo"
-                style={{
-                  width: 100,
-                  marginBottom: 10,
-                  backgroundColor: '#fff',
-                  padding: 5,
-                  borderRadius: 4
-                }}
-              />
-            )}
-            {businessSettings.businessName && (
-              <div style={{ fontSize: 28, fontWeight: 'bold', color: '#1e40af' }}>
-                {businessSettings.businessName}
+        {/* Header - Updated to match old style */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          paddingBottom: 20,
+          borderBottom: '4px solid #1e40af',
+          marginBottom: 0
+        }}>
+          {/* Left: Logo + Company Info */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+              {businessSettings.logo && (
+                <img
+                  src={businessSettings.logo}
+                  alt="Logo"
+                  style={{
+                    width: 80,
+                    height: 80,
+                    objectFit: 'contain',
+                    marginRight: 16,
+                    background: '#fff',
+                    borderRadius: 8,
+                    border: '1px solid #eee'
+                  }}
+                />
+              )}
+              <div>
+                <div style={{ fontSize: 26, fontWeight: 'bold', color: '#1e40af', marginBottom: 2 }}>
+                  {businessSettings.businessName || 'Company Name'}
+                </div>
+                {businessSettings.email && (
+                  <div style={{ fontSize: 14, color: '#222' }}>{businessSettings.email}</div>
+                )}
+                {businessSettings.address && (
+                  <div style={{ fontSize: 14, color: '#222' }}>{businessSettings.address}</div>
+                )}
+                {businessSettings.registrationNumber && (
+                  <div style={{ fontSize: 14, color: '#222', fontWeight: 'bold' }}>
+                    Reg No: <span style={{ fontWeight: 'bold' }}>{businessSettings.registrationNumber}</span>
+                  </div>
+                )}
+                {businessSettings.website && (
+                  <div style={{ fontSize: 14, color: '#222' }}>
+                    Website: {businessSettings.website}
+                  </div>
+                )}
+                {businessSettings.gstNumber && (
+                  <div style={{ fontSize: 14, color: '#222', fontWeight: 'bold' }}>
+                    GST: <span style={{ fontWeight: 'bold' }}>{businessSettings.gstNumber}</span>
+                  </div>
+                )}
               </div>
-            )}
-            {businessSettings.contact && (
-              <div style={{ fontSize: 14, color: '#555' }}>{businessSettings.contact}</div>
-            )}
-            {businessSettings.address && (
-              <div style={{ fontSize: 14, color: '#555' }}>{businessSettings.address}</div>
-            )}
-            {businessSettings.registrationNumber && (
-              <div style={{ fontSize: 14, color: '#555', fontWeight: 'bold' }}>
-                Reg No: {businessSettings.registrationNumber}
-              </div>
-            )}
-            {businessSettings.website && (
-              <div style={{ fontSize: 14, color: '#555' }}>
-                Website: {businessSettings.website}
-              </div>
-            )}
-            {businessSettings.gstNumber && (
-              <div style={{ fontSize: 14, color: '#555', fontWeight: 'bold' }}>
-                GST: {businessSettings.gstNumber}
-              </div>
-            )}
+            </div>
           </div>
-          <div style={{ flex: 1, textAlign: 'right' }}>
-            <div style={{ fontSize: 42, fontWeight: 'bold', color: '#333', marginBottom: 10 }}>
+          {/* Right: Invoice Info */}
+          <div style={{ flex: 1, textAlign: 'right', alignSelf: 'flex-start' }}>
+            <div style={{ fontSize: 40, fontWeight: 'bold', color: '#333', marginBottom: 10 }}>
               INVOICE
             </div>
-            <div style={{ fontSize: 14, display: 'flex', justifyContent: 'flex-end', gap: '5px' }}>
-              <b style={{ color: '#555' }}>Invoice Number:</b> {invoice.invoiceNumber || invoice.id || ''}
+            <div style={{ fontSize: 15, color: '#222', marginBottom: 2 }}>
+              <b>Invoice Number:</b> {invoice.invoiceNumber || invoice.id || ''}
             </div>
-            <div style={{ fontSize: 14, display: 'flex', justifyContent: 'flex-end', gap: '5px' }}>
-              <b style={{ color: '#555' }}>Date:</b> {invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString() : ''}
+            <div style={{ fontSize: 15, color: '#222' }}>
+              <b>Date:</b> {invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString() : ''}
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const purchaseController = require("../controllers/PurchaseController");
+const purchaseController = require('../controllers/PurchaseController');
 
 // Create a new purchase
 router.post("/", purchaseController.createPurchase);

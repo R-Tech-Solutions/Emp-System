@@ -1,17 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const CrmController = require('../controllers/CrmController');
+const crmController = require('../controllers/CrmController');
 
 // Create a new lead
-router.post('/', CrmController.createLead);
+router.post('/', crmController.createLead);
 
 // Get all leads
-router.get('/', CrmController.getLeads);
+router.get('/', crmController.getLeads);
 
 // Get a single lead by ID
-router.get('/:id', CrmController.getLeadById);
+router.get('/:id', crmController.getLeadById);
 
 // Update a lead
-router.put('/:id', CrmController.updateLead);
+router.put('/:id', crmController.updateLead);
 
 module.exports = router;

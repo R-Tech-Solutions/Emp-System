@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const productController = require("../controllers/productController");
+const productController = require('../controllers/productController');
 
 // Use the multer middleware in controller for create and update
 router.post("/", productController.createProduct);

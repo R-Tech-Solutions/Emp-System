@@ -5,7 +5,7 @@ import axios from "axios"
 import DotSpinner from "../loaders/Loader"
 import AdvanceA4Invoice from "./Invoice/AdvanceA4invoice"
 import AdvanceThermalInvoice from "./Invoice/Advancethermalinvoice"
-// Enhanced Print Styles for both POS and A4 formats
+
 
 const printStyles = `
 @media print {

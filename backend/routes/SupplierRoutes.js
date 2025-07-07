@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const supplierController = require("../controllers/SupplierController");
+const supplierController = require('../controllers/SupplierController');
 
 // Create a new supplier record
 router.post("/", supplierController.createSupplier);
