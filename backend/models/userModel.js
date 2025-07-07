@@ -18,10 +18,11 @@ class User {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
-
+      if (userData.role === 'super-admin' && userData.mobileNumber) {
+        user.mobileNumber = userData.mobileNumber;
+      }
       // Save to Firestore
       const userRef = await db.collection('users').add(user);
-
       return { id: userRef.id, ...user };
     } catch (error) {
       throw error;
@@ -65,11 +66,14 @@ class User {
   static async update(uid, updateData) {
     try {
       // Update Firestore document
-      await db.collection('users').doc(uid).update({
+      const updateObj = {
         ...updateData,
         updatedAt: new Date().toISOString(),
-      });
-
+      };
+      if (updateData.role === 'super-admin' && updateData.mobileNumber) {
+        updateObj.mobileNumber = updateData.mobileNumber;
+      }
+      await db.collection('users').doc(uid).update(updateObj);
       const updatedDoc = await db.collection('users').doc(uid).get();
       return { id: updatedDoc.id, ...updatedDoc.data() };
     } catch (error) {

@@ -64,19 +64,45 @@ export default function AdvancedLogin() {
     }
     setIsLoading(true);
     try {
-      // Superuser login
+      // Superuser login - also get JWT token from backend
       if (
         formData.email === VALID_EMAIL &&
         formData.password === VALID_PASSWORD
       ) {
-        setSuccess(true);
-        sessionStorage.setItem("isLoggedIn", "true");
-        sessionStorage.setItem("email", formData.email);
-        sessionStorage.setItem("restrictedUser", "true");
-        setTimeout(() => {
-          navigate("/user");
-        }, 1000);
-        return;
+        try {
+          // Get JWT token from backend for the special admin
+          const adminResponse = await fetch(`${backEndURL}/api/users/login`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: formData.email,
+              password: formData.password,
+            }),
+          });
+          
+          const adminResult = await adminResponse.json();
+          
+          if (adminResponse.ok && adminResult.token) {
+            setSuccess(true);
+            sessionStorage.setItem("isLoggedIn", "true");
+            sessionStorage.setItem("email", formData.email);
+            sessionStorage.setItem("restrictedUser", "true");
+            sessionStorage.setItem("jwtToken", adminResult.token);
+            sessionStorage.setItem("userData", JSON.stringify(adminResult.user));
+            setTimeout(() => {
+              navigate("/user");
+            }, 1000);
+            return;
+          } else {
+            setErrors({ form: "Failed to authenticate admin user." });
+            return;
+          }
+        } catch (error) {
+          setErrors({ form: "Failed to authenticate admin user." });
+          return;
+        }
       }
   
       // Normal user login (check database)

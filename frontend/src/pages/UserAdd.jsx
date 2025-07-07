@@ -2,9 +2,32 @@ import { useState, useEffect } from "react";
 import axios from "axios"; // Import axios for API calls
 import { PlusIcon, SearchIcon, PencilIcon, TrashIcon, XIcon, EyeIcon, EyeOffIcon } from "lucide-react"
 import { backEndURL } from "../Backendurl";
-import { hasPermission } from "../utils/auth";
+import { hasPermission, getUserData } from "../utils/auth";
+import { useNavigate } from "react-router-dom";
 
 export default function UserManagementPage() {
+  const navigate = useNavigate();
+  const VALID_EMAIL = "info@rtechsl.lk";
+  
+  // Check if user has access to this page
+  useEffect(() => {
+    const isLoggedIn = sessionStorage.getItem("isLoggedIn") === "true";
+    const email = sessionStorage.getItem("email");
+    const restrictedUser = sessionStorage.getItem("restrictedUser") === "true";
+    const userData = JSON.parse(sessionStorage.getItem("userData") || "{}");
+    
+    // Allow access if:
+    // 1. User is logged in with the specific hardcoded credentials, OR
+    // 2. User is logged in and has admin role
+    const hasValidCredentials = email === VALID_EMAIL && restrictedUser;
+    const isAdminUser = userData.role === "admin";
+    
+    if (!isLoggedIn || (!hasValidCredentials && !isAdminUser)) {
+      navigate("/login");
+      return;
+    }
+  }, [navigate]);
+
   const initialUsers = [
   ]
   const [users, setUsers] = useState(initialUsers)
@@ -19,6 +42,7 @@ export default function UserManagementPage() {
   const [toast, setToast] = useState({ show: false, message: "", type: "" })
   const [showPassword, setShowPassword] = useState(false)
   const [showEditPassword, setShowEditPassword] = useState(false)
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true)
   
   // Define sidebar permissions structure
   const sidebarPermissions = {
@@ -44,7 +68,9 @@ export default function UserManagementPage() {
       supplier: true,
       cashbook: true,
       income: true,
-      invoice: true
+      invoice: true,
+      "return-dashboard": true,
+      customerAccounts: true
     }
   }
 
@@ -54,32 +80,50 @@ export default function UserManagementPage() {
     name: "",
     role: "user",
     status: "active",
-    permissions: {}
+    permissions: {},
+    mobileNumber: "" // New field for Super Admin
   })
   const [formErrors, setFormErrors] = useState({})
   const [isLoading, setIsLoading] = useState(false)
 
-  // Check if user has permission to access this page
-  const canAccessUserManagement = hasPermission('user');
-
   // Fetch users from the backend
   useEffect(() => {
     const fetchUsers = async () => {
+      setIsLoadingUsers(true);
       try {
         const response = await axios.get(`${backEndURL}/api/users`);
-        setUsers(response.data.data);
+        if (response.data.success) {
+          setUsers(response.data.data);
+          setFilteredUsers(response.data.data);
+        } else {
+          showToast("Failed to fetch users", "error");
+        }
       } catch (error) {
         console.error("Error fetching users:", error);
         if (error.response?.status === 403) {
           showToast("You don't have permission to access user management", "error");
+        } else if (error.response?.status === 401) {
+          showToast("Please login again", "error");
+        } else {
+          showToast("Failed to fetch users. Please try again.", "error");
         }
+      } finally {
+        setIsLoadingUsers(false);
       }
     };
 
-    if (canAccessUserManagement) {
+    // Fetch users if user has proper access (admin or special credentials)
+    const email = sessionStorage.getItem("email");
+    const restrictedUser = sessionStorage.getItem("restrictedUser") === "true";
+    const userData = JSON.parse(sessionStorage.getItem("userData") || "{}");
+    
+    const hasValidCredentials = email === VALID_EMAIL && restrictedUser;
+    const isAdminUser = userData.role === "admin";
+    
+    if (hasValidCredentials || isAdminUser) {
       fetchUsers();
     }
-  }, [canAccessUserManagement]);
+  }, []);
 
   // Filter users based on search term and filters
   useEffect(() => {
@@ -127,6 +171,15 @@ export default function UserManagementPage() {
       errors.name = "Name is required"
     }
 
+    // Mobile number validation for Super Admin
+    if (formData.role === "super-admin") {
+      if (!formData.mobileNumber) {
+        errors.mobileNumber = "Mobile number is required for Super Admin"
+      } else if (!/^\+?[\d\s\-\(\)]{10,}$/.test(formData.mobileNumber)) {
+        errors.mobileNumber = "Please enter a valid mobile number"
+      }
+    }
+
     setFormErrors(errors)
     return Object.keys(errors).length === 0
   }
@@ -143,7 +196,14 @@ export default function UserManagementPage() {
 
     // Handle role change
     if (name === "role") {
-      if (value === "admin") {
+      if (value === "super-admin") {
+        // Super Admin gets all permissions and requires mobile number
+        setFormData((prev) => ({ 
+          ...prev, 
+          [name]: value,
+          permissions: {} // Empty object means all permissions for super admin
+        }))
+      } else if (value === "admin") {
         // Admin gets all permissions
         setFormData((prev) => ({ 
           ...prev, 
@@ -156,6 +216,14 @@ export default function UserManagementPage() {
           ...prev, 
           [name]: value,
           permissions: {}
+        }))
+      }
+      
+      // Clear mobile number if not Super Admin
+      if (value !== "super-admin") {
+        setFormData((prev) => ({ 
+          ...prev, 
+          mobileNumber: ""
         }))
       }
     }
@@ -287,7 +355,8 @@ export default function UserManagementPage() {
       name: user.name,
       role: user.role,
       status: user.status,
-      permissions: user.permissions || {}
+      permissions: user.permissions || {},
+      mobileNumber: user.mobileNumber || ""
     })
     setIsEditModalOpen(true)
   }
@@ -306,7 +375,8 @@ export default function UserManagementPage() {
       name: "",
       role: "user",
       status: "active",
-      permissions: {}
+      permissions: {},
+      mobileNumber: ""
     })
     setFormErrors({})
     setShowPassword(false)
@@ -318,7 +388,28 @@ export default function UserManagementPage() {
       {/* Header */}
       <header className="bg-surface shadow-md border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-3xl font-bold text-text-primary">User Management</h1>
+          <div className="flex justify-between items-center">
+            <h1 className="text-3xl font-bold text-text-primary">User Management</h1>
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-text-secondary">
+                Logged in as: <span className="font-medium text-text-primary">
+                  {JSON.parse(sessionStorage.getItem("userData") || "{}").name || sessionStorage.getItem("email")}
+                </span>
+                <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                  {JSON.parse(sessionStorage.getItem("userData") || "{}").role || "Admin"}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  sessionStorage.clear();
+                  navigate("/login");
+                }}
+                className="px-3 py-1 bg-accent hover:bg-accent/80 text-text-primary text-sm font-medium rounded-md transition-colors"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -357,9 +448,51 @@ export default function UserManagementPage() {
               onChange={(e) => setStatusFilter(e.target.value)}
             >
               <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="active">Active Only</option>
+              <option value="inactive">Inactive Only</option>
             </select>
+
+            <button
+              className={`px-3 py-2 rounded-md font-medium text-sm transition-colors ${
+                statusFilter === 'active' 
+                  ? 'bg-green-100 text-green-800 border border-green-300' 
+                  : 'bg-background border border-border text-text-primary hover:bg-surface'
+              }`}
+              onClick={() => setStatusFilter(statusFilter === 'active' ? 'all' : 'active')}
+            >
+              Show Active
+            </button>
+
+            <button
+              className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-text-primary font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-secondary/20 focus:ring-offset-2 focus:ring-offset-background transition-colors flex items-center gap-2"
+              onClick={() => {
+                const fetchUsers = async () => {
+                  setIsLoadingUsers(true);
+                  try {
+                    const response = await axios.get(`${backEndURL}/api/users`);
+                    if (response.data.success) {
+                      setUsers(response.data.data);
+                      setFilteredUsers(response.data.data);
+                      showToast("Users refreshed successfully");
+                    } else {
+                      showToast("Failed to fetch users", "error");
+                    }
+                  } catch (error) {
+                    console.error("Error fetching users:", error);
+                    showToast("Failed to refresh users", "error");
+                  } finally {
+                    setIsLoadingUsers(false);
+                  }
+                };
+                fetchUsers();
+              }}
+              disabled={isLoadingUsers}
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span>Refresh</span>
+            </button>
 
             <button
               className="px-4 py-2 bg-primary hover:bg-primary-dark text-white font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 focus:ring-offset-background transition-colors flex items-center gap-2"
@@ -373,6 +506,51 @@ export default function UserManagementPage() {
             </button>
           </div>
         </div>
+
+        {/* User Statistics */}
+        {!isLoadingUsers && (
+          <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-surface rounded-lg p-4 border border-border">
+              <div className="flex items-center">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                  </svg>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-text-secondary">Total Users</p>
+                  <p className="text-2xl font-bold text-text-primary">{users.length}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-surface rounded-lg p-4 border border-border">
+              <div className="flex items-center">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-text-secondary">Active Users</p>
+                  <p className="text-2xl font-bold text-green-600">{users.filter(user => user.status === 'active').length}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-surface rounded-lg p-4 border border-border">
+              <div className="flex items-center">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-text-secondary">Admins</p>
+                  <p className="text-2xl font-bold text-blue-600">{users.filter(user => user.role === 'admin').length}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Users Table */}
         <div className="bg-surface rounded-lg shadow-lg overflow-hidden border border-border">
@@ -419,7 +597,16 @@ export default function UserManagementPage() {
                 </tr>
               </thead>
               <tbody className="bg-background divide-y divide-border">
-                {filteredUsers.length > 0 ? (
+                {isLoadingUsers ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-8 text-center">
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                        <span className="ml-2 text-sm text-text-secondary">Loading users...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : filteredUsers.length > 0 ? (
                   filteredUsers.map((user) => (
                     <tr key={user.id} className="hover:bg-surface/50">
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -440,21 +627,28 @@ export default function UserManagementPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
                           className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            user.status === "active" ? "bg-secondary/20 text-text-primary" : "bg-accent/20 text-text-primary"
+                            user.status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                           }`}
                         >
                           {user.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">{user.createdAt}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
+                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button
                           className="text-primary hover:text-primary-dark mr-4"
                           onClick={() => openEditModal(user)}
+                          title="Edit user"
                         >
                           <PencilIcon className="h-5 w-5" />
                         </button>
-                        <button className="text-accent hover:text-accent/80" onClick={() => openDeleteModal(user)}>
+                        <button 
+                          className="text-accent hover:text-accent/80" 
+                          onClick={() => openDeleteModal(user)}
+                          title="Delete user"
+                        >
                           <TrashIcon className="h-5 w-5" />
                         </button>
                       </td>
@@ -462,8 +656,8 @@ export default function UserManagementPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="6" className="px-6 py-4 text-center text-sm text-text-muted">
-                      No users found matching your criteria
+                    <td colSpan="6" className="px-6 py-8 text-center text-sm text-text-muted">
+                      {users.length === 0 ? "No users found in the system" : "No users found matching your criteria"}
                     </td>
                   </tr>
                 )}
@@ -572,8 +766,30 @@ export default function UserManagementPage() {
                       >
                         <option value="user">User</option>
                         <option value="admin">Admin</option>
+                        <option value="super-admin">Super Admin</option>
                       </select>
                     </div>
+
+                    {/* Mobile Number Field - Only for Super Admin */}
+                    {formData.role === "super-admin" && (
+                      <div>
+                        <label htmlFor="mobileNumber" className="block text-sm font-medium text-text-secondary mb-1">
+                          Mobile Number <span className="text-accent">*</span>
+                        </label>
+                        <input
+                          id="mobileNumber"
+                          name="mobileNumber"
+                          type="tel"
+                          value={formData.mobileNumber}
+                          onChange={handleChange}
+                          className={`w-full px-4 py-2 rounded-md bg-background border ${
+                            formErrors.mobileNumber ? "border-accent" : "border-border"
+                          } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
+                          placeholder="+1234567890"
+                        />
+                        {formErrors.mobileNumber && <p className="mt-1 text-sm text-accent">{formErrors.mobileNumber}</p>}
+                      </div>
+                    )}
 
                     {/* Permissions Section - Only show for user role */}
                     {formData.role === "user" && (
@@ -723,8 +939,30 @@ export default function UserManagementPage() {
                       >
                         <option value="user">User</option>
                         <option value="admin">Admin</option>
+                        <option value="super-admin">Super Admin</option>
                       </select>
                     </div>
+
+                    {/* Mobile Number Field - Only for Super Admin */}
+                    {formData.role === "super-admin" && (
+                      <div>
+                        <label htmlFor="mobileNumber" className="block text-sm font-medium text-text-secondary mb-1">
+                          Mobile Number <span className="text-accent">*</span>
+                        </label>
+                        <input
+                          id="mobileNumber"
+                          name="mobileNumber"
+                          type="tel"
+                          value={formData.mobileNumber}
+                          onChange={handleChange}
+                          className={`w-full px-4 py-2 rounded-md bg-background border ${
+                            formErrors.mobileNumber ? "border-accent" : "border-border"
+                          } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
+                          placeholder="+1234567890"
+                        />
+                        {formErrors.mobileNumber && <p className="mt-1 text-sm text-accent">{formErrors.mobileNumber}</p>}
+                      </div>
+                    )}
 
                     {/* Permissions Section - Only show for user role */}
                     {formData.role === "user" && (

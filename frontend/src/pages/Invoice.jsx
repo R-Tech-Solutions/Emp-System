@@ -3,11 +3,6 @@ import { backEndURL } from "../Backendurl"
 import { useNavigate } from "react-router-dom"
 import axios from "axios"
 import DotSpinner from "../loaders/Loader"
-import JsBarcode from "jsbarcode"
-import { jsPDF } from 'jspdf'
-import autoTable from 'jspdf-autotable'
-import InvoiceA4 from "./Invoice/A4invoice"
-import ThermalReceipt from "./Invoice/PosInvoice"
 import AdvanceA4Invoice from "./Invoice/AdvanceA4invoice"
 import AdvanceThermalInvoice from "./Invoice/Advancethermalinvoice"
 // Enhanced Print Styles for both POS and A4 formats
@@ -2080,6 +2075,13 @@ const EnhancedBillingPOSSystem = () => {
         }
 
         // Step 1: Create the invoice
+        // Validate invoice items before sending
+        if (!invoice.items || !Array.isArray(invoice.items) || invoice.items.length === 0) {
+          showToast("Invoice must have at least one item.", "error");
+          return;
+        }
+        // Log invoice data for debugging
+        console.log("Creating invoice with data:", invoice);
         const response = await fetch(`${backEndURL}/api/invoices`, {
           method: "POST",
           headers: {
@@ -2089,7 +2091,10 @@ const EnhancedBillingPOSSystem = () => {
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          const errorData = await response.json().catch(() => ({}));
+          console.error("Failed to create invoice:", errorData, invoice);
+          showToast(`Failed to create invoice: ${errorData.error || response.statusText}`, "error");
+          return; // Stop further processing
         }
 
         const savedInvoice = await response.json();
@@ -4270,6 +4275,11 @@ const EnhancedInvoiceModal = ({ invoice, onClose }) => {
             )}
           </div>
         )}
+
+        {/* Invoice Preview Section */}
+        <div style={{ margin: '2rem 0' }}>
+          <AdvanceA4Invoice invoiceDocumentId={invoice.id} />
+        </div>
 
         {/* Action Buttons */}
         <div className="space-y-4">

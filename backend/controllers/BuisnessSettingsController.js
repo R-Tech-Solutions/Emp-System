@@ -26,7 +26,9 @@ class BuisnessSettingsController {
   static async uploadLogo(req, res) {
     try {
       if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded.' });
-      const url = await uploadImageToStorage(req.file, 'business');
+      const url = await uploadImageToStorage(req.file, 'businessSettings');
+      // Update the businessSettings document with the new logo URL
+      await BuisnessSettings.createOrUpdate({ logo: url });
       res.status(200).json({ success: true, url });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
@@ -109,6 +111,36 @@ class BuisnessSettingsController {
         message: 'Error clearing database',
         error: error.message
       });
+    }
+  }
+
+  static async uploadTemplate(req, res) {
+    try {
+      if (!req.file || req.file.mimetype !== 'application/pdf') {
+        return res.status(400).json({ success: false, message: 'No PDF file uploaded.' });
+      }
+      // Always use the same filename to overwrite
+      const { storage } = require('../firebaseConfig');
+      const bucket = storage.bucket();
+      const filename = 'businessSettings/template.pdf';
+      const fileRef = bucket.file(filename);
+      const stream = require('stream');
+      const passthroughStream = new stream.PassThrough();
+      passthroughStream.end(req.file.buffer);
+      await new Promise((resolve, reject) => {
+        passthroughStream.pipe(fileRef.createWriteStream({
+          metadata: { contentType: req.file.mimetype },
+        }))
+        .on('finish', resolve)
+        .on('error', reject);
+      });
+      await fileRef.makePublic();
+      const url = fileRef.publicUrl();
+      // Save the template URL in businessSettings
+      await BuisnessSettings.createOrUpdate({ templateUrl: url });
+      res.status(200).json({ success: true, url });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
     }
   }
 }

@@ -40,41 +40,36 @@ const FinanceDashboard = () => {
       // Separate regular invoices and return invoices
       const regularInvoices = (invoicesResponse || []).filter(inv => !inv.isReturn)
       const returnInvoices = (invoicesResponse || []).filter(inv => inv.isReturn)
-      
-      // Map regular invoices to income-like objects (positive amounts)
-      const mappedRegularInvoices = regularInvoices.map(inv => ({
-        id: inv.id || inv.invoiceNumber,
-        date: inv.date || inv.createdAt || '',
-        title: inv.invoiceNumber,
-        category: 'invoice',
-        amount: Math.abs(inv.total) || 0, // Use absolute value for regular invoices
-        receivedFrom: 'invoice',
-        paymentMethod: Array.isArray(inv.payments) && inv.payments.length > 0 ? inv.payments[0].method : '',
-        status: 'Received',
-        project: '',
-        description: '',
-        isRecurring: false,
-        isInvoice: true
-      }))
-      
-      // Map return invoices to income-like objects (negative amounts for deduction)
-      const mappedReturnInvoices = returnInvoices.map(inv => ({
-        id: inv.id || inv.invoiceNumber,
-        date: inv.date || inv.createdAt || '',
-        title: `Return - ${inv.originalInvoiceId}`,
-        category: 'return',
-        amount: Math.abs(inv.total) || 0, // Use absolute value for display
-        receivedFrom: 'return',
-        paymentMethod: inv.paymentMethod || '',
-        status: 'Refunded',
-        project: '',
-        description: inv.returnReason || '',
-        isRecurring: false,
-        isReturn: true,
-        originalInvoiceId: inv.originalInvoiceId
-      }))
-      
-      setIncomes([...(incomesResponse.data || []), ...mappedRegularInvoices, ...mappedReturnInvoices])
+
+      // Map returns by originalInvoiceId for quick lookup
+      const returnsByInvoice = {};
+      returnInvoices.forEach(ret => {
+        if (!returnsByInvoice[ret.originalInvoiceId]) returnsByInvoice[ret.originalInvoiceId] = 0;
+        returnsByInvoice[ret.originalInvoiceId] += Math.abs(ret.total) || 0;
+      });
+
+      // Map regular invoices to income-like objects (net of returns)
+      const mappedInvoices = regularInvoices.map(inv => {
+        const invoiceId = inv.id || inv.invoiceNumber;
+        const returnAmount = returnsByInvoice[invoiceId] || 0;
+        const netAmount = (Math.abs(inv.total) || 0) - returnAmount;
+        return {
+          id: invoiceId,
+          date: inv.createdAt ? new Date(inv.createdAt).toLocaleDateString() : '',
+          title: inv.invoiceNumber,
+          category: 'invoice',
+          amount: netAmount,
+          receivedFrom: 'invoice',
+          paymentMethod: Array.isArray(inv.payments) && inv.payments.length > 0 ? inv.payments[0].method : '',
+          status: 'Received',
+          project: '',
+          description: '',
+          isRecurring: false,
+          isInvoice: true
+        };
+      }).filter(inv => inv.amount !== 0);
+
+      setIncomes([...(incomesResponse.data || []), ...mappedInvoices])
       setExpenses(expensesResponse.data || [])
     } catch (err) {
       setError(err.message || 'Error fetching data')
@@ -571,134 +566,97 @@ const FinanceDashboard = () => {
   const netProfit = incomeSummary.total - expenseSummary.approved
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-primary-light via-surface to-background text-text-primary font-sans">
       {loading && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-4 rounded-lg">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="bg-surface p-6 rounded-2xl shadow-2xl flex flex-col items-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-primary"></div>
+            <span className="mt-2 text-text-muted">Loading...</span>
           </div>
         </div>
       )}
-      
       {error && (
-        <div className="fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg z-50">
+        <div className="fixed top-6 right-6 bg-red-500/90 text-white px-6 py-3 rounded-xl shadow-lg z-50 border-2 border-red-300">
           {error}
         </div>
       )}
-
-      <div className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-            <h3 className="text-sm text-gray-400">💰 Net Income</h3>
-            <p className="text-2xl font-bold text-green-400">Rs {incomeSummary.total.toLocaleString()}</p>
+      <div className="container mx-auto px-2 md:px-8 py-8">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+          <div className="bg-surface/80 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-border flex flex-col items-start transition-transform hover:scale-105">
+            <h3 className="text-xs text-text-muted font-semibold mb-1">💰 Net Income</h3>
+            <p className="text-3xl font-bold text-primary">Rs {incomeSummary.total.toLocaleString()}</p>
           </div>
-          <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-            <h3 className="text-sm text-gray-400">💸 Total Expenses</h3>
-            <p className="text-2xl font-bold text-red-400">Rs {expenseSummary.total.toLocaleString()}</p>
+          <div className="bg-surface/80 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-border flex flex-col items-start transition-transform hover:scale-105">
+            <h3 className="text-xs text-text-muted font-semibold mb-1">💸 Total Expenses</h3>
+            <p className="text-3xl font-bold text-red-400">Rs {expenseSummary.total.toLocaleString()}</p>
           </div>
-          <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-            <h3 className="text-sm text-gray-400">📊 Net Profit</h3>
-            <p className={`text-2xl font-bold ${netProfit >= 0 ? "text-green-400" : "text-red-400"}`}>
-              Rs {netProfit.toLocaleString()}
-            </p>
+          <div className="bg-surface/80 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-border flex flex-col items-start transition-transform hover:scale-105">
+            <h3 className="text-xs text-text-muted font-semibold mb-1">💵 Profit</h3>
+            <p className={`text-3xl font-bold ${incomeSummary.total - expenseSummary.total >= 0 ? 'text-green-500' : 'text-red-400'}`}>Rs {(incomeSummary.total - expenseSummary.total).toLocaleString()}</p>
           </div>
-          <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-            <h3 className="text-sm text-gray-400">📈 Profit Margin</h3>
-            <p className={`text-2xl font-bold ${netProfit >= 0 ? "text-green-400" : "text-red-400"}`}>
-              {incomeSummary.total > 0 ? ((netProfit / incomeSummary.total) * 100).toFixed(1) : 0}%
-            </p>
+          <div className="bg-surface/80 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-border flex flex-col items-start transition-transform hover:scale-105">
+            <h3 className="text-xs text-text-muted font-semibold mb-1">📊 Net Profit</h3>
+            <p className={`text-3xl font-bold ${netProfit >= 0 ? "text-green-500" : "text-red-400"}`}>Rs {netProfit.toLocaleString()}</p>
+          </div>
+          <div className="bg-surface/80 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-border flex flex-col items-start transition-transform hover:scale-105">
+            <h3 className="text-xs text-text-muted font-semibold mb-1">📈 Profit Margin</h3>
+            <p className={`text-3xl font-bold ${netProfit >= 0 ? "text-green-500" : "text-red-400"}`}>{incomeSummary.total > 0 ? ((netProfit / incomeSummary.total) * 100).toFixed(1) : 0}%</p>
           </div>
         </div>
-
         {/* Tab Navigation */}
-        <div className="flex space-x-1 mb-6">
+        <div className="flex space-x-2 mb-8 justify-center">
           <button
             onClick={() => setActiveTab("income")}
-            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-              activeTab === "income"
-                ? "bg-green-600 text-white"
-                : "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white"
-            }`}
+            className={`px-8 py-3 rounded-full font-semibold shadow transition-all duration-200 border-2 ${activeTab === "income" ? "bg-primary text-white border-primary-dark scale-105" : "bg-surface text-text-muted border-border hover:bg-primary-light hover:text-primary"}`}
           >
             💰 Income Management
           </button>
           <button
             onClick={() => setActiveTab("expenses")}
-            className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-              activeTab === "expenses"
-                ? "bg-red-600 text-white"
-                : "bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white"
-            }`}
+            className={`px-8 py-3 rounded-full font-semibold shadow transition-all duration-200 border-2 ${activeTab === "expenses" ? "bg-red-500 text-white border-red-700 scale-105" : "bg-surface text-text-muted border-border hover:bg-red-100 hover:text-red-500"}`}
           >
             💸 Expense Management
           </button>
         </div>
-
         {/* Income Tab Content */}
         {activeTab === "income" && (
           <div>
-            {/* Income Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
-              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h3 className="text-sm text-gray-400">💰 Net Income</h3>
-                <p className="text-2xl font-bold text-green-400">Rs {incomeSummary.total.toLocaleString()}</p>
-              </div>
-              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h3 className="text-sm text-gray-400">📈 Gross Sales</h3>
-                <p className="text-2xl font-bold text-blue-400">Rs {incomeSummary.regularTotal.toLocaleString()}</p>
-              </div>
-              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h3 className="text-sm text-gray-400">↩️ Returns</h3>
-                <p className="text-2xl font-bold text-red-400">Rs {incomeSummary.returnTotal.toLocaleString()}</p>
-              </div>
-              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h3 className="text-sm text-gray-400">🕗 Pending</h3>
-                <p className="text-2xl font-bold text-yellow-400">Rs {incomeSummary.pending.toLocaleString()}</p>
-              </div>
-              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h3 className="text-sm text-gray-400">📅 This Month</h3>
-                <p className="text-2xl font-bold text-purple-400">Rs {incomeSummary.thisMonth.toLocaleString()}</p>
-              </div>
-              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h3 className="text-sm text-gray-400">🔁 Recurring</h3>
-                <p className="text-2xl font-bold text-indigo-400">Rs {incomeSummary.recurring.toLocaleString()}</p>
-              </div>
-            </div>
             <div className="flex justify-between items-center mb-6">
               <button
                 onClick={() => setShowIncomeModal(true)}
-                className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2"
+                className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2"
               >
                 <span>➕</span> Add Income
               </button>
             </div>
 
             {/* Income Table */}
-            <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden mb-6">
+            <div className="bg-surface/80 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-border overflow-hidden mb-6">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-700">
+                  <thead className="bg-surface/80 backdrop-blur-md">
                     <tr>
                       <th
-                        className="px-4 py-3 text-left cursor-pointer hover:bg-gray-600"
+                        className="px-4 py-3 text-left cursor-pointer hover:bg-surface/90"
                         onClick={() => handleIncomeSort("date")}
                       >
                         Date {incomeSortBy === "date" && (incomeSortOrder === "asc" ? "↑" : "↓")}
                       </th>
                       <th
-                        className="px-4 py-3 text-left cursor-pointer hover:bg-gray-600"
+                        className="px-4 py-3 text-left cursor-pointer hover:bg-surface/90"
                         onClick={() => handleIncomeSort("title")}
                       >
                         Income Title {incomeSortBy === "title" && (incomeSortOrder === "asc" ? "↑" : "↓")}
                       </th>
                       <th
-                        className="px-4 py-3 text-left cursor-pointer hover:bg-gray-600"
+                        className="px-4 py-3 text-left cursor-pointer hover:bg-surface/90"
                         onClick={() => handleIncomeSort("category")}
                       >
                         Source/Category {incomeSortBy === "category" && (incomeSortOrder === "asc" ? "↑" : "↓")}
                       </th>
                       <th
-                        className="px-4 py-3 text-left cursor-pointer hover:bg-gray-600"
+                        className="px-4 py-3 text-left cursor-pointer hover:bg-surface/90"
                         onClick={() => handleIncomeSort("amount")}
                       >
                         Amount {incomeSortBy === "amount" && (incomeSortOrder === "asc" ? "↑" : "↓")}
@@ -706,7 +664,7 @@ const FinanceDashboard = () => {
                       <th className="px-4 py-3 text-left">Received From</th>
                       <th className="px-4 py-3 text-left">Payment Method</th>
                       <th
-                        className="px-4 py-3 text-left cursor-pointer hover:bg-gray-600"
+                        className="px-4 py-3 text-left cursor-pointer hover:bg-surface/90"
                         onClick={() => handleIncomeSort("status")}
                       >
                         Status {incomeSortBy === "status" && (incomeSortOrder === "asc" ? "↑" : "↓")}
@@ -716,7 +674,7 @@ const FinanceDashboard = () => {
                   </thead>
                   <tbody>
                     {paginatedIncomes.map((income) => (
-                      <tr key={income.id} className="border-t border-gray-700 hover:bg-gray-750">
+                      <tr key={income.id} className="border-t border-surface/10 hover:bg-surface/20">
                         <td className="px-4 py-3">{income.date}</td>
                         <td className="px-4 py-3">
                           <div className="font-medium">{income.title}</div>
@@ -778,7 +736,7 @@ const FinanceDashboard = () => {
 
             {/* Income Pagination */}
             <div className="flex justify-between items-center">
-              <div className="text-sm text-gray-400">
+              <div className="text-sm text-text-muted">
                 Showing {(incomeCurrentPage - 1) * itemsPerPage + 1} to{" "}
                 {Math.min(incomeCurrentPage * itemsPerPage, filteredAndSortedIncomes.length)} of{" "}
                 {filteredAndSortedIncomes.length} entries
@@ -787,7 +745,7 @@ const FinanceDashboard = () => {
                 <button
                   onClick={() => setIncomeCurrentPage(Math.max(1, incomeCurrentPage - 1))}
                   disabled={incomeCurrentPage === 1}
-                  className="px-3 py-1 bg-gray-700 border border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600"
+                  className="px-3 py-1 bg-surface text-text-muted border border-border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-light hover:text-primary"
                 >
                   Previous
                 </button>
@@ -795,8 +753,8 @@ const FinanceDashboard = () => {
                   <button
                     key={page}
                     onClick={() => setIncomeCurrentPage(page)}
-                    className={`px-3 py-1 border border-gray-600 rounded ${
-                      incomeCurrentPage === page ? "bg-green-600 text-white" : "bg-gray-700 hover:bg-gray-600"
+                    className={`px-3 py-1 border border-border rounded ${
+                      incomeCurrentPage === page ? "bg-primary text-white" : "bg-surface text-text-muted hover:bg-primary-light hover:text-primary"
                     }`}
                   >
                     {page}
@@ -805,7 +763,7 @@ const FinanceDashboard = () => {
                 <button
                   onClick={() => setIncomeCurrentPage(Math.min(incomeTotalPages, incomeCurrentPage + 1))}
                   disabled={incomeCurrentPage === incomeTotalPages}
-                  className="px-3 py-1 bg-gray-700 border border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600"
+                  className="px-3 py-1 bg-surface text-text-muted border border-border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-light hover:text-primary"
                 >
                   Next
                 </button>
@@ -817,65 +775,41 @@ const FinanceDashboard = () => {
         {/* Expenses Tab Content */}
         {activeTab === "expenses" && (
           <div>
-            {/* Expense Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h3 className="text-sm text-gray-400">Total Expenses</h3>
-                <p className="text-2xl font-bold text-red-400">Rs {expenseSummary.total.toLocaleString()}</p>
-              </div>
-              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h3 className="text-sm text-gray-400">Approved</h3>
-                <p className="text-2xl font-bold text-blue-400">Rs {expenseSummary.approved.toLocaleString()}</p>
-              </div>
-              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h3 className="text-sm text-gray-400">Pending</h3>
-                <p className="text-2xl font-bold text-yellow-400">Rs {expenseSummary.pending.toLocaleString()}</p>
-              </div>
-              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h3 className="text-sm text-gray-400">Rejected</h3>
-                <p className="text-2xl font-bold text-red-400">Rs {expenseSummary.rejected.toLocaleString()}</p>
-              </div>
-              <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-                <h3 className="text-sm text-gray-400">This Month</h3>
-                <p className="text-2xl font-bold text-purple-400">Rs {expenseSummary.thisMonth.toLocaleString()}</p>
-              </div>
-            </div>
             <div className="flex justify-between items-center mb-6">
               <button
                 onClick={() => setShowExpenseModal(true)}
-                className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium flex items-center gap-2"
+                className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2"
               >
                 <span>➕</span> Add Expense
               </button>
-              
             </div>
 
             {/* Expense Table */}
-            <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden mb-6">
+            <div className="bg-surface/80 backdrop-blur-md p-6 rounded-2xl shadow-lg border border-border overflow-hidden mb-6">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-700">
+                  <thead className="bg-surface/80 backdrop-blur-md">
                     <tr>
                       <th
-                        className="px-4 py-3 text-left cursor-pointer hover:bg-gray-600"
+                        className="px-4 py-3 text-left cursor-pointer hover:bg-surface/90"
                         onClick={() => handleExpenseSort("date")}
                       >
                         Date {expenseSortBy === "date" && (expenseSortOrder === "asc" ? "↑" : "↓")}
                       </th>
                       <th
-                        className="px-4 py-3 text-left cursor-pointer hover:bg-gray-600"
+                        className="px-4 py-3 text-left cursor-pointer hover:bg-surface/90"
                         onClick={() => handleExpenseSort("title")}
                       >
                         Title {expenseSortBy === "title" && (expenseSortOrder === "asc" ? "↑" : "↓")}
                       </th>
                       <th
-                        className="px-4 py-3 text-left cursor-pointer hover:bg-gray-600"
+                        className="px-4 py-3 text-left cursor-pointer hover:bg-surface/90"
                         onClick={() => handleExpenseSort("category")}
                       >
                         Category {expenseSortBy === "category" && (expenseSortOrder === "asc" ? "↑" : "↓")}
                       </th>
                       <th
-                        className="px-4 py-3 text-left cursor-pointer hover:bg-gray-600"
+                        className="px-4 py-3 text-left cursor-pointer hover:bg-surface/90"
                         onClick={() => handleExpenseSort("amount")}
                       >
                         Amount {expenseSortBy === "amount" && (expenseSortOrder === "asc" ? "↑" : "↓")}
@@ -883,7 +817,7 @@ const FinanceDashboard = () => {
                       <th className="px-4 py-3 text-left">Paid By</th>
                       <th className="px-4 py-3 text-left">Department</th>
                       <th
-                        className="px-4 py-3 text-left cursor-pointer hover:bg-gray-600"
+                        className="px-4 py-3 text-left cursor-pointer hover:bg-surface/90"
                         onClick={() => handleExpenseSort("status")}
                       >
                         Status {expenseSortBy === "status" && (expenseSortOrder === "asc" ? "↑" : "↓")}
@@ -893,7 +827,7 @@ const FinanceDashboard = () => {
                   </thead>
                   <tbody>
                     {paginatedExpenses.map((expense) => (
-                      <tr key={expense.id} className="border-t border-gray-700 hover:bg-gray-750">
+                      <tr key={expense.id} className="border-t border-surface/10 hover:bg-surface/20">
                         <td className="px-4 py-3">{expense.date}</td>
                         <td className="px-4 py-3 font-medium">{expense.title}</td>
                         <td className="px-4 py-3">{expense.category}</td>
@@ -939,7 +873,7 @@ const FinanceDashboard = () => {
 
             {/* Expense Pagination */}
             <div className="flex justify-between items-center">
-              <div className="text-sm text-gray-400">
+              <div className="text-sm text-text-muted">
                 Showing {(expenseCurrentPage - 1) * itemsPerPage + 1} to{" "}
                 {Math.min(expenseCurrentPage * itemsPerPage, filteredAndSortedExpenses.length)} of{" "}
                 {filteredAndSortedExpenses.length} entries
@@ -948,7 +882,7 @@ const FinanceDashboard = () => {
                 <button
                   onClick={() => setExpenseCurrentPage(Math.max(1, expenseCurrentPage - 1))}
                   disabled={expenseCurrentPage === 1}
-                  className="px-3 py-1 bg-gray-700 border border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600"
+                  className="px-3 py-1 bg-surface text-text-muted border border-border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-light hover:text-primary"
                 >
                   Previous
                 </button>
@@ -956,8 +890,8 @@ const FinanceDashboard = () => {
                   <button
                     key={page}
                     onClick={() => setExpenseCurrentPage(page)}
-                    className={`px-3 py-1 border border-gray-600 rounded ${
-                      expenseCurrentPage === page ? "bg-blue-600 text-white" : "bg-gray-700 hover:bg-gray-600"
+                    className={`px-3 py-1 border border-border rounded ${
+                      expenseCurrentPage === page ? "bg-primary text-white" : "bg-surface text-text-muted hover:bg-primary-light hover:text-primary"
                     }`}
                   >
                     {page}
@@ -966,7 +900,7 @@ const FinanceDashboard = () => {
                 <button
                   onClick={() => setExpenseCurrentPage(Math.min(expenseTotalPages, expenseCurrentPage + 1))}
                   disabled={expenseCurrentPage === expenseTotalPages}
-                  className="px-3 py-1 bg-gray-700 border border-gray-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-600"
+                  className="px-3 py-1 bg-surface text-text-muted border border-border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-light hover:text-primary"
                 >
                   Next
                 </button>
@@ -979,7 +913,7 @@ const FinanceDashboard = () => {
       {/* Income Modal */}
       {showIncomeModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="bg-surface p-6 rounded-lg border border-border w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">{editingIncome ? "Edit Income" : "Add New Income"}</h2>
             <form onSubmit={handleIncomeSubmit} className="space-y-4">
               <div>
@@ -987,7 +921,7 @@ const FinanceDashboard = () => {
                 <input
                   type="text"
                   required
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                  className="w-full bg-surface text-text-primary border border-border rounded px-3 py-2"
                   value={incomeFormData.title}
                   onChange={(e) => setIncomeFormData({ ...incomeFormData, title: e.target.value })}
                 />
@@ -996,7 +930,7 @@ const FinanceDashboard = () => {
                 <label className="block text-sm font-medium mb-1">Source/Category</label>
                 <select
                   required
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                  className="w-full bg-surface text-text-primary border border-border rounded px-3 py-2"
                   value={incomeFormData.category}
                   onChange={(e) => setIncomeFormData({ ...incomeFormData, category: e.target.value })}
                 >
@@ -1014,7 +948,7 @@ const FinanceDashboard = () => {
                   type="number"
                   step="0.01"
                   required
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                  className="w-full bg-surface text-text-primary border border-border rounded px-3 py-2"
                   value={incomeFormData.amount}
                   onChange={(e) => setIncomeFormData({ ...incomeFormData, amount: e.target.value })}
                 />
@@ -1024,7 +958,7 @@ const FinanceDashboard = () => {
                 <input
                   type="date"
                   required
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                  className="w-full bg-surface text-text-primary border border-border rounded px-3 py-2"
                   value={incomeFormData.date}
                   onChange={(e) => setIncomeFormData({ ...incomeFormData, date: e.target.value })}
                 />
@@ -1034,7 +968,7 @@ const FinanceDashboard = () => {
                 <input
                   type="text"
                   required
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                  className="w-full bg-surface text-text-primary border border-border rounded px-3 py-2"
                   value={incomeFormData.receivedFrom}
                   onChange={(e) => setIncomeFormData({ ...incomeFormData, receivedFrom: e.target.value })}
                 />
@@ -1043,7 +977,7 @@ const FinanceDashboard = () => {
                 <label className="block text-sm font-medium mb-1">Project/Department</label>
                 <select
                   required
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                  className="w-full bg-surface text-text-primary border border-border rounded px-3 py-2"
                   value={incomeFormData.project}
                   onChange={(e) => setIncomeFormData({ ...incomeFormData, project: e.target.value })}
                 >
@@ -1059,7 +993,7 @@ const FinanceDashboard = () => {
                 <label className="block text-sm font-medium mb-1">Payment Method</label>
                 <select
                   required
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                  className="w-full bg-surface text-text-primary border border-border rounded px-3 py-2"
                   value={incomeFormData.paymentMethod}
                   onChange={(e) => setIncomeFormData({ ...incomeFormData, paymentMethod: e.target.value })}
                 >
@@ -1074,7 +1008,7 @@ const FinanceDashboard = () => {
               <div>
                 <label className="block text-sm font-medium mb-1">Status</label>
                 <select
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                  className="w-full bg-surface text-text-primary border border-border rounded px-3 py-2"
                   value={incomeFormData.status}
                   onChange={(e) => setIncomeFormData({ ...incomeFormData, status: e.target.value })}
                 >
@@ -1097,20 +1031,20 @@ const FinanceDashboard = () => {
               <div>
                 <label className="block text-sm font-medium mb-1">Description / Notes</label>
                 <textarea
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                  className="w-full bg-surface text-text-primary border border-border rounded px-3 py-2"
                   rows="3"
                   value={incomeFormData.description}
                   onChange={(e) => setIncomeFormData({ ...incomeFormData, description: e.target.value })}
                 />
               </div>
               <div className="flex gap-3 pt-4">
-                <button type="submit" className="flex-1 bg-green-600 hover:bg-green-700 px-4 py-2 rounded font-medium">
+                <button type="submit" className="flex-1 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded font-medium">
                   {editingIncome ? "Update" : "Add"} Income
                 </button>
                 <button
                   type="button"
                   onClick={resetIncomeForm}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded font-medium"
+                  className="flex-1 bg-surface text-text-muted border border-border rounded font-medium"
                 >
                   Cancel
                 </button>
@@ -1123,7 +1057,7 @@ const FinanceDashboard = () => {
       {/* Expense Modal */}
       {showExpenseModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="bg-surface p-6 rounded-lg border border-border w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">{editingExpense ? "Edit Expense" : "Add New Expense"}</h2>
             <form onSubmit={handleExpenseSubmit} className="space-y-4">
               <div>
@@ -1131,7 +1065,7 @@ const FinanceDashboard = () => {
                 <input
                   type="text"
                   required
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                  className="w-full bg-surface text-text-primary border border-border rounded px-3 py-2"
                   value={expenseFormData.title}
                   onChange={(e) => setExpenseFormData({ ...expenseFormData, title: e.target.value })}
                 />
@@ -1140,7 +1074,7 @@ const FinanceDashboard = () => {
                 <label className="block text-sm font-medium mb-1">Category</label>
                 <select
                   required
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                  className="w-full bg-surface text-text-primary border border-border rounded px-3 py-2"
                   value={expenseFormData.category}
                   onChange={(e) => setExpenseFormData({ ...expenseFormData, category: e.target.value })}
                 >
@@ -1158,7 +1092,7 @@ const FinanceDashboard = () => {
                   type="number"
                   step="0.01"
                   required
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                  className="w-full bg-surface text-text-primary border border-border rounded px-3 py-2"
                   value={expenseFormData.amount}
                   onChange={(e) => setExpenseFormData({ ...expenseFormData, amount: e.target.value })}
                 />
@@ -1168,7 +1102,7 @@ const FinanceDashboard = () => {
                 <input
                   type="date"
                   required
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                  className="w-full bg-surface text-text-primary border border-border rounded px-3 py-2"
                   value={expenseFormData.date}
                   onChange={(e) => setExpenseFormData({ ...expenseFormData, date: e.target.value })}
                 />
@@ -1178,7 +1112,7 @@ const FinanceDashboard = () => {
                 <input
                   type="text"
                   required
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                  className="w-full bg-surface text-text-primary border border-border rounded px-3 py-2"
                   value={expenseFormData.paidBy}
                   onChange={(e) => setExpenseFormData({ ...expenseFormData, paidBy: e.target.value })}
                 />
@@ -1187,7 +1121,7 @@ const FinanceDashboard = () => {
                 <label className="block text-sm font-medium mb-1">Department</label>
                 <select
                   required
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                  className="w-full bg-surface text-text-primary border border-border rounded px-3 py-2"
                   value={expenseFormData.department}
                   onChange={(e) => setExpenseFormData({ ...expenseFormData, department: e.target.value })}
                 >
@@ -1203,7 +1137,7 @@ const FinanceDashboard = () => {
                 <label className="block text-sm font-medium mb-1">Payment Method</label>
                 <select
                   required
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                  className="w-full bg-surface text-text-primary border border-border rounded px-3 py-2"
                   value={expenseFormData.paymentMethod}
                   onChange={(e) => setExpenseFormData({ ...expenseFormData, paymentMethod: e.target.value })}
                 >
@@ -1218,7 +1152,7 @@ const FinanceDashboard = () => {
               <div>
                 <label className="block text-sm font-medium mb-1">Status</label>
                 <select
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                  className="w-full bg-surface text-text-primary border border-border rounded px-3 py-2"
                   value={expenseFormData.status}
                   onChange={(e) => setExpenseFormData({ ...expenseFormData, status: e.target.value })}
                 >
@@ -1230,20 +1164,20 @@ const FinanceDashboard = () => {
               <div>
                 <label className="block text-sm font-medium mb-1">Description</label>
                 <textarea
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                  className="w-full bg-surface text-text-primary border border-border rounded px-3 py-2"
                   rows="3"
                   value={expenseFormData.description}
                   onChange={(e) => setExpenseFormData({ ...expenseFormData, description: e.target.value })}
                 />
               </div>
               <div className="flex gap-3 pt-4">
-                <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded font-medium">
+                <button type="submit" className="flex-1 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded font-medium">
                   {editingExpense ? "Update" : "Add"} Expense
                 </button>
                 <button
                   type="button"
                   onClick={resetExpenseForm}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded font-medium"
+                  className="flex-1 bg-surface text-text-muted border border-border rounded font-medium"
                 >
                   Cancel
                 </button>

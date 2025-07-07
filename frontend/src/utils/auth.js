@@ -15,10 +15,8 @@ export const getUserData = () => {
 export const hasPermission = (permission) => {
   const userData = getUserData();
   if (!userData) return false;
-  
-  // Admin has all permissions
-  if (userData.role === 'admin') return true;
-  
+  // Admin and Super Admin have all permissions
+  if (userData.role === 'admin' || userData.role === 'super-admin') return true;
   // Check specific permission
   return userData.permissions && userData.permissions[permission] === true;
 };
@@ -27,12 +25,9 @@ export const hasPermission = (permission) => {
 export const hasAnyPermission = (permissions) => {
   const userData = getUserData();
   if (!userData) return false;
-  
-  // Admin has all permissions
-  if (userData.role === 'admin') return true;
-  
-  // Check if user has any of the specified permissions
-  return permissions.some(permission => 
+  // Admin and Super Admin have all permissions
+  if (userData.role === 'admin' || userData.role === 'super-admin') return true;
+  return permissions.some(permission =>
     userData.permissions && userData.permissions[permission] === true
   );
 };
@@ -41,12 +36,9 @@ export const hasAnyPermission = (permissions) => {
 export const hasAllPermissions = (permissions) => {
   const userData = getUserData();
   if (!userData) return false;
-  
-  // Admin has all permissions
-  if (userData.role === 'admin') return true;
-  
-  // Check if user has all specified permissions
-  return permissions.every(permission => 
+  // Admin and Super Admin have all permissions
+  if (userData.role === 'admin' || userData.role === 'super-admin') return true;
+  return permissions.every(permission =>
     userData.permissions && userData.permissions[permission] === true
   );
 };

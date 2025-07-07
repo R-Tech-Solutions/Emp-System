@@ -2,23 +2,24 @@ const { db } = require('../firebaseConfig');
 const INVOICE_COLLECTION = 'invoices';
 
 async function getNextInvoiceId() {
-  // Get the latest invoice and increment
+  // Query the latest invoice by createdAt (descending)
   const snapshot = await db.collection(INVOICE_COLLECTION)
-    .orderBy('invoiceNumber', 'desc')
+    .orderBy('createdAt', 'desc')
     .limit(1)
     .get();
-  
+
   let nextNumber = 1;
   if (!snapshot.empty) {
-    const last = snapshot.docs[0];
-    const lastInvoiceNumber = last.data().invoiceNumber;
-    // Extract number from Inv-01, Inv-02, etc.
-    const match = /Inv-(\d+)/.exec(lastInvoiceNumber);
+    const lastInvoice = snapshot.docs[0].data();
+    // Extract the numeric part from the invoiceNumber (e.g., Inv-03 -> 3)
+    const match = lastInvoice.invoiceNumber && lastInvoice.invoiceNumber.match(/Inv-(\d+)/i);
     if (match) {
       nextNumber = parseInt(match[1], 10) + 1;
     }
   }
-  return `Inv-${String(nextNumber).padStart(2, '0')}`;
+  // Pad with zeros if needed
+  const padded = String(nextNumber).padStart(2, '0');
+  return `Inv-${padded}`;
 }
 
 async function getNextReturnInvoiceNumber(originalInvoiceNumber) {
@@ -57,26 +58,64 @@ async function getNextReturnInvoiceNumber(originalInvoiceNumber) {
 
 const InvoiceModel = {
   async create(invoice) {
-    // Generate custom invoice number
-    const invoiceNumber = await getNextInvoiceId();
-    
-    // Prepare invoice data with customer array
-    const invoiceData = {
-      ...invoice,
-      customer: invoice.customer || [], // Ensure customer is always an array
-      invoiceNumber,
-      isReturn: false, // Mark as regular invoice
-      isPartiallyReturned: false, // Mark as not partially returned
-      returnInvoices: [], // Array to store return invoice numbers
-      createdAt: Date.now(), // Use timestamp instead of ISO string
-      updatedAt: Date.now()
-    };
+    try {
+      console.log('InvoiceModel.create called with data:', {
+        itemCount: invoice.items?.length,
+        total: invoice.total,
+        customerCount: invoice.customer?.length
+      });
 
-    // Use invoiceNumber as document ID
-    const docRef = db.collection(INVOICE_COLLECTION).doc(invoiceNumber);
-    await docRef.set(invoiceData);
-    const doc = await docRef.get();
-    return { id: doc.id, ...doc.data() };
+      // Generate custom invoice number
+      console.log('Generating invoice number...');
+      const invoiceNumber = await getNextInvoiceId();
+      console.log('Generated invoice number:', invoiceNumber);
+      
+      // Prepare invoice data with customer array
+      const invoiceData = {
+        ...invoice,
+        customer: invoice.customer || [], // Ensure customer is always an array
+        invoiceNumber,
+        isReturn: false, // Mark as regular invoice
+        isPartiallyReturned: false, // Mark as not partially returned
+        returnInvoices: [], // Array to store return invoice numbers
+        createdAt: Date.now(), // Use timestamp instead of ISO string
+        updatedAt: Date.now()
+      };
+
+      console.log('Prepared invoice data for database:', {
+        invoiceNumber,
+        itemCount: invoiceData.items.length,
+        total: invoiceData.total
+      });
+
+      // Use invoiceNumber as document ID
+      const docRef = db.collection(INVOICE_COLLECTION).doc(invoiceNumber);
+      console.log('Saving to database with document ID:', invoiceNumber);
+      
+      await docRef.set(invoiceData);
+      console.log('Invoice saved to database successfully');
+      
+      const doc = await docRef.get();
+      const savedData = { id: doc.id, ...doc.data() };
+      
+      console.log('Retrieved saved invoice:', {
+        id: savedData.id,
+        invoiceNumber: savedData.invoiceNumber,
+        total: savedData.total
+      });
+      
+      if (savedData && savedData.id) {
+        console.log(`✅ [InvoiceModel] Invoice SAVED: Document ID = ${savedData.id}, Invoice Number = ${savedData.invoiceNumber}`);
+      } else {
+        console.log('❌ [InvoiceModel] Invoice NOT SAVED! No document ID returned.');
+      }
+      
+      return savedData;
+    } catch (error) {
+      console.error('Error in InvoiceModel.create:', error);
+      console.error('Error stack:', error.stack);
+      throw error;
+    }
   },
 
   async createReturnInvoice(originalInvoice, returnedItems, returnReason) {

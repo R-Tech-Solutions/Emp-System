@@ -43,6 +43,19 @@ const PermissionRoute = ({ permission, children }) => {
   return <Navigate to="/dashboard" replace />;
 };
 
+// Admin-only route component
+const AdminOnlyRoute = ({ children }) => {
+  const userData = JSON.parse(sessionStorage.getItem("userData") || "{}");
+  const email = sessionStorage.getItem("email");
+  const restrictedUser = sessionStorage.getItem("restrictedUser") === "true";
+  
+  // Allow access if user is admin, super-admin, or has the special hardcoded credentials
+  if (userData.role === "admin" || userData.role === "super-admin" || (email === "info@rtechsl.lk" && restrictedUser)) {
+    return children;
+  }
+  return <Navigate to="/dashboard" replace />;
+};
+
 function App() {
   const isLoggedIn = sessionStorage.getItem("isLoggedIn") === "true";
 
@@ -151,7 +164,9 @@ function App() {
             path="user"
             element={
               <ProtectedRoute>
-                <UserAdd />
+                <AdminOnlyRoute>
+                  <UserAdd />
+                </AdminOnlyRoute>
               </ProtectedRoute>
             }
           />
@@ -317,7 +332,9 @@ function App() {
             path="buisness"
             element={
               <ProtectedRoute>
-                <BuisnessSettings />
+                <AdminOnlyRoute>
+                  <BuisnessSettings />
+                </AdminOnlyRoute>
               </ProtectedRoute>
             }
           />
@@ -335,7 +352,7 @@ function App() {
             path="User-Hrm"
             element={
               <ProtectedRoute>
-                <PermissionRoute permission="sales-report">
+                <PermissionRoute permission="reports">
                   <UserHrm />
                 </PermissionRoute>
               </ProtectedRoute>
@@ -345,7 +362,7 @@ function App() {
             path="User-Sales"
             element={
               <ProtectedRoute>
-                <PermissionRoute permission="sales-report">
+                <PermissionRoute permission="reports">
                   <UserSales />
                 </PermissionRoute>
               </ProtectedRoute>
@@ -355,7 +372,7 @@ function App() {
             path="return-dashboard"
             element={
               <ProtectedRoute>
-                <PermissionRoute permission="sales-report">
+                <PermissionRoute permission="return-dashboard">
                   <ReturnDashboard />
                 </PermissionRoute>
               </ProtectedRoute>
@@ -366,7 +383,7 @@ function App() {
             path="customerAccounts"
             element={
               <ProtectedRoute>
-                <PermissionRoute permission="sales-report">
+                <PermissionRoute permission="customerAccounts">
                   <CustomerAccounts />
                 </PermissionRoute>
               </ProtectedRoute>

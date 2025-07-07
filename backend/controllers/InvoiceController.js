@@ -18,11 +18,20 @@ exports.createInvoice = async (req, res) => {
       customer: invoice.customer,
       hasItems: !!invoice.items,
       itemCount: invoice.items?.length,
-      printingOption: invoice.printingOption
+      printingOption: invoice.printingOption,
+      total: invoice.total,
+      subtotal: invoice.subtotal
     });
     
+    // Enhanced validation
     if (!invoice.items || !Array.isArray(invoice.items) || invoice.items.length === 0) {
+      console.error('Invoice validation failed: No items provided');
       return res.status(400).json({ error: 'Invoice items are required.' });
+    }
+
+    if (!invoice.total || invoice.total <= 0) {
+      console.error('Invoice validation failed: Invalid total amount');
+      return res.status(400).json({ error: 'Invoice total must be greater than 0.' });
     }
 
     // Get customer details if customerId is provided
@@ -30,6 +39,7 @@ exports.createInvoice = async (req, res) => {
 
     if (invoice.customerId) {
       try {
+        console.log('Fetching customer details for ID:', invoice.customerId);
         const customerDoc = await db.collection('contacts').doc(invoice.customerId).get();
         if (customerDoc.exists) {
           const customerData = customerDoc.data();
@@ -44,6 +54,9 @@ exports.createInvoice = async (req, res) => {
             customerCreatedAt: customerData.createdAt || null,
             customerUpdatedAt: customerData.updatedAt || null
           }];
+          console.log('Customer details fetched successfully:', customerArray[0]);
+        } else {
+          console.warn('Customer not found for ID:', invoice.customerId);
         }
       } catch (error) {
         console.error('Error fetching customer details:', error);
@@ -75,15 +88,25 @@ exports.createInvoice = async (req, res) => {
       changeDue: typeof invoice.changeDue !== 'undefined' ? invoice.changeDue : 0
     };
 
+    console.log('Prepared invoice data for saving:', {
+      itemCount: invoiceData.items.length,
+      total: invoiceData.total,
+      customerCount: invoiceData.customer.length,
+      paymentMethod: invoiceData.paymentMethod
+    });
+
     // Use InvoiceModel to create invoice with proper numbering
+    console.log('Calling InvoiceModel.create...');
     const savedInvoice = await InvoiceModel.create(invoiceData);
     
     console.log('Saved invoice data:', {
       id: savedInvoice.id,
+      invoiceNumber: savedInvoice.invoiceNumber,
       customerId: savedInvoice.customerId,
       customer: savedInvoice.customer,
       customerCount: savedInvoice.customer?.length || 0,
-      printingStatus: savedInvoice.printingStatus
+      printingStatus: savedInvoice.printingStatus,
+      total: savedInvoice.total
     });
 
     // Return success response immediately
@@ -98,7 +121,12 @@ exports.createInvoice = async (req, res) => {
 
   } catch (err) {
     console.error('Error creating invoice:', err);
-    res.status(500).json({ error: 'Failed to create invoice.' });
+    console.error('Error stack:', err.stack);
+    res.status(500).json({ 
+      error: 'Failed to create invoice.',
+      details: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
   }
 };
 

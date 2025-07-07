@@ -418,7 +418,9 @@ function SidebarContent({
       "/cashbook": "cashbook",
       "/income": "income",
       "/invoice": "invoice",
-      "/sales-report": "sales-report"
+      "/sales-report": "sales-report",
+      "/return-dashboard": "return-dashboard",
+      "/customerAccounts": "customerAccounts"
     };
 
     const requiredPermission = pathToPermissionMap[item.path];
@@ -456,6 +458,8 @@ function SidebarContent({
       finalItems.push(...group.items);
     }
   });
+
+  const isAdminOrSuperAdmin = userData?.role === "admin" || userData?.role === "super-admin" || (sessionStorage.getItem("email") === "info@rtechsl.lk" && sessionStorage.getItem("restrictedUser") === "true");
 
   return (
     <>
@@ -557,20 +561,32 @@ function SidebarContent({
       </div>
       <div className="p-4 border-t border-border">
         <div className="flex items-center justify-start flex-wrap gap-2">
-          {hasPermission('user') && (
-            <NavLink
-              to="/user"
-              className="flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
-              title="User"
-            >
-              <User className="w-4 h-4 mr-1" />
-            </NavLink>
+          {/* Admin-only buttons */}
+          {isAdminOrSuperAdmin && (
+            <>
+              <NavLink
+                to="/user"
+                className="flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+                title="User Management (Admin Only)"
+              >
+                <User className="w-4 h-4 mr-1" />
+              </NavLink>
+              <button
+                onClick={() => navigate('/buisness')}
+                className="flex items-center px-3 py-2 text-sm font-medium text-blue-500 rounded-lg hover:bg-blue-50 transition-colors"
+                title="Business Settings (Admin Only)"
+              >
+                <Settings className="w-4 h-4 mr-1" />
+              </button>
+            </>
           )}
+
+          {/* Regular user buttons */}
           {hasPermission('my') && (
             <NavLink
               to="/my"
               className="flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-green-500 hover:bg-green-50 transition-colors"
-              title="My"
+              title="My Settings"
             >
               <User className="w-4 h-4 mr-1" />
             </NavLink>
@@ -581,6 +597,7 @@ function SidebarContent({
               <button
                 onClick={() => navigate('/invoice')}
                 className="flex items-center px-3 py-2 text-sm font-medium text-green-500 rounded-lg hover:bg-green-50 transition-colors"
+                title="Invoice"
               >
                 <Receipt className="w-4 h-4 mr-1" />
               </button>
@@ -589,17 +606,9 @@ function SidebarContent({
 
           <div className="relative group">
             <button
-              onClick={() => navigate('/buisness')}
-              className="flex items-center px-3 py-2 text-sm font-medium text-blue-500 rounded-lg hover:bg-blue-50 transition-colors"
-            >
-              <Settings className="w-4 h-4 mr-1" />
-            </button>
-          </div>
-
-          <div className="relative group">
-            <button
               onClick={handleLogout}
               className="flex items-center px-3 py-2 text-sm font-medium text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+              title="Logout"
             >
               <LogoutIcon className="w-4 h-4 mr-1" />
             </button>

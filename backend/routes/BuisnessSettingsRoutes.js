@@ -13,6 +13,9 @@ router.get('/', BuisnessSettingsController.get);
 // Upload business logo
 router.post('/upload-logo', upload.single('logo'), BuisnessSettingsController.uploadLogo);
 
+// Upload business template (PDF)
+router.post('/upload-template', upload.single('template'), BuisnessSettingsController.uploadTemplate);
+
 // Clear all database tables
 router.delete('/clear-all-database', BuisnessSettingsController.clearAllDatabase);
 
