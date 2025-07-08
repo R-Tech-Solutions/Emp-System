@@ -16,6 +16,36 @@ const fetchInvoice = async (invoiceDocumentId) => {
   }
 };
 
+const fetchBusinessSettings = async () => {
+  try {
+    const response = await fetch(`${backEndURL}/api/business-settings`);
+    if (!response.ok) throw new Error('Failed to fetch business settings');
+    const result = await response.json();
+    console.log('Fetched business settings:', result);
+    return result.data || result; // API returns { success, data }
+  } catch (error) {
+    console.error('Error fetching business settings:', error);
+    return null;
+  }
+};
+
+const fetchAdditionalData = async () => {
+  try {
+    // Use the correct endpoint for notes and terms
+    const response = await fetch(`${backEndURL}/api/additional/notes-terms`);
+    if (!response.ok) throw new Error('Failed to fetch additional notes/terms');
+    const data = await response.json();
+    console.log('Fetched additional notes/terms:', data);
+    return {
+      notes: data.notes || '',
+      terms: data.terms || []
+    };
+  } catch (error) {
+    console.error('Error fetching additional notes/terms:', error);
+    return { notes: '', terms: [] };
+  }
+};
+
 const AdvanceA4Invoice = ({ invoice: invoiceProp, invoiceDocumentId }) => {
   const [invoice, setInvoice] = useState(invoiceProp);
   const [businessSettings, setBusinessSettings] = useState({});
@@ -27,71 +57,45 @@ const AdvanceA4Invoice = ({ invoice: invoiceProp, invoiceDocumentId }) => {
   const headerBarcodeCanvasRef = useRef(null);
 
   useEffect(() => {
-    if (!invoiceProp && invoiceDocumentId) {
-      fetchInvoice(invoiceDocumentId).then(invoiceData => {
-        setInvoice(invoiceData);
-      });
-    }
-  }, [invoiceDocumentId, invoiceProp]);
-
-  // Fetch business settings and template
-  useEffect(() => {
-    const fetchBusinessSettings = async () => {
+    const loadData = async () => {
+      setIsLoading(true);
       try {
-        setIsLoading(true);
-        const response = await fetch(`${backEndURL}/api/business-settings`);
-        if (response.ok) {
-          const { data } = await response.json();
-          setBusinessSettings(data || {});
-          console.log('Fetched business settings:', data);
-
-          // If template URL exists, convert it to an image
-          if (data.templateUrl) {
-            try {
-              const templateImg = new Image();
-              templateImg.crossOrigin = "Anonymous";
-              templateImg.src = data.templateUrl;
-              templateImg.onload = () => {
-                setTemplateImage(templateImg);
-              };
-              templateImg.onerror = () => {
-                console.error("Failed to load template image");
-                setTemplateImage(null);
-              };
-            } catch (error) {
-              console.error("Error processing template:", error);
-              setTemplateImage(null);
-            }
+        // Always fetch business settings
+        const settings = await fetchBusinessSettings();
+        if (settings) {
+          setBusinessSettings(settings);
+          // Load template image if exists
+          if (settings.templateUrl) {
+            const img = new Image();
+            img.crossOrigin = "Anonymous";
+            img.src = settings.templateUrl;
+            img.onload = () => setTemplateImage(img);
+            img.onerror = () => setTemplateImage(null);
           }
         }
+        // Always fetch additional notes/terms
+        const additional = await fetchAdditionalData();
+        setAdditionalData(additional);
       } catch (error) {
-        console.error('Error fetching business settings:', error);
+        console.error('Error loading data:', error);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchBusinessSettings();
-  }, []);
+    loadData();
+  }, [invoiceDocumentId, invoiceProp]);
+
+  useEffect(() => {
+    if (!invoiceProp && invoiceDocumentId) {
+      fetchInvoice(invoiceDocumentId).then(invoiceData => {
+        setInvoice(invoiceData);
+      });
+    } else if (invoiceProp) {
+      setInvoice(invoiceProp);
+    }
+  }, [invoiceDocumentId, invoiceProp]);
 
   // Fetch additional notes and terms
-  useEffect(() => {
-    const fetchAdditional = async () => {
-      try {
-        const response = await fetch(`${backEndURL}/api/additional`);
-        if (response.ok) {
-          const data = await response.json();
-          setAdditionalData({
-            notes: data.notes || '',
-            terms: data.terms || []
-          });
-          console.log('Fetched additional:', data);
-        }
-      } catch (error) {
-        console.error('Error fetching additional notes/terms:', error);
-      }
-    };
-    fetchAdditional();
-  }, []);
 
   useEffect(() => {
     if (invoice) {

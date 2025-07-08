@@ -554,19 +554,19 @@ export default function ProductManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
+    <div className="min-h-screen bg-background dark:bg-gray-900 text-text-primary dark:text-gray-100">
       {/* Header */}
-      <header className="bg-gray-800 border-b border-gray-700 rounded-lg p-6 mb-6 py-6 px-4">
+      <header className="bg-surface dark:bg-gray-800 border-b border-border rounded-xl shadow-lg p-6 mb-6 py-6 px-4 transition-all duration-200">
         <div className="container mx-auto">
-          <div className="flex border-b border-gray-700 mb-4">
+          <div className="flex border-b border-border mb-4">
             <button
-              className={`px-4 py-2 font-medium ${activeTab === "new" ? "text-blue-400 border-b-2 border-blue-400" : "text-gray-400 hover:text-gray-300"}`}
+              className={`px-4 py-2 font-bold text-lg rounded-xl transition-all duration-200 ${activeTab === "new" ? "text-primary border-b-2 border-primary bg-accent" : "text-text-secondary hover:text-primary hover:bg-accent"}`}
               onClick={() => setActiveTab("new")}
             >
               New Product
             </button>
             <button
-              className={`px-4 py-2 font-medium ${activeTab === "all" ? "text-blue-400 border-b-2 border-blue-400" : "text-gray-400 hover:text-gray-300"}`}
+              className={`px-4 py-2 font-bold text-lg rounded-xl transition-all duration-200 ${activeTab === "all" ? "text-primary border-b-2 border-primary bg-accent" : "text-text-secondary hover:text-primary hover:bg-accent"}`}
               onClick={() => setActiveTab("all")}
             >
               View All Products
@@ -578,16 +578,16 @@ export default function ProductManagement() {
       {/* Main Content */}
       <main className="container mx-auto py-6 px-4">
         {activeTab === "new" ? (
-          <div className="bg-gray-800 rounded-lg p-6 mb-6">
-            <h2 className="text-lg font-semibold mb-6">Product Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-surface dark:bg-gray-800 rounded-xl shadow-lg p-8 mb-8 border border-border transition-all duration-200">
+            <h2 className="text-2xl font-bold text-text-primary mb-8">Product Information</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Left Column */}
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {/* Product Image */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">Product Image</label>
+                  <label className="block text-lg font-bold text-text-primary mb-4">Product Image</label>
                   <div className="flex items-center">
-                    <div className="h-24 w-24 rounded-md overflow-hidden bg-gray-700 flex items-center justify-center">
+                    <div className="h-32 w-32 rounded-xl overflow-hidden bg-accent flex items-center justify-center shadow-lg border border-border">
                       {newProduct.image ? (
                         <img
                           src={URL.createObjectURL(newProduct.image)}
@@ -595,11 +595,11 @@ export default function ProductManagement() {
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <span className="text-gray-400">No image</span>
+                        <span className="text-text-muted text-lg">No image</span>
                       )}
                     </div>
-                    <label className="ml-4 cursor-pointer">
-                      <div className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-md text-sm">
+                    <label className="ml-6 cursor-pointer">
+                      <div className="px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl text-lg font-bold transition-all duration-200 shadow-lg">
                         {newProduct.image ? "Change" : "Upload"}
                       </div>
                       <input
@@ -614,14 +614,14 @@ export default function ProductManagement() {
 
                 {/* Basic Information */}
                 <div>
-                  <h3 className="text-sm font-medium mb-3">Basic Information</h3>
-                  <div className="space-y-4">
+                  <h3 className="text-xl font-bold text-text-primary mb-6">Basic Information</h3>
+                  <div className="space-y-6">
                     <div>
-                      <label className="block text-sm font-medium mb-1">Product Type</label>
+                      <label className="block text-lg font-bold text-text-primary mb-2">Product Type</label>
                       <select
                         value={newProduct.productType}
                         onChange={(e) => handleNewProductChange("productType", e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                       >
                         {productTypes.map((type) => (
                           <option key={type} value={type}>{type}</option>
@@ -631,33 +631,33 @@ export default function ProductManagement() {
                     {/* Barcode and Scale fields for Goods */}
                     {newProduct.productType === "Goods" && (
                       <>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-3">
                           <input
                             type="checkbox"
                             id="toWeighWithScale"
                             checked={!!newProduct.toWeighWithScale}
                             onChange={e => handleNewProductChange("toWeighWithScale", e.target.checked)}
-                            className="form-checkbox h-4 w-4 text-blue-600"
+                            className="form-checkbox h-5 w-5 text-primary rounded-lg"
                           />
-                          <label htmlFor="toWeighWithScale" className="text-sm font-medium">
+                          <label htmlFor="toWeighWithScale" className="text-lg font-bold text-text-primary">
                             To Weigh With Scale?
                           </label>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-1">
-                            Barcode <span className="text-red-400">*</span>
+                          <label className="block text-lg font-bold text-text-primary mb-2">
+                            Barcode <span className="text-red-500">*</span>
                           </label>
                           <input
                             type="text"
                             value={newProduct.barcode}
                             onChange={e => handleNewProductChange("barcode", e.target.value)}
-                            className={`w-full bg-gray-700 border ${errors.barcode ? 'border-red-500' : 'border-gray-600'} rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                            className={`w-full bg-surface border ${errors.barcode ? 'border-red-500' : 'border-border'} rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200`}
                           />
-                          {errors.barcode && <p className="mt-1 text-sm text-red-400">{errors.barcode}</p>}
+                          {errors.barcode && <p className="mt-2 text-lg text-red-500">{errors.barcode}</p>}
                         </div>
-                        <div className="mt-4">
-                          <label className="block text-sm font-medium mb-2">Additional Product Identifier</label>
-                          <div className="space-y-2">
+                        <div className="mt-6">
+                          <label className="block text-lg font-bold text-text-primary mb-4">Additional Product Identifier</label>
+                          <div className="space-y-4">
                             <div className="flex items-center">
                               <input
                                 type="radio"
@@ -666,9 +666,9 @@ export default function ProductManagement() {
                                 value="none"
                                 checked={newProduct.productIdentifierType === "none"}
                                 onChange={e => handleNewProductChange("productIdentifierType", e.target.value)}
-                                className="h-4 w-4 text-blue-600"
+                                className="h-5 w-5 text-primary"
                               />
-                              <label htmlFor="none" className="ml-2 text-sm">
+                              <label htmlFor="none" className="ml-3 text-lg text-text-primary">
                                 None
                               </label>
                             </div>
@@ -680,9 +680,9 @@ export default function ProductManagement() {
                                 value="serial"
                                 checked={newProduct.productIdentifierType === "serial"}
                                 onChange={e => handleNewProductChange("productIdentifierType", e.target.value)}
-                                className="h-4 w-4 text-blue-600"
+                                className="h-5 w-5 text-primary"
                               />
-                              <label htmlFor="serial" className="ml-2 text-sm">
+                              <label htmlFor="serial" className="ml-3 text-lg text-text-primary">
                                 Product with Serial Number
                               </label>
                             </div>
@@ -694,9 +694,9 @@ export default function ProductManagement() {
                                 value="imei"
                                 checked={newProduct.productIdentifierType === "imei"}
                                 onChange={e => handleNewProductChange("productIdentifierType", e.target.value)}
-                                className="h-4 w-4 text-blue-600"
+                                className="h-5 w-5 text-primary"
                               />
-                              <label htmlFor="imei" className="ml-2 text-sm">
+                              <label htmlFor="imei" className="ml-3 text-lg text-text-primary">
                                 Product with IMEI Number
                               </label>
                             </div>
@@ -705,25 +705,25 @@ export default function ProductManagement() {
                       </>
                     )}
                     <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Product Name <span className="text-red-400">*</span>
+                      <label className="block text-lg font-bold text-text-primary mb-2">
+                        Product Name <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         value={newProduct.name}
                         onChange={(e) => handleNewProductChange("name", e.target.value)}
-                        className={`w-full bg-gray-700 border ${errors.name ? 'border-red-500' : 'border-gray-600'} rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                        className={`w-full bg-surface border ${errors.name ? 'border-red-500' : 'border-border'} rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200`}
                       />
-                      {errors.name && <p className="mt-1 text-sm text-red-400">{errors.name}</p>}
+                      {errors.name && <p className="mt-2 text-lg text-red-500">{errors.name}</p>}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-1">Description</label>
+                      <label className="block text-lg font-bold text-text-primary mb-2">Description</label>
                       <textarea
                         value={newProduct.description}
                         onChange={(e) => handleNewProductChange("description", e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        rows={3}
+                        className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
+                        rows={4}
                       />
                     </div>
                   </div>
@@ -731,40 +731,40 @@ export default function ProductManagement() {
               </div>
 
               {/* Right Column */}
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div>
-                  <h3 className="text-sm font-medium mb-3">Pricing</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <h3 className="text-xl font-bold text-text-primary mb-6">Pricing</h3>
+                  <div className="grid grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Cost Price <span className="text-red-400">*</span>
+                      <label className="block text-lg font-bold text-text-primary mb-2">
+                        Cost Price <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
-                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">Rs</span>
+                        <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-text-muted text-lg">Rs</span>
                         <input
                           type="number"
                           min="0"
                           step="0.01"
                           value={newProduct.costPrice}
                           onChange={e => handleNewProductChange("costPrice", parseFloat(e.target.value) || 0)}
-                          className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-8 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full bg-surface border border-border rounded-xl py-3 pl-12 pr-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">
+                      <label className="block text-lg font-bold text-text-primary mb-2">
                         Wholesale Price
                       </label>
-                      <div className="flex gap-2">
+                      <div className="flex gap-3">
                         <div className="relative w-2/3">
-                          <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">Rs</span>
+                          <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-text-muted text-lg">Rs</span>
                           <input
                             type="number"
                             min="0"
                             step="0.01"
                             value={newProduct.marginPrice}
                             onChange={e => syncPricePercent('marginPrice', parseFloat(e.target.value) || 0, false)}
-                            className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-8 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full bg-surface border border-border rounded-xl py-3 pl-12 pr-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                           />
                         </div>
                         <input
@@ -773,25 +773,25 @@ export default function ProductManagement() {
                           step="0.01"
                           value={newProduct.marginPricePercent}
                           onChange={e => syncPricePercent('marginPrice', parseFloat(e.target.value) || 0, true)}
-                          className="w-1/3 bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-1/3 bg-surface border border-border rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                           placeholder="%"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">
+                      <label className="block text-lg font-bold text-text-primary mb-2">
                         Retail Price
                       </label>
-                      <div className="flex gap-2">
+                      <div className="flex gap-3">
                         <div className="relative w-2/3">
-                          <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">Rs</span>
+                          <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-text-muted text-lg">Rs</span>
                           <input
                             type="number"
                             min="0"
                             step="0.01"
                             value={newProduct.retailPrice}
                             onChange={e => syncPricePercent('retailPrice', parseFloat(e.target.value) || 0, false)}
-                            className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-8 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full bg-surface border border-border rounded-xl py-3 pl-12 pr-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                           />
                         </div>
                         <input
@@ -800,25 +800,25 @@ export default function ProductManagement() {
                           step="0.01"
                           value={newProduct.retailPricePercent}
                           onChange={e => syncPricePercent('retailPrice', parseFloat(e.target.value) || 0, true)}
-                          className="w-1/3 bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-1/3 bg-surface border border-border rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                           placeholder="%"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Sales Price <span className="text-red-400">*</span>
+                      <label className="block text-lg font-bold text-text-primary mb-2">
+                        Sales Price <span className="text-red-500">*</span>
                       </label>
-                      <div className="flex gap-2">
+                      <div className="flex gap-3">
                         <div className="relative w-2/3">
-                          <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">Rs</span>
+                          <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-text-muted text-lg">Rs</span>
                           <input
                             type="number"
                             min="0"
                             step="0.01"
                             value={newProduct.salesPrice}
                             onChange={e => syncPricePercent('salesPrice', parseFloat(e.target.value) || 0, false)}
-                            className={`w-full bg-gray-700 border ${errors.salesPrice ? 'border-red-500' : 'border-gray-600'} rounded-md py-2 pl-8 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                            className={`w-full bg-surface border ${errors.salesPrice ? 'border-red-500' : 'border-border'} rounded-xl py-3 pl-12 pr-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200`}
                           />
                         </div>
                         <input
@@ -827,34 +827,34 @@ export default function ProductManagement() {
                           step="0.01"
                           value={newProduct.salesPricePercent}
                           onChange={e => syncPricePercent('salesPrice', parseFloat(e.target.value) || 0, true)}
-                          className="w-1/3 bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-1/3 bg-surface border border-border rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                           placeholder="%"
                         />
                       </div>
-                      {errors.salesPrice && <p className="mt-1 text-sm text-red-400">{errors.salesPrice}</p>}
+                      {errors.salesPrice && <p className="mt-2 text-lg text-red-500">{errors.salesPrice}</p>}
                     </div>
                   </div>
                 </div>
 
                 {/* Inventory */}
                 <div>
-                  <h3 className="text-sm font-medium mb-3">Inventory</h3>
-                  <div className="space-y-4">
+                  <h3 className="text-xl font-bold text-text-primary mb-6">Inventory</h3>
+                  <div className="space-y-6">
                     <div>
-                      <label className="block text-sm font-medium mb-1">SKU</label>
+                      <label className="block text-lg font-bold text-text-primary mb-2">SKU</label>
                       <input
                         type="text"
                         value={newProduct.sku}
                         onChange={e => handleNewProductChange("sku", e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Category</label>
+                      <label className="block text-lg font-bold text-text-primary mb-2">Category</label>
                       <select
                         value={newProduct.category}
                         onChange={e => handleNewProductChange("category", e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                       >
                         {productCategories.map((category) => (
                           <option key={category} value={category}>{category}</option>
@@ -866,24 +866,24 @@ export default function ProductManagement() {
 
                 {/* Additional Information */}
                 <div>
-                  <h3 className="text-sm font-medium mb-3">Additional Information</h3>
-                  <div className="space-y-4">
+                  <h3 className="text-xl font-bold text-text-primary mb-6">Additional Information</h3>
+                  <div className="space-y-6">
                     <div>
-                      <label className="block text-sm font-medium mb-1">Reference</label>
+                      <label className="block text-lg font-bold text-text-primary mb-2">Reference</label>
                       <input
                         type="text"
                         value={newProduct.reference}
                         onChange={(e) => handleNewProductChange("reference", e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Internal Notes</label>
+                      <label className="block text-lg font-bold text-text-primary mb-2">Internal Notes</label>
                       <textarea
                         value={newProduct.internalNotes}
                         onChange={(e) => handleNewProductChange("internalNotes", e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        rows={2}
+                        className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
+                        rows={3}
                       />
                     </div>
                   </div>
@@ -892,7 +892,7 @@ export default function ProductManagement() {
             </div>
 
             {/* Form Actions */}
-            <div className="flex justify-end space-x-3 mt-8">
+            <div className="flex justify-end space-x-4 mt-10">
               <button
                 onClick={() => {
                   setNewProduct({
@@ -917,34 +917,34 @@ export default function ProductManagement() {
                   });
                   setErrors({});
                 }}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md"
+                className="px-8 py-3 bg-secondary hover:bg-accent text-primary rounded-xl font-bold transition-all duration-200 shadow-lg"
               >
                 Clear
               </button>
               <button
                 onClick={handleCreateProduct}
                 disabled={isLoading || !newProduct.name || newProduct.salesPrice <= 0}
-                className={`px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md ${(isLoading || !newProduct.name || newProduct.salesPrice <= 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`px-8 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold transition-all duration-200 shadow-lg ${(isLoading || !newProduct.name || newProduct.salesPrice <= 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {isLoading ? 'Creating...' : 'Create Product'}
               </button>
             </div>
           </div>
         ) : (
-          <div className="bg-gray-800 rounded-lg p-6">
+          <div className="bg-surface dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-border transition-all duration-200">
             {/* Search and filter */}
-            <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="flex flex-col md:flex-row gap-6 mb-8">
               <div className="flex-1">
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search size={16} className="text-gray-400" />
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <Search size={20} className="text-text-muted" />
                   </div>
                   <input
                     type="text"
                     placeholder="Search products..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-10 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full bg-surface border border-border rounded-xl py-3 pl-12 pr-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                   />
                 </div>
               </div>
@@ -952,7 +952,7 @@ export default function ProductManagement() {
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="bg-surface border border-border rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                 >
                   <option value="all">All Categories</option>
                   {productCategories.map((category) => (
@@ -961,31 +961,31 @@ export default function ProductManagement() {
                 </select>
               </div>
               {/* Import/Export Buttons */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <button
                   onClick={() => setImportModalOpen(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 transition-colors"
+                  className="flex items-center gap-2 px-6 py-3 bg-secondary hover:bg-accent text-primary rounded-xl font-bold transition-all duration-200 shadow-lg"
                 >
-                  <Upload size={16} />
+                  <Upload size={18} />
                   Import
                 </button>
                 <button
                   onClick={handleExport}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-500 transition-colors"
+                  className="flex items-center gap-2 px-6 py-3 bg-secondary hover:bg-accent text-primary rounded-xl font-bold transition-all duration-200 shadow-lg"
                 >
-                  <Download size={16} />
+                  <Download size={18} />
                   Export
                 </button>
               </div>
             </div>
 
             {/* Products table */}
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-xl border border-border">
               <table className="w-full">
-                <thead>
-                  <tr className="text-left text-gray-400 border-b border-gray-700">
+                <thead className="bg-accent">
+                  <tr className="text-left text-text-primary border-b border-border">
                     <th
-                      className="pb-3 font-medium cursor-pointer hover:text-gray-300"
+                      className="pb-4 pt-4 pl-6 font-bold text-lg cursor-pointer hover:text-primary transition-all duration-200"
                       onClick={() => requestSort('sku')}
                     >
                       <div className="flex items-center">
@@ -993,9 +993,9 @@ export default function ProductManagement() {
                         {renderSortIcon('sku')}
                       </div>
                     </th>
-                    <th className="pb-3 font-medium">Image</th>
+                    <th className="pb-4 pt-4 font-bold text-lg">Image</th>
                     <th
-                      className="pb-3 font-medium cursor-pointer hover:text-gray-300"
+                      className="pb-4 pt-4 font-bold text-lg cursor-pointer hover:text-primary transition-all duration-200"
                       onClick={() => requestSort('name')}
                     >
                       <div className="flex items-center">
@@ -1004,7 +1004,7 @@ export default function ProductManagement() {
                       </div>
                     </th>
                     <th
-                      className="pb-3 font-medium cursor-pointer hover:text-gray-300"
+                      className="pb-4 pt-4 font-bold text-lg cursor-pointer hover:text-primary transition-all duration-200"
                       onClick={() => requestSort('category')}
                     >
                       <div className="flex items-center">
@@ -1013,7 +1013,7 @@ export default function ProductManagement() {
                       </div>
                     </th>
                     <th
-                      className="pb-3 font-medium cursor-pointer hover:text-gray-300"
+                      className="pb-4 pt-4 font-bold text-lg cursor-pointer hover:text-primary transition-all duration-200"
                       onClick={() => requestSort('salesPrice')}
                     >
                       <div className="flex items-center">
@@ -1022,7 +1022,7 @@ export default function ProductManagement() {
                       </div>
                     </th>
                     <th
-                      className="pb-3 font-medium cursor-pointer hover:text-gray-300"
+                      className="pb-4 pt-4 font-bold text-lg cursor-pointer hover:text-primary transition-all duration-200"
                       onClick={() => requestSort('costPrice')}
                     >
                       <div className="flex items-center">
@@ -1031,77 +1031,81 @@ export default function ProductManagement() {
                       </div>
                     </th>
 
-                    <th className="pb-3 font-medium">Barcode</th>
-                    <th className="pb-3 font-medium">Weigh With Scale?</th>
-                    <th className="pb-3 font-medium">Actions</th>
+                    <th className="pb-4 pt-4 font-bold text-lg">Barcode</th>
+                    <th className="pb-4 pt-4 font-bold text-lg">Weigh With Scale?</th>
+                    <th className="pb-4 pt-4 font-bold text-lg">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="bg-surface">
                   {isLoading ? (
                     <tr>
-                      <td colSpan="9" className="py-4 text-center">
+                      <td colSpan="9" className="py-8 text-center">
                         <div className="flex justify-center">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
                         </div>
                       </td>
                     </tr>
                   ) : currentProducts.length === 0 ? (
                     <tr>
-                      <td colSpan="9" className="py-4 text-center text-gray-400">
+                      <td colSpan="9" className="py-8 text-center text-text-muted text-lg">
                         No products found
                       </td>
                     </tr>
                   ) : (
                     currentProducts.map((product) => (
-                      <tr key={product.id} className="border-b border-gray-700 hover:bg-gray-750">
-                        <td className="py-4">{product.sku || '-'}</td>
-                        <td className="py-4">
+                      <tr key={product.id} className="border-b border-border hover:bg-accent transition-all duration-200">
+                        <td className="py-6 pl-6 text-lg font-bold">{product.sku || '-'}</td>
+                        <td className="py-6">
                           {product.imageUrl ? (
                             <img
                               src={product.imageUrl}
                               alt={product.name}
-                              className="h-10 w-10 rounded-md object-cover"
+                              className="h-16 w-16 rounded-xl object-cover shadow-lg"
                               onError={(e) => { e.target.src = 'fallback-image-url'; }}
                             />
                           ) : (
-                            <div className="h-10 w-10 rounded-md bg-gray-700 flex items-center justify-center">
-                              <span className="text-xs text-gray-400">No image</span>
+                            <div className="h-16 w-16 rounded-xl bg-accent flex items-center justify-center shadow-lg">
+                              <span className="text-text-muted text-lg">No image</span>
                             </div>
                           )}
                         </td>
-                        <td className="py-4 font-medium">
-                          <div>{product.name}</div>
-                          <div className="text-sm text-gray-400">{product.description}</div>
+                        <td className="py-6">
+                          <div className="text-lg font-bold text-text-primary">{product.name}</div>
+                          <div className="text-lg text-text-secondary">{product.description}</div>
                         </td>
-                        <td className="py-4">
-                          <span className="px-2 py-1 bg-gray-700 rounded-full text-sm">
+                        <td className="py-6">
+                          <span className="px-4 py-2 bg-secondary text-primary rounded-xl text-lg font-bold shadow-lg">
                             {product.category}
                           </span>
                         </td>
-                        <td className="py-4">Rs {product.salesPrice?.toLocaleString() || '0'}</td>
-                        <td className="py-4">Rs {product.costPrice?.toLocaleString() || '0'}</td>
-                        <td className="py-4">{product.barcode || '-'}</td>
-                        <td className="py-4">
-                          {product.productType === "Goods" ? (product.toWeighWithScale ? "Yes" : "No") : "-"}
+                        <td className="py-6 text-lg font-bold text-text-primary">Rs {product.salesPrice?.toLocaleString() || '0'}</td>
+                        <td className="py-6 text-lg font-bold text-text-primary">Rs {product.costPrice?.toLocaleString() || '0'}</td>
+                        <td className="py-6 text-lg text-text-primary">{product.barcode || '-'}</td>
+                        <td className="py-6">
+                          {product.productType === "Goods" ? (
+                            <span className={`px-4 py-2 rounded-xl text-lg font-bold ${product.toWeighWithScale ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                              {product.toWeighWithScale ? "Yes" : "No"}
+                            </span>
+                          ) : "-"}
                         </td>
-                        <td className="py-4">
-                          <div className="flex space-x-2">
+                        <td className="py-6">
+                          <div className="flex space-x-3">
                             <button
                               onClick={() => handleViewIdentifiers(product)}
-                              className="text-blue-400 hover:text-blue-300"
+                              className="text-primary hover:text-primary-dark transition-all duration-200"
                               title="View Identifiers"
                             >
-                              <Eye size={16} />
+                              <Eye size={20} />
                             </button>
                             
                             {/* Only show edit button if user has products permission */}
                             {hasPermission('products') && (
                               <button
                                 onClick={() => handleEditProduct(product)}
-                                className="text-blue-400 hover:text-blue-300"
+                                className="text-primary hover:text-primary-dark transition-all duration-200"
                                 title="Edit"
                               >
-                                <Edit size={16} />
+                                <Edit size={20} />
                               </button>
                             )}
                             
@@ -1109,10 +1113,10 @@ export default function ProductManagement() {
                             {hasPermission('products') && (
                               <button
                                 onClick={() => handleDeleteProduct(product.id)}
-                                className="text-red-400 hover:text-red-300"
+                                className="text-red-500 hover:text-red-700 transition-all duration-200"
                                 title="Delete"
                               >
-                                <Trash2 size={16} />
+                                <Trash2 size={20} />
                               </button>
                             )}
                           </div>
@@ -1125,22 +1129,22 @@ export default function ProductManagement() {
             </div>
 
             {/* Pagination */}
-            <div className="flex justify-between items-center mt-6">
-              <div className="text-sm text-gray-400">
+            <div className="flex justify-between items-center mt-8">
+              <div className="text-lg text-text-secondary">
                 Showing {indexOfFirstProduct + 1} to {Math.min(indexOfLastProduct, filteredProducts.length)} of {filteredProducts.length} entries
               </div>
-              <div className="flex space-x-1">
+              <div className="flex space-x-2">
                 <button
                   onClick={() => setCurrentPage(1)}
                   disabled={currentPage === 1}
-                  className="px-3 py-1 bg-gray-700 rounded-md text-gray-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-surface border border-border rounded-xl text-text-primary hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                 >
                   «
                 </button>
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-1 bg-gray-700 rounded-md text-gray-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-surface border border-border rounded-xl text-text-primary hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                 >
                   ‹
                 </button>
@@ -1161,7 +1165,7 @@ export default function ProductManagement() {
                     <button
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`px-3 py-1 rounded-md ${currentPage === pageNum ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                      className={`px-4 py-2 rounded-xl font-bold transition-all duration-200 ${currentPage === pageNum ? 'bg-primary text-white shadow-lg' : 'bg-surface border border-border text-text-primary hover:bg-accent'}`}
                     >
                       {pageNum}
                     </button>
@@ -1171,14 +1175,14 @@ export default function ProductManagement() {
                 <button
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages || totalPages === 0}
-                  className="px-3 py-1 bg-gray-700 rounded-md text-gray-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-surface border border-border rounded-xl text-text-primary hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                 >
                   ›
                 </button>
                 <button
                   onClick={() => setCurrentPage(totalPages)}
                   disabled={currentPage === totalPages || totalPages === 0}
-                  className="px-3 py-1 bg-gray-700 rounded-md text-gray-300 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 bg-surface border border-border rounded-xl text-text-primary hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                 >
                   »
                 </button>
@@ -1190,26 +1194,26 @@ export default function ProductManagement() {
 
       {/* Edit Product Modal */}
       {editModalOpen && editProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 ">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-4xl w-[1800px] max-h-screen h-[1000px]  overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-semibold">Edit Product</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface dark:bg-gray-800 rounded-xl shadow-2xl p-8 w-full max-w-4xl w-[1800px] max-h-screen h-[1000px] overflow-y-auto border border-border transition-all duration-200">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-2xl font-bold text-text-primary">Edit Product</h2>
               <button
                 onClick={() => setEditModalOpen(false)}
-                className="text-gray-400 hover:text-gray-200"
+                className="text-text-muted hover:text-text-primary transition-all duration-200"
               >
                 <X size={24} />
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Left Column */}
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {/* Product Image */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">Product Image</label>
+                  <label className="block text-lg font-bold text-text-primary mb-4">Product Image</label>
                   <div className="flex items-center">
-                    <div className="h-24 w-24 rounded-md overflow-hidden bg-gray-700 flex items-center justify-center">
+                    <div className="h-32 w-32 rounded-xl overflow-hidden bg-accent flex items-center justify-center shadow-lg border border-border">
                       {editProduct.image ? (
                         typeof editProduct.image === 'string' ? (
                           <img
@@ -1225,11 +1229,11 @@ export default function ProductManagement() {
                           />
                         )
                       ) : (
-                        <span className="text-gray-400">No image</span>
+                        <span className="text-text-muted text-lg">No image</span>
                       )}
                     </div>
-                    <label className="ml-4 cursor-pointer">
-                      <div className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-md text-sm">
+                    <label className="ml-6 cursor-pointer">
+                      <div className="px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl text-lg font-bold transition-all duration-200 shadow-lg">
                         {editProduct.image ? "Change" : "Upload"}
                       </div>
                       <input
@@ -1244,14 +1248,14 @@ export default function ProductManagement() {
 
                 {/* Basic Information */}
                 <div>
-                  <h3 className="text-sm font-medium mb-3">Basic Information</h3>
-                  <div className="space-y-4">
+                  <h3 className="text-xl font-bold text-text-primary mb-6">Basic Information</h3>
+                  <div className="space-y-6">
                     <div>
-                      <label className="block text-sm font-medium mb-1">Product Type</label>
+                      <label className="block text-lg font-bold text-text-primary mb-2">Product Type</label>
                       <select
                         value={editProduct.productType}
                         onChange={(e) => handleEditProductChange("productType", e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                       >
                         {productTypes.map((type) => (
                           <option key={type} value={type}>{type}</option>
@@ -1261,33 +1265,33 @@ export default function ProductManagement() {
                     {/* Barcode and Scale fields for Goods */}
                     {editProduct.productType === "Goods" && (
                       <>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-3">
                           <input
                             type="checkbox"
                             id="editToWeighWithScale"
                             checked={!!editProduct.toWeighWithScale}
                             onChange={e => handleEditProductChange("toWeighWithScale", e.target.checked)}
-                            className="form-checkbox h-4 w-4 text-blue-600"
+                            className="form-checkbox h-5 w-5 text-primary rounded-lg"
                           />
-                          <label htmlFor="editToWeighWithScale" className="text-sm font-medium">
+                          <label htmlFor="editToWeighWithScale" className="text-lg font-bold text-text-primary">
                             To Weigh With Scale?
                           </label>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-1">
-                            Barcode <span className="text-red-400">*</span>
+                          <label className="block text-lg font-bold text-text-primary mb-2">
+                            Barcode <span className="text-red-500">*</span>
                           </label>
                           <input
                             type="text"
                             value={editProduct.barcode}
                             onChange={e => handleEditProductChange("barcode", e.target.value)}
-                            className={`w-full bg-gray-700 border ${errors.barcode ? 'border-red-500' : 'border-gray-600'} rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                            className={`w-full bg-surface border ${errors.barcode ? 'border-red-500' : 'border-border'} rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200`}
                           />
-                          {errors.barcode && <p className="mt-1 text-sm text-red-400">{errors.barcode}</p>}
+                          {errors.barcode && <p className="mt-2 text-lg text-red-500">{errors.barcode}</p>}
                         </div>
-                        <div className="mt-4">
-                          <label className="block text-sm font-medium mb-2">Additional Product Identifier</label>
-                          <div className="space-y-2">
+                        <div className="mt-6">
+                          <label className="block text-lg font-bold text-text-primary mb-4">Additional Product Identifier</label>
+                          <div className="space-y-4">
                             <div className="flex items-center">
                               <input
                                 type="radio"
@@ -1296,9 +1300,9 @@ export default function ProductManagement() {
                                 value="none"
                                 checked={editProduct.productIdentifierType === "none"}
                                 onChange={e => handleEditProductChange("productIdentifierType", e.target.value)}
-                                className="h-4 w-4 text-blue-600"
+                                className="h-5 w-5 text-primary"
                               />
-                              <label htmlFor="editNone" className="ml-2 text-sm">
+                              <label htmlFor="editNone" className="ml-3 text-lg text-text-primary">
                                 None
                               </label>
                             </div>
@@ -1310,9 +1314,9 @@ export default function ProductManagement() {
                                 value="serial"
                                 checked={editProduct.productIdentifierType === "serial"}
                                 onChange={e => handleEditProductChange("productIdentifierType", e.target.value)}
-                                className="h-4 w-4 text-blue-600"
+                                className="h-5 w-5 text-primary"
                               />
-                              <label htmlFor="editSerial" className="ml-2 text-sm">
+                              <label htmlFor="editSerial" className="ml-3 text-lg text-text-primary">
                                 Product with Serial Number
                               </label>
                             </div>
@@ -1324,9 +1328,9 @@ export default function ProductManagement() {
                                 value="imei"
                                 checked={editProduct.productIdentifierType === "imei"}
                                 onChange={e => handleEditProductChange("productIdentifierType", e.target.value)}
-                                className="h-4 w-4 text-blue-600"
+                                className="h-5 w-5 text-primary"
                               />
-                              <label htmlFor="editImei" className="ml-2 text-sm">
+                              <label htmlFor="editImei" className="ml-3 text-lg text-text-primary">
                                 Product with IMEI Number
                               </label>
                             </div>
@@ -1335,65 +1339,65 @@ export default function ProductManagement() {
                       </>
                     )}
                     <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Product Name <span className="text-red-400">*</span>
+                      <label className="block text-lg font-bold text-text-primary mb-2">
+                        Product Name <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         value={editProduct.name}
                         onChange={(e) => handleEditProductChange("name", e.target.value)}
-                        className={`w-full bg-gray-700 border ${errors.name ? 'border-red-500' : 'border-gray-600'} rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                        className={`w-full bg-surface border ${errors.name ? 'border-red-500' : 'border-border'} rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200`}
                       />
-                      {errors.name && <p className="mt-1 text-sm text-red-400">{errors.name}</p>}
+                      {errors.name && <p className="mt-2 text-lg text-red-500">{errors.name}</p>}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium mb-1">Description</label>
+                      <label className="block text-lg font-bold text-text-primary mb-2">Description</label>
                       <textarea
                         value={editProduct.description}
                         onChange={(e) => handleEditProductChange("description", e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        rows={3}
+                        className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
+                        rows={4}
                       />
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div>
-                  <h3 className="text-sm font-medium mb-3">Pricing</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <h3 className="text-xl font-bold text-text-primary mb-6">Pricing</h3>
+                  <div className="grid grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Cost Price <span className="text-red-400">*</span>
+                      <label className="block text-lg font-bold text-text-primary mb-2">
+                        Cost Price <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
-                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">Rs</span>
+                        <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-text-muted text-lg">Rs</span>
                         <input
                           type="number"
                           min="0"
                           step="0.01"
                           value={editProduct.costPrice}
                           onChange={e => handleEditProductChange("costPrice", parseFloat(e.target.value) || 0)}
-                          className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-8 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full bg-surface border border-border rounded-xl py-3 pl-12 pr-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">
+                      <label className="block text-lg font-bold text-text-primary mb-2">
                         Wholesale Price
                       </label>
-                      <div className="flex gap-2">
+                      <div className="flex gap-3">
                         <div className="relative w-2/3">
-                          <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">Rs</span>
+                          <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-text-muted text-lg">Rs</span>
                           <input
                             type="number"
                             min="0"
                             step="0.01"
                             value={editProduct.marginPrice}
                             onChange={e => syncEditPricePercent('marginPrice', parseFloat(e.target.value) || 0, false)}
-                            className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-8 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full bg-surface border border-border rounded-xl py-3 pl-12 pr-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                           />
                         </div>
                         <input
@@ -1402,25 +1406,25 @@ export default function ProductManagement() {
                           step="0.01"
                           value={editProduct.marginPricePercent}
                           onChange={e => syncEditPricePercent('marginPrice', parseFloat(e.target.value) || 0, true)}
-                          className="w-1/3 bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-1/3 bg-surface border border-border rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                           placeholder="%"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">
+                      <label className="block text-lg font-bold text-text-primary mb-2">
                         Retail Price
                       </label>
-                      <div className="flex gap-2">
+                      <div className="flex gap-3">
                         <div className="relative w-2/3">
-                          <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">Rs</span>
+                          <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-text-muted text-lg">Rs</span>
                           <input
                             type="number"
                             min="0"
                             step="0.01"
                             value={editProduct.retailPrice}
                             onChange={e => syncEditPricePercent('retailPrice', parseFloat(e.target.value) || 0, false)}
-                            className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-8 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full bg-surface border border-border rounded-xl py-3 pl-12 pr-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                           />
                         </div>
                         <input
@@ -1429,25 +1433,25 @@ export default function ProductManagement() {
                           step="0.01"
                           value={editProduct.retailPricePercent}
                           onChange={e => syncEditPricePercent('retailPrice', parseFloat(e.target.value) || 0, true)}
-                          className="w-1/3 bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-1/3 bg-surface border border-border rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                           placeholder="%"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Sales Price <span className="text-red-400">*</span>
+                      <label className="block text-lg font-bold text-text-primary mb-2">
+                        Sales Price <span className="text-red-500">*</span>
                       </label>
-                      <div className="flex gap-2">
+                      <div className="flex gap-3">
                         <div className="relative w-2/3">
-                          <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">Rs</span>
+                          <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-text-muted text-lg">Rs</span>
                           <input
                             type="number"
                             min="0"
                             step="0.01"
                             value={editProduct.salesPrice}
                             onChange={e => syncEditPricePercent('salesPrice', parseFloat(e.target.value) || 0, false)}
-                            className={`w-full bg-gray-700 border ${errors.salesPrice ? 'border-red-500' : 'border-gray-600'} rounded-md py-2 pl-8 pr-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                            className={`w-full bg-surface border ${errors.salesPrice ? 'border-red-500' : 'border-border'} rounded-xl py-3 pl-12 pr-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200`}
                           />
                         </div>
                         <input
@@ -1456,34 +1460,34 @@ export default function ProductManagement() {
                           step="0.01"
                           value={editProduct.salesPricePercent}
                           onChange={e => syncEditPricePercent('salesPrice', parseFloat(e.target.value) || 0, true)}
-                          className="w-1/3 bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-1/3 bg-surface border border-border rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                           placeholder="%"
                         />
                       </div>
-                      {errors.salesPrice && <p className="mt-1 text-sm text-red-400">{errors.salesPrice}</p>}
+                      {errors.salesPrice && <p className="mt-2 text-lg text-red-500">{errors.salesPrice}</p>}
                     </div>
                   </div>
                 </div>
 
                 {/* Inventory */}
                 <div>
-                  <h3 className="text-sm font-medium mb-3">Inventory</h3>
-                  <div className="space-y-4">
+                  <h3 className="text-xl font-bold text-text-primary mb-6">Inventory</h3>
+                  <div className="space-y-6">
                     <div>
-                      <label className="block text-sm font-medium mb-1">SKU</label>
+                      <label className="block text-lg font-bold text-text-primary mb-2">SKU</label>
                       <input
                         type="text"
                         value={editProduct.sku}
                         onChange={e => handleEditProductChange("sku", e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Category</label>
+                      <label className="block text-lg font-bold text-text-primary mb-2">Category</label>
                       <select
                         value={editProduct.category}
                         onChange={e => handleEditProductChange("category", e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                       >
                         {productCategories.map((category) => (
                           <option key={category} value={category}>{category}</option>
@@ -1495,24 +1499,24 @@ export default function ProductManagement() {
 
                 {/* Additional Information */}
                 <div>
-                  <h3 className="text-sm font-medium mb-3">Additional Information</h3>
-                  <div className="space-y-4">
+                  <h3 className="text-xl font-bold text-text-primary mb-6">Additional Information</h3>
+                  <div className="space-y-6">
                     <div>
-                      <label className="block text-sm font-medium mb-1">Reference</label>
+                      <label className="block text-lg font-bold text-text-primary mb-2">Reference</label>
                       <input
                         type="text"
                         value={editProduct.reference}
                         onChange={(e) => handleEditProductChange("reference", e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Internal Notes</label>
+                      <label className="block text-lg font-bold text-text-primary mb-2">Internal Notes</label>
                       <textarea
                         value={editProduct.internalNotes}
                         onChange={(e) => handleEditProductChange("internalNotes", e.target.value)}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        rows={2}
+                        className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-text-primary focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
+                        rows={3}
                       />
                     </div>
                   </div>
@@ -1521,17 +1525,17 @@ export default function ProductManagement() {
             </div>
 
             {/* Form Actions */}
-            <div className="flex justify-end space-x-3 mt-8">
+            <div className="flex justify-end space-x-4 mt-10">
               <button
                 onClick={() => setEditModalOpen(false)}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md"
+                className="px-8 py-3 bg-secondary hover:bg-accent text-primary rounded-xl font-bold transition-all duration-200 shadow-lg"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveEditProduct}
                 disabled={isLoading || !editProduct.name || editProduct.salesPrice <= 0}
-                className={`px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md ${(isLoading || !editProduct.name || editProduct.salesPrice <= 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`px-8 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold transition-all duration-200 shadow-lg ${(isLoading || !editProduct.name || editProduct.salesPrice <= 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {isLoading ? 'Saving...' : 'Save Changes'}
               </button>
@@ -1543,40 +1547,40 @@ export default function ProductManagement() {
       {/* Import Products Modal */}
       {importModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-lg">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-semibold">Import Products</h2>
+          <div className="bg-surface dark:bg-gray-800 rounded-xl shadow-2xl p-8 w-full max-w-lg border border-border transition-all duration-200">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-2xl font-bold text-text-primary">Import Products</h2>
               <button
                 onClick={() => setImportModalOpen(false)}
-                className="text-gray-400 hover:text-gray-200"
+                className="text-text-muted hover:text-text-primary transition-all duration-200"
               >
                 <X size={24} />
               </button>
             </div>
             
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <p className="text-sm text-gray-300 mb-2">
+                <p className="text-lg text-text-secondary mb-4">
                   Download the template, fill it out, and upload it to bulk-import products.
                 </p>
                 <button
                   onClick={handleDownloadTemplate}
-                  className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+                  className="text-primary hover:text-primary-dark text-lg font-bold transition-all duration-200"
                 >
                   Download Template.xlsx
                 </button>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Upload File</label>
+                <label className="block text-lg font-bold text-text-primary mb-4">Upload File</label>
                 <div className="flex items-center justify-center w-full">
-                    <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-700 hover:bg-gray-600">
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <Upload size={24} className="mb-2 text-gray-400"/>
-                            <p className="mb-2 text-sm text-gray-400">
-                              {importFile ? importFile.name : <><span className="font-semibold">Click to upload</span> or drag and drop</>}
+                    <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-40 border-2 border-border border-dashed rounded-xl cursor-pointer bg-accent hover:bg-secondary transition-all duration-200">
+                        <div className="flex flex-col items-center justify-center pt-8 pb-6">
+                            <Upload size={32} className="mb-4 text-text-muted"/>
+                            <p className="mb-2 text-lg text-text-primary">
+                              {importFile ? importFile.name : <><span className="font-bold">Click to upload</span> or drag and drop</>}
                             </p>
-                            <p className="text-xs text-gray-500">XLSX or CSV file</p>
+                            <p className="text-lg text-text-muted">XLSX or CSV file</p>
                         </div>
                         <input id="dropzone-file" type="file" className="hidden" onChange={handleImportFileChange} accept=".xlsx, .csv" />
                     </label>
@@ -1584,9 +1588,9 @@ export default function ProductManagement() {
               </div>
 
               {importErrors.length > 0 && (
-                <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-md">
-                  <h3 className="font-bold">Import Errors</h3>
-                  <ul className="mt-2 list-disc list-inside text-sm">
+                <div className="bg-red-100 border border-red-300 text-red-800 px-6 py-4 rounded-xl">
+                  <h3 className="font-bold text-lg mb-2">Import Errors</h3>
+                  <ul className="mt-2 list-disc list-inside text-lg">
                     {importErrors.map((error, i) => (
                       <li key={i}>{error}</li>
                     ))}
@@ -1596,17 +1600,17 @@ export default function ProductManagement() {
 
             </div>
 
-            <div className="flex justify-end space-x-3 mt-8">
+            <div className="flex justify-end space-x-4 mt-8">
               <button
                 onClick={() => setImportModalOpen(false)}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md"
+                className="px-6 py-3 bg-secondary hover:bg-accent text-primary rounded-xl font-bold transition-all duration-200 shadow-lg"
               >
                 Cancel
               </button>
               <button
                 onClick={handleImport}
                 disabled={isImporting || !importFile}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isImporting ? 'Importing...' : 'Start Import'}
               </button>
@@ -1619,14 +1623,14 @@ export default function ProductManagement() {
       {/* Add Identifiers Modal */}
       {identifiersModalOpen && selectedProductIdentifiers && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-semibold">
+          <div className="bg-surface dark:bg-gray-800 rounded-xl shadow-2xl p-8 w-full max-w-4xl max-h-[80vh] overflow-y-auto border border-border transition-all duration-200">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-2xl font-bold text-text-primary">
                 Identifiers for {selectedProductIdentifiers.product.name}
               </h2>
               <button
                 onClick={() => setIdentifiersModalOpen(false)}
-                className="text-gray-400 hover:text-gray-200"
+                className="text-text-muted hover:text-text-primary transition-all duration-200"
               >
                 <X size={24} />
               </button>
@@ -1634,42 +1638,40 @@ export default function ProductManagement() {
 
             {isLoadingIdentifiers ? (
               <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
               </div>
             ) : (
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {/* IMEI Numbers */}
                 {selectedProductIdentifiers.imei && (
                   <div>
-                    <h3 className="text-md font-medium mb-3">IMEI Numbers</h3>
-                    <div className="overflow-x-auto">
+                    <h3 className="text-xl font-bold text-text-primary mb-6">IMEI Numbers</h3>
+                    <div className="overflow-x-auto rounded-xl border border-border">
                       <table className="w-full">
-                        <thead>
-                          <tr className="text-left text-gray-400 border-b border-gray-700">
-                            <th className="pb-2">IMEI</th>
-                            <th className="pb-2">Status</th>
-                            <th className="pb-2">Purchase ID</th>
-                            <th className="pb-2">Created At</th>
-                            <th className="pb-2">Damaged</th>
-                            <th className="pb-2">Opened</th>
+                        <thead className="bg-accent">
+                          <tr className="text-left text-text-primary border-b border-border">
+                            <th className="pb-4 pt-4 pl-6 font-bold text-lg">IMEI</th>
+                            <th className="pb-4 pt-4 font-bold text-lg">Status</th>
+                            <th className="pb-4 pt-4 font-bold text-lg">Purchase ID</th>
+                            <th className="pb-4 pt-4 font-bold text-lg">Created At</th>
+                            <th className="pb-4 pt-4 font-bold text-lg">Damaged</th>
+                            <th className="pb-4 pt-4 font-bold text-lg">Opened</th>
                           </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="bg-surface">
                           {selectedProductIdentifiers.imei.identifiers?.map((item, index) => {
                             // Debug log for each item's createdAt
                             console.log('Item createdAt:', item.createdAt);
                             return (
-                              <tr key={index} className="border-b border-gray-700">
-                                <td className="py-2">{item.imei}</td>
-                                <td className="py-2">
-                                  <span className={`px-2 py-1 rounded-full text-xs ${
-                                    item.sold ? 'bg-red-900 text-red-200' : 'bg-green-900 text-green-200'
-                                  }`}>
+                              <tr key={index} className="border-b border-border hover:bg-accent transition-all duration-200">
+                                <td className="py-4 pl-6 text-lg font-bold text-text-primary">{item.imei}</td>
+                                <td className="py-4">
+                                  <span className={`px-4 py-2 rounded-xl text-lg font-bold ${item.sold ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
                                     {item.sold ? 'Sold' : 'Available'}
                                   </span>
                                 </td>
-                                <td className="py-2">{item.purchaseId || '-'}</td>
-                                <td className="py-2">
+                                <td className="py-4 text-lg text-text-primary">{item.purchaseId || '-'}</td>
+                                <td className="py-4 text-lg text-text-primary">
                                   {item.createdAt ? (
                                     (() => {
                                       let dateObj;
@@ -1694,18 +1696,18 @@ export default function ProductManagement() {
                                     })()
                                   ) : '-'}
                                 </td>
-                                <td className="py-2">
+                                <td className="py-4">
                                   {item.damaged ? (
-                                    <span className="px-2 py-1 rounded-full text-xs bg-red-800 text-red-200">Damaged</span>
+                                    <span className="px-4 py-2 rounded-xl text-lg font-bold bg-red-100 text-red-800">Damaged</span>
                                   ) : (
-                                    <span className="px-2 py-1 rounded-full text-xs bg-gray-700 text-gray-400">No</span>
+                                    <span className="px-4 py-2 rounded-xl text-lg font-bold bg-gray-100 text-gray-800">No</span>
                                   )}
                                 </td>
-                                <td className="py-2">
+                                <td className="py-4">
                                   {item.opened ? (
-                                    <span className="px-2 py-1 rounded-full text-xs bg-yellow-700 text-yellow-200">Opened</span>
+                                    <span className="px-4 py-2 rounded-xl text-lg font-bold bg-yellow-100 text-yellow-800">Opened</span>
                                   ) : (
-                                    <span className="px-2 py-1 rounded-full text-xs bg-gray-700 text-gray-400">No</span>
+                                    <span className="px-4 py-2 rounded-xl text-lg font-bold bg-gray-100 text-gray-800">No</span>
                                   )}
                                 </td>
                               </tr>
@@ -1720,35 +1722,33 @@ export default function ProductManagement() {
                 {/* Serial Numbers */}
                 {selectedProductIdentifiers.serial && (
                   <div>
-                    <h3 className="text-md font-medium mb-3">Serial Numbers</h3>
-                    <div className="overflow-x-auto">
+                    <h3 className="text-xl font-bold text-text-primary mb-6">Serial Numbers</h3>
+                    <div className="overflow-x-auto rounded-xl border border-border">
                       <table className="w-full">
-                        <thead>
-                          <tr className="text-left text-gray-400 border-b border-gray-700">
-                            <th className="pb-2">Serial</th>
-                            <th className="pb-2">Status</th>
-                            <th className="pb-2">Purchase ID</th>
-                            <th className="pb-2">Created At</th>
-                            <th className="pb-2">Damaged</th>
-                            <th className="pb-2">Opened</th>
+                        <thead className="bg-accent">
+                          <tr className="text-left text-text-primary border-b border-border">
+                            <th className="pb-4 pt-4 pl-6 font-bold text-lg">Serial</th>
+                            <th className="pb-4 pt-4 font-bold text-lg">Status</th>
+                            <th className="pb-4 pt-4 font-bold text-lg">Purchase ID</th>
+                            <th className="pb-4 pt-4 font-bold text-lg">Created At</th>
+                            <th className="pb-4 pt-4 font-bold text-lg">Damaged</th>
+                            <th className="pb-4 pt-4 font-bold text-lg">Opened</th>
                           </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="bg-surface">
                           {selectedProductIdentifiers.serial.identifiers?.map((item, index) => {
                             // Debug log for each item's createdAt
                             console.log('Item createdAt:', item.createdAt);
                             return (
-                              <tr key={index} className="border-b border-gray-700">
-                                <td className="py-2">{item.serial}</td>
-                                <td className="py-2">
-                                  <span className={`px-2 py-1 rounded-full text-xs ${
-                                    item.sold ? 'bg-red-900 text-red-200' : 'bg-green-900 text-green-200'
-                                  }`}>
+                              <tr key={index} className="border-b border-border hover:bg-accent transition-all duration-200">
+                                <td className="py-4 pl-6 text-lg font-bold text-text-primary">{item.serial}</td>
+                                <td className="py-4">
+                                  <span className={`px-4 py-2 rounded-xl text-lg font-bold ${item.sold ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
                                     {item.sold ? 'Sold' : 'Available'}
                                   </span>
                                 </td>
-                                <td className="py-2">{item.purchaseId || '-'}</td>
-                                <td className="py-2">
+                                <td className="py-4 text-lg text-text-primary">{item.purchaseId || '-'}</td>
+                                <td className="py-4 text-lg text-text-primary">
                                   {item.createdAt ? (
                                     (() => {
                                       let dateObj;
@@ -1773,18 +1773,18 @@ export default function ProductManagement() {
                                     })()
                                   ) : '-'}
                                 </td>
-                                <td className="py-2">
+                                <td className="py-4">
                                   {item.damaged ? (
-                                    <span className="px-2 py-1 rounded-full text-xs bg-red-800 text-red-200">Damaged</span>
+                                    <span className="px-4 py-2 rounded-xl text-lg font-bold bg-red-100 text-red-800">Damaged</span>
                                   ) : (
-                                    <span className="px-2 py-1 rounded-full text-xs bg-gray-700 text-gray-400">No</span>
+                                    <span className="px-4 py-2 rounded-xl text-lg font-bold bg-gray-100 text-gray-800">No</span>
                                   )}
                                 </td>
-                                <td className="py-2">
+                                <td className="py-4">
                                   {item.opened ? (
-                                    <span className="px-2 py-1 rounded-full text-xs bg-yellow-700 text-yellow-200">Opened</span>
+                                    <span className="px-4 py-2 rounded-xl text-lg font-bold bg-yellow-100 text-yellow-800">Opened</span>
                                   ) : (
-                                    <span className="px-2 py-1 rounded-full text-xs bg-gray-700 text-gray-400">No</span>
+                                    <span className="px-4 py-2 rounded-xl text-lg font-bold bg-gray-100 text-gray-800">No</span>
                                   )}
                                 </td>
                               </tr>
@@ -1797,7 +1797,7 @@ export default function ProductManagement() {
                 )}
 
                 {(!selectedProductIdentifiers.imei && !selectedProductIdentifiers.serial) && (
-                  <div className="text-center py-8 text-gray-400">
+                  <div className="text-center py-8 text-text-muted text-xl">
                     No identifiers found for this product
                   </div>
                 )}

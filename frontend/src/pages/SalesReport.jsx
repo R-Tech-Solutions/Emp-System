@@ -1225,7 +1225,7 @@ export default function SalesReport() {
                   </div>
                   {/* Total Sales summary */}
                   <div className="text-lg font-semibold text-primary mt-2">
-                    Total Sales: ${processedData.totalSales.toFixed(2)}
+                    Total Sales: Rs {processedData.totalSales.toFixed(2)}
                   </div>
                 </div>
               )}

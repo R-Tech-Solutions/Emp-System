@@ -2604,7 +2604,7 @@ export default function CrmPipeline() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <div className="min-h-screen bg-background dark:bg-gray-900 text-text-primary dark:text-gray-100">
       {/* Header */}
       <header>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -2612,18 +2612,18 @@ export default function CrmPipeline() {
             <div className="flex space-x-2">
               <button
                 onClick={() => setActiveView("pipeline")}
-                className={`px-4 py-2 rounded-md text-sm font-medium ${activeView === "pipeline"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-sm ${activeView === "pipeline"
+                  ? "bg-primary text-white hover:bg-primary-dark"
+                  : "bg-surface dark:bg-gray-700 text-text-primary dark:text-gray-200 hover:bg-accent"
                   }`}
               >
                 Pipeline
               </button>
               <button
                 onClick={() => setActiveView("contacts")}
-                className={`px-4 py-2 rounded-md text-sm font-medium flex items-center ${activeView === "contacts"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                className={`px-4 py-2 rounded-xl text-sm font-medium flex items-center transition-all duration-200 shadow-sm ${activeView === "contacts"
+                  ? "bg-primary text-white hover:bg-primary-dark"
+                  : "bg-surface dark:bg-gray-700 text-text-primary dark:text-gray-200 hover:bg-accent"
                   }`}
               >
                 <Users size={16} className="mr-1" /> Contacts
