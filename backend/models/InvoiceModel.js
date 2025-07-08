@@ -70,9 +70,12 @@ const InvoiceModel = {
       const invoiceNumber = await getNextInvoiceId();
       console.log('Generated invoice number:', invoiceNumber);
       
+      // Ensure all items have returned: false
+      const itemsWithReturned = (invoice.items || []).map(item => ({ ...item, returned: false }));
       // Prepare invoice data with customer array
       const invoiceData = {
         ...invoice,
+        items: itemsWithReturned,
         customer: invoice.customer || [], // Ensure customer is always an array
         invoiceNumber,
         isReturn: false, // Mark as regular invoice
@@ -145,6 +148,8 @@ const InvoiceModel = {
     const negativeReturnDiscountAmount = -returnDiscountAmount;
     const negativeReturnTaxAmount = -returnTaxAmount;
     
+    // Mark all returned items as returned: true
+    const returnedItemsWithFlag = (returnedItems || []).map(item => ({ ...item, returned: true }));
     // Prepare return invoice data with negative amounts
     const returnInvoiceData = {
       invoiceNumber: returnInvoiceNumber,
@@ -155,7 +160,7 @@ const InvoiceModel = {
       customerName: originalInvoice.customerName,
       customerPhone: originalInvoice.customerPhone,
       customerEmail: originalInvoice.customerEmail,
-      items: returnedItems,
+      items: returnedItemsWithFlag,
       subtotal: negativeReturnSubtotal, // Negative for returns
       discountAmount: negativeReturnDiscountAmount, // Negative for returns
       taxAmount: negativeReturnTaxAmount, // Negative for returns

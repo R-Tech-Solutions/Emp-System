@@ -237,6 +237,35 @@ exports.createReturn = async (req, res) => {
       return res.status(400).json({ error: 'No valid items to process.' });
     }
     
+    // --- Add returned property to invoice items ---
+    try {
+      const invoiceRef = db.collection('invoices').doc(invoiceId);
+      const invoiceSnapshot = await invoiceRef.get();
+      if (invoiceSnapshot.exists) {
+        const invoiceData = invoiceSnapshot.data();
+        const invoiceItems = invoiceData.items || [];
+        // Build a map of total returned quantities for each item (by id and identifierValue if present)
+        const returnedQtyMap = {};
+        for (const item of items) {
+          const key = item.identifierValue ? `${item.id}__${item.identifierValue}` : `${item.id}`;
+          returnedQtyMap[key] = (returnedQtyMap[key] || 0) + (item.quantity || 1);
+        }
+        // Update the returned property for each item
+        const updatedItems = invoiceItems.map(item => {
+          const key = item.identifierValue ? `${item.id}__${item.identifierValue}` : `${item.id}`;
+          const returnedQty = returnedQtyMap[key] || 0;
+          const isFullyReturned = returnedQty >= (item.quantity || 1);
+          return {
+            ...item,
+            returned: isFullyReturned
+          };
+        });
+        await invoiceRef.update({ items: updatedItems, updatedAt: new Date() });
+      }
+    } catch (err) {
+      console.error('Error updating returned property on invoice items:', err);
+    }
+    // --- End add returned property ---
     // Return success with return invoice details
     return res.status(201).json({ 
       success: true, 

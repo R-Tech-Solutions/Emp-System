@@ -4,6 +4,7 @@ import autoTable from "jspdf-autotable";
 import JsBarcode from "jsbarcode";
 import html2canvas from "html2canvas";
 import { backEndURL } from "../../Backendurl";
+import { PDFDocument } from 'pdf-lib';
 
 const fetchInvoice = async (invoiceDocumentId) => {
   if (!invoiceDocumentId) return null;
@@ -16,74 +17,15 @@ const fetchInvoice = async (invoiceDocumentId) => {
   }
 };
 
-const fetchBusinessSettings = async () => {
-  try {
-    const response = await fetch(`${backEndURL}/api/business-settings`);
-    if (!response.ok) throw new Error('Failed to fetch business settings');
-    const result = await response.json();
-    console.log('Fetched business settings:', result);
-    return result.data || result; // API returns { success, data }
-  } catch (error) {
-    console.error('Error fetching business settings:', error);
-    return null;
-  }
-};
-
-const fetchAdditionalData = async () => {
-  try {
-    // Use the correct endpoint for notes and terms
-    const response = await fetch(`${backEndURL}/api/additional/notes-terms`);
-    if (!response.ok) throw new Error('Failed to fetch additional notes/terms');
-    const data = await response.json();
-    console.log('Fetched additional notes/terms:', data);
-    return {
-      notes: data.notes || '',
-      terms: data.terms || []
-    };
-  } catch (error) {
-    console.error('Error fetching additional notes/terms:', error);
-    return { notes: '', terms: [] };
-  }
-};
-
-const AdvanceA4Invoice = ({ invoice: invoiceProp, invoiceDocumentId }) => {
+const AdvanceA4Invoice = ({ invoice: invoiceProp, invoiceDocumentId, additionalData: additionalDataProp, businessSettings: businessSettingsProp }) => {
   const [invoice, setInvoice] = useState(invoiceProp);
-  const [businessSettings, setBusinessSettings] = useState({});
-  const [additionalData, setAdditionalData] = useState({ notes: '', terms: [] });
+  const [businessSettings, setBusinessSettings] = useState(businessSettingsProp || {});
+  const [additionalData, setAdditionalData] = useState(additionalDataProp || { notes: '', terms: [] });
   const [templateImage, setTemplateImage] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const printRef = useRef();
   const barcodeCanvasRef = useRef(null);
   const headerBarcodeCanvasRef = useRef(null);
-
-  useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        // Always fetch business settings
-        const settings = await fetchBusinessSettings();
-        if (settings) {
-          setBusinessSettings(settings);
-          // Load template image if exists
-          if (settings.templateUrl) {
-            const img = new Image();
-            img.crossOrigin = "Anonymous";
-            img.src = settings.templateUrl;
-            img.onload = () => setTemplateImage(img);
-            img.onerror = () => setTemplateImage(null);
-          }
-        }
-        // Always fetch additional notes/terms
-        const additional = await fetchAdditionalData();
-        setAdditionalData(additional);
-      } catch (error) {
-        console.error('Error loading data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, [invoiceDocumentId, invoiceProp]);
 
   useEffect(() => {
     if (!invoiceProp && invoiceDocumentId) {
@@ -95,7 +37,55 @@ const AdvanceA4Invoice = ({ invoice: invoiceProp, invoiceDocumentId }) => {
     }
   }, [invoiceDocumentId, invoiceProp]);
 
-  // Fetch additional notes and terms
+  // Fetch additional notes and terms from backend only if not provided as prop
+  useEffect(() => {
+    if (!additionalDataProp) {
+      const fetchAdditionalData = async () => {
+        try {
+          const response = await fetch(`${backEndURL}/api/additional/notes-terms`);
+          if (!response.ok) throw new Error('Failed to fetch additional notes/terms');
+          const data = await response.json();
+          setAdditionalData({
+            notes: data.notes || '',
+            terms: data.terms || []
+          });
+        } catch (error) {
+          setAdditionalData({ notes: '', terms: [] });
+          console.error('Error fetching additional notes/terms:', error);
+        }
+      };
+      fetchAdditionalData();
+    }
+  }, [additionalDataProp]);
+
+  // Fetch business settings from backend only if not provided as prop
+  useEffect(() => {
+    if (!businessSettingsProp) {
+      const fetchBusinessSettings = async () => {
+        try {
+          const response = await fetch(`${backEndURL}/api/business-settings`);
+          if (!response.ok) throw new Error('Failed to fetch business settings');
+          const result = await response.json();
+          const data = result.data || result;
+          setBusinessSettings({
+            logo: data.logo,
+            businessName: data.businessName,
+            email: data.contact,
+            address: data.address,
+            registrationNumber: data.registrationNumber,
+            website: data.website,
+            gstNumber: data.gstNumber,
+            taxRate: Number(data.taxRate) || 0,
+            templateUrl: data.templateUrl
+          });
+        } catch (error) {
+          setBusinessSettings({});
+          console.error('Error fetching business settings:', error);
+        }
+      };
+      fetchBusinessSettings();
+    }
+  }, [businessSettingsProp, invoiceDocumentId]);
 
   useEffect(() => {
     if (invoice) {
@@ -152,38 +142,62 @@ const AdvanceA4Invoice = ({ invoice: invoiceProp, invoiceDocumentId }) => {
     const input = printRef.current;
     if (!input) return;
 
-    // Create a new PDF with the template as background
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    });
+    // Render invoice as image
+    const canvas = await html2canvas(input, { scale: 2, useCORS: true, backgroundColor: 'white' });
+    const imgData = canvas.toDataURL('image/png');
 
-    // If we have a template image, add it as background
-    if (templateImage) {
-      // Calculate dimensions to fit the A4 page
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
+    let pdfDoc;
+    let page;
 
-      // Add the template as background
-      pdf.addImage(templateImage, 'JPEG', 0, 0, pageWidth, pageHeight);
+    if (businessSettings.templateUrl) {
+      // Load template PDF
+      const templatePdfBytes = await fetch(businessSettings.templateUrl).then(res => res.arrayBuffer());
+      const templatePdfDoc = await PDFDocument.load(templatePdfBytes);
+
+      // Create a new PDF and copy the first template page
+      pdfDoc = await PDFDocument.create();
+      const [templatePage] = await pdfDoc.copyPages(templatePdfDoc, [0]);
+      page = pdfDoc.addPage(templatePage);
+
+      // Draw invoice image on top of the template page
+      const pngImage = await pdfDoc.embedPng(imgData);
+      page.drawImage(pngImage, {
+        x: 0,
+        y: 0,
+        width: page.getWidth(),
+        height: page.getHeight(),
+      });
+
+      // (Optional) Append any additional template pages
+      if (templatePdfDoc.getPageCount() > 1) {
+        const otherPages = await pdfDoc.copyPages(
+          templatePdfDoc,
+          Array.from({ length: templatePdfDoc.getPageCount() - 1 }, (_, i) => i + 1)
+        );
+        otherPages.forEach((p) => pdfDoc.addPage(p));
+      }
+    } else {
+      // Fallback: just invoice as image
+      pdfDoc = await PDFDocument.create();
+      const pngImage = await pdfDoc.embedPng(imgData);
+      page = pdfDoc.addPage([pngImage.width, pngImage.height]);
+      page.drawImage(pngImage, {
+        x: 0,
+        y: 0,
+        width: pngImage.width,
+        height: pngImage.height,
+      });
     }
 
-    // Convert the invoice content to canvas
-    const canvas = await html2canvas(input, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      windowWidth: input.scrollWidth,
-      windowHeight: input.scrollHeight,
-      backgroundColor: 'transparent'
-    });
-
-    // Add the invoice content on top of the template
-    const imgData = canvas.toDataURL('image/png');
-    pdf.addImage(imgData, 'PNG', 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
-
-    pdf.save(`Invoice_${invoice.invoiceNumber || invoice.id || ''}.pdf`);
+    // Download
+    const mergedPdfBytes = await pdfDoc.save();
+    const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `Invoice_${invoice.invoiceNumber || invoice.id || ''}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (!invoice) return null;

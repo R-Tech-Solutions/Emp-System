@@ -392,11 +392,11 @@ const printInvoice = async (invoice, format = "a4") => {
     }
     const fullInvoiceData = await response.json();
 
-    if (!fullInvoiceData) {
-      console.error('Fetched invoice data is empty.');
-      return;
-    }
-
+    // Fetch additional notes/terms and business settings
+    const [additionalData, businessSettings] = await Promise.all([
+      fetchAdditionalNotesTerms(),
+      fetchBusinessSettings()
+    ]);
 
     // 2. Render the correct component to an HTML string with the fetched data
     let printHtmlContent = '';
@@ -408,7 +408,7 @@ const printInvoice = async (invoice, format = "a4") => {
       );
     } else {
       printHtmlContent = ReactDOMServer.renderToStaticMarkup(
-        <AdvanceA4Invoice invoice={fullInvoiceData} />
+        <AdvanceA4Invoice invoice={fullInvoiceData} additionalData={additionalData} businessSettings={businessSettings} />
       );
     }
 
@@ -459,11 +459,17 @@ const generateInvoiceHTML = async (invoice, format) => {
     }
     const fullInvoiceData = await response.json();
 
+    // Fetch additional notes/terms and business settings
+    const [additionalData, businessSettings] = await Promise.all([
+      fetchAdditionalNotesTerms(),
+      fetchBusinessSettings()
+    ]);
+
     const ReactDOMServer = require('react-dom/server');
     if (format === "pos") {
       return ReactDOMServer.renderToStaticMarkup(<AdvanceThermalInvoice invoice={fullInvoiceData} />);
     } else {
-      return ReactDOMServer.renderToStaticMarkup(<AdvanceA4Invoice invoice={fullInvoiceData} />);
+      return ReactDOMServer.renderToStaticMarkup(<AdvanceA4Invoice invoice={fullInvoiceData} additionalData={additionalData} businessSettings={businessSettings} />);
     }
   } catch (error) {
     console.error('An error occurred during HTML generation:', error);
@@ -684,18 +690,21 @@ const EnhancedBillingPOSSystem = () => {
     const fetchBusinessSettings = async () => {
       try {
         const response = await fetch(`${backEndURL}/api/business-settings`);
-        if (response.ok) {
-          const { data } = await response.json();
-          setBusinessSettings(data || {
-            printingStyle: 'A4',
-            gstNumber: '',
-            taxRate: 0
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching business settings:', error);
-      } finally {
-        setIsLoadingSettings(false);
+        if (!response.ok) return {};
+        const result = await response.json();
+        const data = result.data || result;
+        return {
+          logo: data.logo,
+          businessName: data.businessName,
+          email: data.contact,
+          address: data.address,
+          registrationNumber: data.registrationNumber,
+          website: data.website,
+          gstNumber: data.gstNumber,
+          taxRate: Number(data.taxRate) || 0
+        };
+      } catch {
+        return {};
       }
     };
 
@@ -5377,6 +5386,39 @@ const getCustomerInfo = (invoice) => {
   }
 
   return null;
+};
+
+// Add helper to fetch additional notes/terms
+const fetchAdditionalNotesTerms = async () => {
+  try {
+    const response = await fetch(`${backEndURL}/api/additional/notes-terms`);
+    if (!response.ok) return { notes: '', terms: [] };
+    return await response.json();
+  } catch {
+    return { notes: '', terms: [] };
+  }
+};
+
+// Add helper to fetch business settings
+const fetchBusinessSettings = async () => {
+  try {
+    const response = await fetch(`${backEndURL}/api/business-settings`);
+    if (!response.ok) return {};
+    const result = await response.json();
+    const data = result.data || result;
+    return {
+      logo: data.logo,
+      businessName: data.businessName,
+      email: data.contact,
+      address: data.address,
+      registrationNumber: data.registrationNumber,
+      website: data.website,
+      gstNumber: data.gstNumber,
+      taxRate: Number(data.taxRate) || 0
+    };
+  } catch {
+    return {};
+  }
 };
 
 // Place this component at the end of the file
