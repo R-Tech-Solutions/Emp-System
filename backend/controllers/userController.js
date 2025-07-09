@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 // Create a new user
 exports.createUser = async (req, res) => {
   try {
-    const { email, password, name, role, status, permissions, mobileNumber } = req.body;
+    const { email, password, name, role, status, permissions, mobileNumber, username } = req.body;
 
     // Only one Super Admin allowed
     if (role === 'super-admin') {
@@ -25,16 +25,24 @@ exports.createUser = async (req, res) => {
       }
     }
 
+    // info@rtechsl.lk can only create super-admin
+    if (req.user && req.user.email === 'info@rtechsl.lk' && role !== 'super-admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'info@rtechsl.lk can only create a Super Admin.'
+      });
+    }
+
     // Basic validation
-    if (!email || !password || !name) {
+    if (!email || !password || !name || !username) {
       return res.status(400).json({ 
         success: false,
-        message: 'Email, password, and name are required' 
+        message: 'Email, password, name, and username are required' 
       });
     }
 
     // Pass mobileNumber only for Super Admin
-    const userData = { email, password, name, role, status, permissions };
+    const userData = { email, password, name, role, status, permissions, username };
     if (role === 'super-admin') {
       userData.mobileNumber = mobileNumber;
     }
@@ -65,11 +73,11 @@ exports.createUser = async (req, res) => {
 // Get all users
 exports.getAllUsers = async (req, res) => {
   try {
-    // Only admin can get all users
-    if (req.user.role !== 'admin') {
+    // Only admin or super-admin can get all users
+    if (req.user.role !== 'admin' && req.user.role !== 'super-admin') {
       return res.status(403).json({
         success: false,
-        message: 'Access denied: Admins only.'
+        message: 'Access denied: Admins or Super Admins only.'
       });
     }
     const users = await User.findAll();
@@ -155,22 +163,37 @@ exports.getUserByEmail = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    // Only admin or the user themselves can update
-    if (req.user.role !== 'admin' && req.user.id !== userId) {
+    // Only super-admin can change status
+    if (req.body.status && req.user.role !== 'super-admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only Super Admin can change user status.'
+      });
+    }
+    // Only super-admin can change role/permissions
+    if ((req.body.role || req.body.permissions) && req.user.role !== 'super-admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only Super Admin can change user roles or permissions.'
+      });
+    }
+    // Only super-admin or the user themselves can update
+    if (req.user.role !== 'super-admin' && req.user.id !== userId) {
       return res.status(403).json({
         success: false,
         message: 'Access denied.'
       });
     }
-    const { email, name, role, status, password, permissions } = req.body;
+    const { email, name, role, status, password, permissions, username } = req.body;
     const updateData = {};
     if (email) updateData.email = email;
     if (name) updateData.name = name;
-    if (role && req.user.role === 'admin') updateData.role = role; // Only admin can change role
-    if (status && req.user.role === 'admin') updateData.status = status; // Only admin can change status
-    if (permissions !== undefined && req.user.role === 'admin') updateData.permissions = permissions; // Only admin can change permissions
+    if (username) updateData.username = username;
+    if (role && req.user.role === 'super-admin') updateData.role = role;
+    if (status && req.user.role === 'super-admin') updateData.status = status;
+    if (permissions !== undefined && req.user.role === 'super-admin') updateData.permissions = permissions;
     if (password) {
-      updateData.password = await bcrypt.hash(password, 10); // Hash password
+      updateData.password = await bcrypt.hash(password, 10);
     }
     const updatedUser = await User.update(userId, updateData);
     res.status(200).json({
@@ -191,11 +214,11 @@ exports.updateUser = async (req, res) => {
 exports.deleteUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    // Only admin or the user themselves can delete
-    if (req.user.role !== 'admin' && req.user.id !== userId) {
+    // Only super-admin can delete users
+    if (req.user.role !== 'super-admin') {
       return res.status(403).json({
         success: false,
-        message: 'Access denied.'
+        message: 'Only Super Admin can delete users.'
       });
     }
     await User.delete(userId);
@@ -248,7 +271,8 @@ exports.loginUser = async (req, res) => {
         role: user.role,
         status: user.status,
         permissions: user.permissions || {},
-        name: user.name
+        name: user.name,
+        username: user.username
       };
       const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '24h' });
 
@@ -286,7 +310,8 @@ exports.loginUser = async (req, res) => {
       role: user.role,
       status: user.status,
       permissions: user.permissions || {},
-      name: user.name
+      name: user.name,
+      username: user.username
     };
     const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '24h' });
 

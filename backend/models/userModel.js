@@ -12,6 +12,7 @@ class User {
         email: userData.email,
         password: hashedPassword, // Save hashed password
         name: userData.name,
+        username: userData.username, // Add username
         role: userData.role || 'user',
         status: userData.status || 'active',
         permissions: userData.permissions || {},
@@ -21,9 +22,33 @@ class User {
       if (userData.role === 'super-admin' && userData.mobileNumber) {
         user.mobileNumber = userData.mobileNumber;
       }
-      // Save to Firestore
-      const userRef = await db.collection('users').add(user);
-      return { id: userRef.id, ...user };
+
+      // Generate custom document ID
+      let docId = '';
+      if (user.role === 'super-admin') {
+        docId = 'super_admin-01';
+      } else {
+        // Find all users with the same role
+        const snapshot = await db.collection('users').where('role', '==', user.role).get();
+        let maxNum = 0;
+        snapshot.forEach(doc => {
+          const match = doc.id.match(/-(\d+)$/);
+          if (match) {
+            const num = parseInt(match[1], 10);
+            if (num > maxNum) maxNum = num;
+          }
+        });
+        const nextNum = (maxNum + 1).toString().padStart(2, '0');
+        if (user.role === 'admin') {
+          docId = `admin-${nextNum}`;
+        } else {
+          docId = `user-${nextNum}`;
+        }
+      }
+      // Save to Firestore with custom ID
+      console.log('Saving user:', user);
+      await db.collection('users').doc(docId).set(user);
+      return { id: docId, ...user };
     } catch (error) {
       throw error;
     }
@@ -70,6 +95,7 @@ class User {
         ...updateData,
         updatedAt: new Date().toISOString(),
       };
+      if (updateData.username) updateObj.username = updateData.username;
       if (updateData.role === 'super-admin' && updateData.mobileNumber) {
         updateObj.mobileNumber = updateData.mobileNumber;
       }

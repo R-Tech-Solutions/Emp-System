@@ -18,11 +18,11 @@ export default function UserManagementPage() {
     
     // Allow access if:
     // 1. User is logged in with the specific hardcoded credentials, OR
-    // 2. User is logged in and has admin role
+    // 2. User is logged in and has admin or super-admin role
     const hasValidCredentials = email === VALID_EMAIL && restrictedUser;
-    const isAdminUser = userData.role === "admin";
+    const isAdminOrSuperAdmin = userData.role === "admin" || userData.role === "super-admin";
     
-    if (!isLoggedIn || (!hasValidCredentials && !isAdminUser)) {
+    if (!isLoggedIn || (!hasValidCredentials && !isAdminOrSuperAdmin)) {
       navigate("/login");
       return;
     }
@@ -78,6 +78,7 @@ export default function UserManagementPage() {
     email: "",
     password: "",
     name: "",
+    username: "", // Add username
     role: "user",
     status: "active",
     permissions: {},
@@ -91,7 +92,12 @@ export default function UserManagementPage() {
     const fetchUsers = async () => {
       setIsLoadingUsers(true);
       try {
-        const response = await axios.get(`${backEndURL}/api/users`);
+        const token = sessionStorage.getItem('token');
+        const response = await axios.get(`${backEndURL}/api/users`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         if (response.data.success) {
           setUsers(response.data.data);
           setFilteredUsers(response.data.data);
@@ -118,9 +124,8 @@ export default function UserManagementPage() {
     const userData = JSON.parse(sessionStorage.getItem("userData") || "{}");
     
     const hasValidCredentials = email === VALID_EMAIL && restrictedUser;
-    const isAdminUser = userData.role === "admin";
-    
-    if (hasValidCredentials || isAdminUser) {
+    const isAdminOrSuperAdmin = userData.role === "admin" || userData.role === "super-admin";
+    if (hasValidCredentials || isAdminOrSuperAdmin) {
       fetchUsers();
     }
   }, []);
@@ -169,6 +174,9 @@ export default function UserManagementPage() {
 
     if (!formData.name) {
       errors.name = "Name is required"
+    }
+    if (!formData.username) {
+      errors.username = "Username is required"
     }
 
     // Mobile number validation for Super Admin
@@ -284,7 +292,13 @@ export default function UserManagementPage() {
   // Add new user
   const handleAddUser = async (e) => {
     e.preventDefault()
-
+    // Restrict info@rtechsl.lk to only create super-admin
+    const email = sessionStorage.getItem("email");
+    const restrictedUser = sessionStorage.getItem("restrictedUser") === "true";
+    if (email === VALID_EMAIL && restrictedUser && formData.role !== "super-admin") {
+      showToast("info@rtechsl.lk can only create a Super Admin.", "error");
+      return;
+    }
     if (!validateForm()) return
 
     setIsLoading(true)
@@ -305,7 +319,12 @@ export default function UserManagementPage() {
   // Edit user
   const handleEditUser = async (e) => {
     e.preventDefault();
-
+    // Only super-admin can edit user roles
+    const userData = JSON.parse(sessionStorage.getItem("userData") || "{}");
+    if ((formData.role !== currentUser.role || formData.status !== currentUser.status) && userData.role !== "super-admin") {
+      showToast("Only Super Admin can change user roles or status.", "error");
+      return;
+    }
     if (!validateForm()) return;
 
     setIsLoading(true);
@@ -353,6 +372,7 @@ export default function UserManagementPage() {
       email: user.email,
       password: "",
       name: user.name,
+      username: user.username || "", // Add username
       role: user.role,
       status: user.status,
       permissions: user.permissions || {},
@@ -369,12 +389,15 @@ export default function UserManagementPage() {
 
   // Reset form
   const resetForm = () => {
+    const email = sessionStorage.getItem("email");
+    const restrictedUser = sessionStorage.getItem("restrictedUser") === "true";
     setFormData({
       email: "",
       password: "",
       name: "",
-      role: "user",
-      status: "active",
+      username: "",
+      role: (email === VALID_EMAIL && restrictedUser) ? "super-admin" : "user",
+      status: (email === VALID_EMAIL && restrictedUser) ? "active" : "active",
       permissions: {},
       mobileNumber: ""
     })
@@ -469,7 +492,12 @@ export default function UserManagementPage() {
                 const fetchUsers = async () => {
                   setIsLoadingUsers(true);
                   try {
-                    const response = await axios.get(`${backEndURL}/api/users`);
+                    const token = sessionStorage.getItem('token');
+                    const response = await axios.get(`${backEndURL}/api/users`, {
+                      headers: {
+                        Authorization: `Bearer ${token}`
+                      }
+                    });
                     if (response.data.success) {
                       setUsers(response.data.data);
                       setFilteredUsers(response.data.data);
@@ -645,9 +673,10 @@ export default function UserManagementPage() {
                           <PencilIcon className="h-5 w-5" />
                         </button>
                         <button 
-                          className="text-accent hover:text-accent/80" 
-                          onClick={() => openDeleteModal(user)}
+                          className={`text-accent hover:text-accent/80 ${(() => { const userData = JSON.parse(sessionStorage.getItem("userData") || "{}"); return userData.role !== "super-admin" ? 'opacity-50 cursor-not-allowed' : '' })()}`}
+                          onClick={() => { const userData = JSON.parse(sessionStorage.getItem("userData") || "{}"); if (userData.role === "super-admin") openDeleteModal(user); }}
                           title="Delete user"
+                          disabled={(() => { const userData = JSON.parse(sessionStorage.getItem("userData") || "{}"); return userData.role !== "super-admin"; })()}
                         >
                           <TrashIcon className="h-5 w-5" />
                         </button>
@@ -754,6 +783,24 @@ export default function UserManagementPage() {
                     </div>
 
                     <div>
+                      <label htmlFor="username" className="block text-sm font-medium text-text-secondary mb-1">
+                        Username
+                      </label>
+                      <input
+                        id="username"
+                        name="username"
+                        type="text"
+                        value={formData.username}
+                        onChange={handleChange}
+                        className={`w-full px-4 py-2 rounded-md bg-background border ${
+                          formErrors.username ? "border-accent" : "border-border"
+                        } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
+                        placeholder="Unique username"
+                      />
+                      {formErrors.username && <p className="mt-1 text-sm text-accent">{formErrors.username}</p>}
+                    </div>
+
+                    <div>
                       <label htmlFor="role" className="block text-sm font-medium text-text-secondary mb-1">
                         User Role
                       </label>
@@ -763,11 +810,33 @@ export default function UserManagementPage() {
                         value={formData.role}
                         onChange={handleChange}
                         className="w-full px-4 py-2 rounded-md bg-background border border-border text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        disabled={(() => {
+                          const email = sessionStorage.getItem("email");
+                          const restrictedUser = sessionStorage.getItem("restrictedUser") === "true";
+                          return (email === VALID_EMAIL && restrictedUser) || JSON.parse(sessionStorage.getItem("userData") || "{}").role !== "super-admin";
+                        })()}
                       >
-                        <option value="user">User</option>
-                        <option value="admin">Admin</option>
-                        <option value="super-admin">Super Admin</option>
+                        {(() => {
+                          const email = sessionStorage.getItem("email");
+                          const restrictedUser = sessionStorage.getItem("restrictedUser") === "true";
+                          if (email === VALID_EMAIL && restrictedUser) {
+                            return <option value="super-admin">Super Admin</option>;
+                          }
+                          return [
+                            <option key="user" value="user">User</option>,
+                            <option key="admin" value="admin">Admin</option>,
+                            <option key="super-admin" value="super-admin">Super Admin</option>
+                          ];
+                        })()}
                       </select>
+                      {(() => {
+                        const email = sessionStorage.getItem("email");
+                        const restrictedUser = sessionStorage.getItem("restrictedUser") === "true";
+                        if (email === VALID_EMAIL && restrictedUser) {
+                          return <p className="mt-1 text-xs text-accent">Login as Super Admin to add other user roles.</p>;
+                        }
+                        return null;
+                      })()}
                     </div>
 
                     {/* Mobile Number Field - Only for Super Admin */}
@@ -792,7 +861,7 @@ export default function UserManagementPage() {
                     )}
 
                     {/* Permissions Section - Only show for user role */}
-                    {formData.role === "user" && (
+                    {formData.role === "user" ? (
                       <div>
                         <label className="block text-sm font-medium text-text-secondary mb-3">
                           User Permissions
@@ -831,7 +900,7 @@ export default function UserManagementPage() {
                           ))}
                         </div>
                       </div>
-                    )}
+                    ) : null}
 
                     <div>
                       <label htmlFor="status" className="block text-sm font-medium text-text-secondary mb-1">
@@ -843,6 +912,11 @@ export default function UserManagementPage() {
                         value={formData.status}
                         onChange={handleChange}
                         className="w-full px-4 py-2 rounded-md bg-background border border-border text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        disabled={(() => {
+                          const email = sessionStorage.getItem("email");
+                          const restrictedUser = sessionStorage.getItem("restrictedUser") === "true";
+                          return (email === VALID_EMAIL && restrictedUser) || JSON.parse(sessionStorage.getItem("userData") || "{}").role !== "super-admin";
+                        })()}
                       >
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>
@@ -927,6 +1001,23 @@ export default function UserManagementPage() {
                     </div>
 
                     <div>
+                      <label htmlFor="username" className="block text-sm font-medium text-text-secondary mb-1">
+                        Username
+                      </label>
+                      <input
+                        id="username"
+                        name="username"
+                        type="text"
+                        value={formData.username}
+                        onChange={handleChange}
+                        className={`w-full px-4 py-2 rounded-md bg-background border ${
+                          formErrors.username ? "border-accent" : "border-border"
+                        } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
+                      />
+                      {formErrors.username && <p className="mt-1 text-sm text-accent">{formErrors.username}</p>}
+                    </div>
+
+                    <div>
                       <label htmlFor="role" className="block text-sm font-medium text-text-secondary mb-1">
                         User Role
                       </label>
@@ -936,6 +1027,10 @@ export default function UserManagementPage() {
                         value={formData.role}
                         onChange={handleChange}
                         className="w-full px-4 py-2 rounded-md bg-background border border-border text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        disabled={(() => {
+                          const userData = JSON.parse(sessionStorage.getItem("userData") || "{}");
+                          return userData.role !== "super-admin";
+                        })()}
                       >
                         <option value="user">User</option>
                         <option value="admin">Admin</option>
@@ -1016,6 +1111,10 @@ export default function UserManagementPage() {
                         value={formData.status}
                         onChange={handleChange}
                         className="w-full px-4 py-2 rounded-md bg-background border border-border text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        disabled={(() => {
+                          const userData = JSON.parse(sessionStorage.getItem("userData") || "{}");
+                          return userData.role !== "super-admin";
+                        })()}
                       >
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>

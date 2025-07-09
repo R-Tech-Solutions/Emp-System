@@ -392,7 +392,7 @@ function SidebarContent({
 
   // Filter navigation items based on user permissions
   const filteredNavItems = navItems.filter(item => {
-    if (userData?.role === "admin") return true;
+    if (userData?.role === "admin" || userData?.role === "super-admin") return true;
 
     const pathToPermissionMap = {
       "/dashboard": "dashboard",
