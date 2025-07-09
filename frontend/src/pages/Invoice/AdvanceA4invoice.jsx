@@ -24,8 +24,7 @@ const AdvanceA4Invoice = ({ invoice: invoiceProp, invoiceDocumentId, additionalD
   const [templateImage, setTemplateImage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const printRef = useRef();
-  const barcodeCanvasRef = useRef(null);
-  const headerBarcodeCanvasRef = useRef(null);
+  // Remove barcodeDataUrl state and useEffect
 
   useEffect(() => {
     if (!invoiceProp && invoiceDocumentId) {
@@ -74,7 +73,6 @@ const AdvanceA4Invoice = ({ invoice: invoiceProp, invoiceDocumentId, additionalD
             address: data.address,
             registrationNumber: data.registrationNumber,
             website: data.website,
-            gstNumber: data.gstNumber,
             taxRate: Number(data.taxRate) || 0,
             templateUrl: data.templateUrl
           });
@@ -87,42 +85,7 @@ const AdvanceA4Invoice = ({ invoice: invoiceProp, invoiceDocumentId, additionalD
     }
   }, [businessSettingsProp, invoiceDocumentId]);
 
-  useEffect(() => {
-    if (invoice) {
-      const barcodeValue = invoice.invoiceNumber || invoice.id || '';
-      if (barcodeValue) {
-        // Footer barcode
-        if (barcodeCanvasRef.current) {
-          try {
-            JsBarcode(barcodeCanvasRef.current, barcodeValue, {
-              format: "CODE128",
-              width: 1.4,
-              height: 40,
-              displayValue: false,
-              margin: 0,
-              lineColor: "#000"
-            });
-          } catch (error) {
-            console.error('Barcode generation failed:', error);
-          }
-        }
-        // Header barcode
-        if (headerBarcodeCanvasRef.current) {
-          try {
-            JsBarcode(headerBarcodeCanvasRef.current, barcodeValue, {
-              format: "CODE128",
-              width: 1.5,
-              height: 40,
-              displayValue: false,
-              margin: 0
-            });
-          } catch (error) {
-            console.error('Header barcode generation failed:', error);
-          }
-        }
-      }
-    }
-  }, [invoice]);
+  // Remove barcodeDataUrl state and useEffect
 
   const handlePrint = () => {
     if (printRef.current) {
@@ -201,6 +164,26 @@ const AdvanceA4Invoice = ({ invoice: invoiceProp, invoiceDocumentId, additionalD
   };
 
   if (!invoice) return null;
+
+  // Barcode generation (synchronous, like Advancethermalinvoice.jsx)
+  let barcodeDataUrl = '';
+  const barcodeValue = invoice?.invoiceNumber || invoice?.id || '';
+  if (barcodeValue) {
+    const canvas = document.createElement('canvas');
+    try {
+      JsBarcode(canvas, barcodeValue, {
+        format: "CODE128",
+        width: 1.4,
+        height: 40,
+        displayValue: false,
+        margin: 0,
+        lineColor: "#000"
+      });
+      barcodeDataUrl = canvas.toDataURL('image/png');
+    } catch (error) {
+      barcodeDataUrl = '';
+    }
+  }
 
   const cust = (Array.isArray(invoice.customer) && invoice.customer.length > 0)
     ? invoice.customer[0]
@@ -284,12 +267,7 @@ const AdvanceA4Invoice = ({ invoice: invoiceProp, invoiceDocumentId, additionalD
                   <div style={{ fontSize: 14, color: '#222' }}>
                     Website: {businessSettings.website}
                   </div>
-                )}
-                {businessSettings.gstNumber && (
-                  <div style={{ fontSize: 14, color: '#222', fontWeight: 'bold' }}>
-                    GST: <span style={{ fontWeight: 'bold' }}>{businessSettings.gstNumber}</span>
-                  </div>
-                )}
+                )}  
               </div>
             </div>
           </div>
@@ -411,14 +389,18 @@ const AdvanceA4Invoice = ({ invoice: invoiceProp, invoiceDocumentId, additionalD
         {/* Footer */}
         <div style={{ borderTop: '4px solid #1e40af', paddingTop: 20, marginTop: 40, textAlign: 'center', color: '#1e40af' }}>
           <div style={{ marginBottom: '1rem', textAlign: 'center' }}>
-            <canvas
-              ref={barcodeCanvasRef}
-              style={{ display: 'block', margin: '0 auto', background: '#fff' }}
-            />
+            {barcodeDataUrl && (
+              <img
+                src={barcodeDataUrl}
+                alt={`Barcode for invoice ${invoice.invoiceNumber || invoice.id || ''}`}
+                style={{ display: 'block', margin: '0 auto', background: '#fff', height: 40 }}
+              />
+            )}
             <div style={{ fontSize: 14, color: '#1e40af', marginTop: 4 }}>
               {invoice?.invoiceNumber || invoice?.id || ''}
             </div>
           </div>
+          
           <div style={{ fontWeight: 'bold', fontSize: 18 }}>Thank you for your business!</div>
           <div style={{ fontSize: 13, margin: '8px 0', color: '#555' }}>Terms & conditions apply.</div>
           <div style={{ fontSize: 13, fontWeight: 'bold' }}>Powered by RTechSolution</div>

@@ -690,21 +690,12 @@ const EnhancedBillingPOSSystem = () => {
     const fetchBusinessSettings = async () => {
       try {
         const response = await fetch(`${backEndURL}/api/business-settings`);
-        if (!response.ok) return {};
+        if (!response.ok) return;
         const result = await response.json();
         const data = result.data || result;
-        return {
-          logo: data.logo,
-          businessName: data.businessName,
-          email: data.contact,
-          address: data.address,
-          registrationNumber: data.registrationNumber,
-          website: data.website,
-          gstNumber: data.gstNumber,
-          taxRate: Number(data.taxRate) || 0
-        };
+        setBusinessSettings(data); // <-- Update state with backend data
       } catch {
-        return {};
+        // Optionally handle error
       }
     };
 
@@ -2017,6 +2008,7 @@ const EnhancedBillingPOSSystem = () => {
   // Enhanced completePayment function with async processing
   const completePayment = useCallback(
     async (paymentData) => {
+      console.log("[DEBUG] completePayment called", paymentData);
       setIsProcessing(true)
       try {
         // Prepare invoice items with identifier information
@@ -2117,6 +2109,11 @@ const EnhancedBillingPOSSystem = () => {
         // Handle printing based on selected option
         const printingOption = paymentData.printingOption || "default";
         const invoiceWithIdentifiers = { ...invoice, id: savedInvoice.id };
+
+        // DEBUG LOGS for printing style
+        console.log("[DEBUG] businessSettings.printingStyle:", businessSettings.printingStyle);
+        const format = businessSettings.printingStyle?.toLowerCase() === 'pos' ? 'pos' : 'a4';
+        console.log("[DEBUG] Format selected for printing:", format);
 
         if (printingOption === "default" || printingOption === "both") {
           // Default printing - A4 and POS thermal
@@ -3194,15 +3191,20 @@ const EnhancedBillingPOSSystem = () => {
         )}
       </div>      {/* Custom Search Modal */}
       {currentTabData.showPayment && (
-        <EnhancedPaymentModal
-          grandTotal={grandTotal}
-          subtotal={calculatedSubtotal}
-          taxRate={effectiveTaxRate}
-          discount={currentDiscount}
-          onClose={() => updateTabData(activeTab, { showPayment: false })}
-          onPaymentComplete={completePayment}
-          currentSelectedCustomer={currentSelectedCustomer}
-        />
+        (() => {
+          console.log("[DEBUG] Rendering EnhancedPaymentModal with onPaymentComplete", completePayment);
+          return (
+            <EnhancedPaymentModal
+              grandTotal={grandTotal}
+              subtotal={calculatedSubtotal}
+              taxRate={effectiveTaxRate}
+              discount={currentDiscount}
+              onClose={() => updateTabData(activeTab, { showPayment: false })}
+              onPaymentComplete={completePayment}
+              currentSelectedCustomer={currentSelectedCustomer}
+            />
+          );
+        })()
       )}
 
       {/* Enhanced Print Selection Modal */}
@@ -3798,6 +3800,7 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
   }
 
   const handleCompletePayment = useCallback(async () => {
+    console.log("[DEBUG] handleCompletePayment called");
     setIsProcessing(true)
     try {
       if (paymentMethod !== "customer_account" && currentAmount < grandTotal) {
@@ -4020,7 +4023,10 @@ const EnhancedPaymentModal = ({ grandTotal, subtotal, taxRate, discount, onClose
                     Cancel
                   </button>
                   <button
-                    onClick={handleCompletePayment}
+                    onClick={() => {
+                      console.log("[DEBUG] Payment button clicked");
+                      handleCompletePayment();
+                    }}
                     disabled={isProcessing || (paymentMethod !== "customer_account" && currentAmount < grandTotal)}
                     className={`flex-1 px-4 py-2 rounded-lg font-medium flex items-center justify-center gap-2 ${isProcessing || (paymentMethod !== "customer_account" && currentAmount < grandTotal)
                       ? "bg-gray-400 cursor-not-allowed"
