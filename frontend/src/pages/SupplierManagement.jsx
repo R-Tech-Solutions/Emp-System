@@ -16,6 +16,8 @@ import {
 } from "lucide-react"
 import axios from "axios"
 import { backEndURL } from "../Backendurl";
+import DotSpinner from "../loaders/Loader.jsx";
+import { useToast } from "../components/Toats.jsx";
 
 export default function SupplierManagement() {
   const [suppliers, setSuppliers] = useState([])
@@ -38,6 +40,8 @@ export default function SupplierManagement() {
   const [supplierPaidAmounts, setSupplierPaidAmounts] = useState({});
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const toast = useToast();
 
   const calculatePaidAmount = (paymentHistory, purchaseId) => {
     if (!paymentHistory || !Array.isArray(paymentHistory)) return 0
@@ -68,10 +72,13 @@ export default function SupplierManagement() {
   })
 
   useEffect(() => {
-    fetchSuppliers()
-    fetchSupplierTotals()
-    fetchSupplierPaidAmounts()
-  }, [])
+    setLoading(true);
+    Promise.all([
+      fetchSuppliers(),
+      fetchSupplierTotals(),
+      fetchSupplierPaidAmounts()
+    ]).finally(() => setLoading(false));
+  }, []);
 
   const fetchSuppliers = async () => {
     try {
@@ -112,6 +119,7 @@ export default function SupplierManagement() {
       setSuppliers(supplierData);
     } catch (error) {
       console.error('Error fetching suppliers:', error);
+      toast.error('Error fetching suppliers.');
     }
   };
 
@@ -142,6 +150,7 @@ export default function SupplierManagement() {
       setSupplierPurchases(purchaseDetails);
     } catch (error) {
       console.error('Error fetching supplier totals:', error);
+      toast.error('Error fetching supplier totals.');
     }
   };
 
@@ -157,6 +166,7 @@ export default function SupplierManagement() {
       setSupplierPaidAmounts(paidAmounts);
     } catch (error) {
       console.error('Error fetching supplier paid amounts:', error);
+      toast.error('Error fetching supplier paid amounts.');
     }
   };
 
@@ -229,8 +239,10 @@ export default function SupplierManagement() {
       });
       setShowAddForm(false);
       await fetchSuppliers();
+      toast.success('Supplier added successfully!');
     } catch (error) {
       console.error('Error adding supplier:', error);
+      toast.error('Error adding supplier.');
     }
   };
 
@@ -246,8 +258,10 @@ export default function SupplierManagement() {
       
       setEditingSupplier(null);
       await fetchSuppliers();
+      toast.success('Supplier updated successfully!');
     } catch (error) {
       console.error('Error updating supplier:', error);
+      toast.error('Error updating supplier.');
     }
   };
 
@@ -268,8 +282,10 @@ export default function SupplierManagement() {
         );
 
         await fetchSuppliers();
+        toast.success('Supplier deleted successfully!');
       } catch (error) {
         console.error('Error deleting supplier:', error);
+        toast.error('Error deleting supplier.');
       }
     }
   };
@@ -307,6 +323,7 @@ export default function SupplierManagement() {
     if (paymentAmount <= 0) {
       setPaymentError("Invalid payment amount");
       setShowError(true);
+      toast.error('Invalid payment amount.');
       return;
     }
 
@@ -315,6 +332,7 @@ export default function SupplierManagement() {
     if (paymentAmount > pendingAmount) {
       setPaymentError(`Payment amount cannot exceed pending amount of ${formatCurrency(pendingAmount)}`);
       setShowError(true);
+      toast.error('Payment amount exceeds pending.');
       return;
     }
 
@@ -385,6 +403,7 @@ export default function SupplierManagement() {
       // Show success message
       setSuccessMessage(`Payment of ${formatCurrency(paymentAmount)} processed successfully!`);
       setShowSuccessMessage(true);
+      toast.success(`Payment of ${formatCurrency(paymentAmount)} processed successfully!`);
 
       // Close modal and reset form after 2 seconds
       setTimeout(() => {
@@ -409,6 +428,7 @@ export default function SupplierManagement() {
       console.error('Error processing payment:', error);
       setPaymentError(error.response?.data?.error || "Failed to process payment. Please try again.");
       setShowError(true);
+      toast.error(error.response?.data?.error || "Failed to process payment. Please try again.");
     }
   };
 
@@ -472,7 +492,7 @@ export default function SupplierManagement() {
       }));
     } catch (error) {
       console.error('Error fetching payment history:', error);
-      alert('Failed to fetch payment history. Please try again.');
+      toast.error('Failed to fetch payment history.');
     }
   };
 
@@ -509,7 +529,7 @@ export default function SupplierManagement() {
     return (
       <div className="space-y-2">
         <div className="flex justify-between items-center mb-3">
-          <h4 className="text-sm font-medium text-white">Payment History for Purchase {purchase.id}</h4>
+          <h4 className="text-sm font-medium text-text-primary">Payment History for Purchase {purchase.id}</h4>
           <div className="flex items-center space-x-2">
             <span className="text-xs bg-green-600 text-white px-2 py-1 rounded-full">
               Paid: {formatCurrency(totalPaid)}
@@ -554,70 +574,169 @@ export default function SupplierManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
-      <div className="px-6 py-6">
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 mb-6">
-          <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search suppliers..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+    <div className="min-h-screen bg-background text-text-primary">
+      <toast.ToastContainer />
+      {loading ? (
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <DotSpinner />
+        </div>
+      ) : (
+        <>
+          <div className="px-6 py-6">
+            <div className="bg-surface border border-border rounded-lg p-6 mb-6">
+              <div className="flex flex-col lg:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-muted" />
+                    <input
+                      type="text"
+                      placeholder="Search suppliers..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-surface border border-border rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Suppliers List */}
-        <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-700">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Purchase ID
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Supplier
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Contact
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Notes
-                  </th>
+            {/* Suppliers List */}
+            <div className="bg-surface border border-border rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-700">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Purchase ID
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Supplier
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Contact
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Notes
+                      </th>
 
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Total Amount
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Paid Amount
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Pending Amount
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-700">
-                {sortedSuppliers.map((supplier) => (
-                  <React.Fragment key={supplier.id}>
-                    {supplierPurchases[supplier.email]?.length > 0 ? (
-                      supplierPurchases[supplier.email].map((purchase) => (
-                        <React.Fragment key={`${supplier.id}-${purchase.id}`}>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Total Amount
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Paid Amount
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Pending Amount
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-700">
+                    {sortedSuppliers.map((supplier) => (
+                      <React.Fragment key={supplier.id}>
+                        {supplierPurchases[supplier.email]?.length > 0 ? (
+                          supplierPurchases[supplier.email].map((purchase) => (
+                            <React.Fragment key={`${supplier.id}-${purchase.id}`}>
+                              <tr className="hover:bg-gray-700/50 transition-colors">
+                               <td className="px-6 py-4">
+                                  <div className="text-sm text-gray-300">
+                                    {purchase.id}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div>
+                                    <div className="text-sm font-medium text-white">{supplier.name}</div>
+                                    <div className="text-sm text-gray-400">{supplier.company}</div>
+                                    {supplier.website && (
+                                      <div className="flex items-center space-x-1 text-sm text-gray-400">
+                                        <Globe className="h-3 w-3" />
+                                        <a href={supplier.website} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400">
+                                          {supplier.website}
+                                        </a>
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="text-sm text-gray-300">
+                                    <div className="flex items-center space-x-1 mb-1">
+                                      <Mail className="h-3 w-3" />
+                                      <span className="truncate max-w-xs">{supplier.email}</span>
+                                    </div>
+                                    <div className="flex items-center space-x-1">
+                                      <Phone className="h-3 w-3" />
+                                      <span>{supplier.phone}</span>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="text-sm text-gray-300">
+                                    {supplier.supplierNotes || '-'}
+                                  </div>
+                                </td>
+                               
+                                <td className="px-6 py-4">
+                                  <div className="text-sm font-medium text-white">
+                                    {formatCurrency(purchase.amount)}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="text-sm font-medium text-green-400">
+                                    {formatCurrency(supplierPaidAmounts[purchase.id] || 0)}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="text-sm font-medium text-yellow-400">
+                                    {formatCurrency(purchase.amount - (supplierPaidAmounts[purchase.id] || 0))}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="flex space-x-2">
+                                    {purchase.amount - (supplierPaidAmounts[purchase.id] || 0) > 0 ? (
+                                      <>
+                                        <button
+                                          onClick={() => handlePayment(supplier, purchase)}
+                                          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                                        >
+                                          Pay
+                                        </button>
+                                        <button
+                                          onClick={() => handlePayment(supplier, purchase, true)}
+                                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                                        >
+                                          Full Pay
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <span className="bg-green-600 text-white px-3 py-1 rounded text-sm">
+                                        Paid
+                                      </span>
+                                    )}
+                                    <button
+                                      onClick={() => togglePaymentHistory(supplier.id, purchase.id)}
+                                      className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors flex items-center space-x-1"
+                                    >
+                                      <span>History</span>
+                                      <ChevronDown
+                                        className={`h-3 w-3 transition-transform ${showPaymentHistory[`${supplier.id}-${purchase.id}`] ? "rotate-180" : ""}`}
+                                      />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                              {showPaymentHistory[`${supplier.id}-${purchase.id}`] && (
+                                <tr className="bg-gray-700/30">
+                                  <td colSpan="8" className="px-6 py-4">
+                                    {renderPaymentHistory(supplier, purchase)}
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          ))
+                        ) : (
                           <tr className="hover:bg-gray-700/50 transition-colors">
-                           <td className="px-6 py-4">
-                              <div className="text-sm text-gray-300">
-                                {purchase.id}
-                              </div>
-                            </td>
                             <td className="px-6 py-4">
                               <div>
                                 <div className="text-sm font-medium text-white">{supplier.name}</div>
@@ -649,34 +768,32 @@ export default function SupplierManagement() {
                                 {supplier.supplierNotes || '-'}
                               </div>
                             </td>
-                           
+                            <td className="px-6 py-4">
+                              <div className="text-sm text-gray-300">
+                                -
+                              </div>
+                            </td>
                             <td className="px-6 py-4">
                               <div className="text-sm font-medium text-white">
-                                {formatCurrency(purchase.amount)}
+                                {formatCurrency(supplierTotals[supplier.email] || 0)}
                               </div>
                             </td>
                             <td className="px-6 py-4">
                               <div className="text-sm font-medium text-green-400">
-                                {formatCurrency(supplierPaidAmounts[purchase.id] || 0)}
+                                {formatCurrency(supplierPaidAmounts[supplier.email] || 0)}
                               </div>
                             </td>
                             <td className="px-6 py-4">
                               <div className="text-sm font-medium text-yellow-400">
-                                {formatCurrency(purchase.amount - (supplierPaidAmounts[purchase.id] || 0))}
+                                {formatCurrency((supplierTotals[supplier.email] || 0) - (supplierPaidAmounts[supplier.email] || 0))}
                               </div>
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex space-x-2">
-                                {purchase.amount - (supplierPaidAmounts[purchase.id] || 0) > 0 ? (
+                                {(supplierTotals[supplier.email] || 0) - (supplierPaidAmounts[supplier.email] || 0) > 0 ? (
                                   <>
                                     <button
-                                      onClick={() => handlePayment(supplier, purchase)}
-                                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                                    >
-                                      Pay
-                                    </button>
-                                    <button
-                                      onClick={() => handlePayment(supplier, purchase, true)}
+                                      onClick={() => handlePayment(supplier, null, true)}
                                       className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors"
                                     >
                                       Full Pay
@@ -688,530 +805,442 @@ export default function SupplierManagement() {
                                   </span>
                                 )}
                                 <button
-                                  onClick={() => togglePaymentHistory(supplier.id, purchase.id)}
+                                  onClick={() => togglePaymentHistory(supplier.id, 'all')}
                                   className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors flex items-center space-x-1"
                                 >
                                   <span>History</span>
                                   <ChevronDown
-                                    className={`h-3 w-3 transition-transform ${showPaymentHistory[`${supplier.id}-${purchase.id}`] ? "rotate-180" : ""}`}
+                                    className={`h-3 w-3 transition-transform ${showPaymentHistory[`${supplier.id}-all`] ? "rotate-180" : ""}`}
                                   />
                                 </button>
                               </div>
                             </td>
                           </tr>
-                          {showPaymentHistory[`${supplier.id}-${purchase.id}`] && (
-                            <tr className="bg-gray-700/30">
-                              <td colSpan="8" className="px-6 py-4">
-                                {renderPaymentHistory(supplier, purchase)}
-                              </td>
-                            </tr>
-                          )}
-                        </React.Fragment>
-                      ))
-                    ) : (
-                      <tr className="hover:bg-gray-700/50 transition-colors">
-                        <td className="px-6 py-4">
-                          <div>
-                            <div className="text-sm font-medium text-white">{supplier.name}</div>
-                            <div className="text-sm text-gray-400">{supplier.company}</div>
-                            {supplier.website && (
-                              <div className="flex items-center space-x-1 text-sm text-gray-400">
-                                <Globe className="h-3 w-3" />
-                                <a href={supplier.website} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400">
-                                  {supplier.website}
-                                </a>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-300">
-                            <div className="flex items-center space-x-1 mb-1">
-                              <Mail className="h-3 w-3" />
-                              <span className="truncate max-w-xs">{supplier.email}</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <Phone className="h-3 w-3" />
-                              <span>{supplier.phone}</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-300">
-                            {supplier.supplierNotes || '-'}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-300">
-                            -
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm font-medium text-white">
-                            {formatCurrency(supplierTotals[supplier.email] || 0)}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm font-medium text-green-400">
-                            {formatCurrency(supplierPaidAmounts[supplier.email] || 0)}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm font-medium text-yellow-400">
-                            {formatCurrency((supplierTotals[supplier.email] || 0) - (supplierPaidAmounts[supplier.email] || 0))}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex space-x-2">
-                            {(supplierTotals[supplier.email] || 0) - (supplierPaidAmounts[supplier.email] || 0) > 0 ? (
-                              <>
-                                <button
-                                  onClick={() => handlePayment(supplier, null, true)}
-                                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                                >
-                                  Full Pay
-                                </button>
-                              </>
-                            ) : (
-                              <span className="bg-green-600 text-white px-3 py-1 rounded text-sm">
-                                Paid
-                              </span>
-                            )}
-                            <button
-                              onClick={() => togglePaymentHistory(supplier.id, 'all')}
-                              className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors flex items-center space-x-1"
-                            >
-                              <span>History</span>
-                              <ChevronDown
-                                className={`h-3 w-3 transition-transform ${showPaymentHistory[`${supplier.id}-all`] ? "rotate-180" : ""}`}
-                              />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                    {showPaymentHistory[`${supplier.id}-all`] && (
-                      <tr className="bg-gray-700/30">
-                        <td colSpan="8" className="px-6 py-4">
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center mb-3">
-                              <h4 className="text-sm font-medium text-white">Payment History for All Purchases</h4>
-                              <span className="text-xs bg-yellow-600 text-white px-2 py-1 rounded-full">
-                                {formatCurrency((supplierTotals[supplier.email] || 0) - (supplierPaidAmounts[supplier.email] || 0))} Pending
-                              </span>
-                            </div>
-                            {supplier.paymentHistory?.length > 0 ? (
+                        )}
+                        {showPaymentHistory[`${supplier.id}-all`] && (
+                          <tr className="bg-gray-700/30">
+                            <td colSpan="8" className="px-6 py-4">
                               <div className="space-y-2">
-                                {supplier.paymentHistory
-                                  .filter(payment => (Number(payment.amount) || 0) > 0)
-                                  .map((payment) => (
-                                    <div
-                                      key={payment.id}
-                                      className="flex items-center justify-between bg-gray-800 rounded p-3"
-                                    >
-                                      <div className="flex items-center space-x-3">
-                                        {payment.method === "card" ? (
-                                          <CreditCard className="h-4 w-4 text-blue-400" />
-                                        ) : (
-                                          <Banknote className="h-4 w-4 text-green-400" />
-                                        )}
-                                        <span className="text-sm text-gray-300">
-                                          {formatCurrency(payment.amount)} via {payment.method}
-                                          {payment.cardLast4 && ` (**** ${payment.cardLast4})`}
-                                        </span>
-                                      </div>
-                                      <div className="flex items-center space-x-1 text-sm text-gray-400">
-                                        <Calendar className="h-3 w-3" />
-                                        <span>{payment.date}</span>
-                                      </div>
-                                    </div>
-                                  ))}
+                                <div className="flex justify-between items-center mb-3">
+                                  <h4 className="text-sm font-medium text-text-primary">Payment History for All Purchases</h4>
+                                  <span className="text-xs bg-yellow-600 text-white px-2 py-1 rounded-full">
+                                    {formatCurrency((supplierTotals[supplier.email] || 0) - (supplierPaidAmounts[supplier.email] || 0))} Pending
+                                  </span>
+                                </div>
+                                {supplier.paymentHistory?.length > 0 ? (
+                                  <div className="space-y-2">
+                                    {supplier.paymentHistory
+                                      .filter(payment => (Number(payment.amount) || 0) > 0)
+                                      .map((payment) => (
+                                        <div
+                                          key={payment.id}
+                                          className="flex items-center justify-between bg-gray-800 rounded p-3"
+                                        >
+                                          <div className="flex items-center space-x-3">
+                                            {payment.method === "card" ? (
+                                              <CreditCard className="h-4 w-4 text-blue-400" />
+                                            ) : (
+                                              <Banknote className="h-4 w-4 text-green-400" />
+                                            )}
+                                            <span className="text-sm text-gray-300">
+                                              {formatCurrency(payment.amount)} via {payment.method}
+                                              {payment.cardLast4 && ` (**** ${payment.cardLast4})`}
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center space-x-1 text-sm text-gray-400">
+                                            <Calendar className="h-3 w-3" />
+                                            <span>{payment.date}</span>
+                                          </div>
+                                        </div>
+                                      ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-gray-400 text-sm">No payment history available for all purchases</p>
+                                )}
                               </div>
-                            ) : (
-                              <p className="text-gray-400 text-sm">No payment history available for all purchases</p>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {sortedSuppliers.length === 0 && (
-            <div className="text-center py-12">
-              <Building2 className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-              <p className="text-gray-400">No suppliers found matching your criteria</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Payment Modal */}
-      {showPaymentModal && selectedSupplier && selectedPurchase && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold text-white mb-4">Payment for {selectedSupplier.name}</h2>
-            
-            {/* Success Message */}
-            {showSuccessMessage && (
-              <div className="mb-4 p-4 bg-green-900/30 border border-green-500 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <div className="h-8 w-8 bg-green-500 rounded-full flex items-center justify-center">
-                    <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  <p className="text-green-400 font-medium">{successMessage}</p>
-                </div>
-              </div>
-            )}
-
-            <div className="mb-4 p-3 bg-gray-700 rounded-lg">
-              <p className="text-sm text-gray-300">
-                Purchase ID: <span className="text-white font-medium">{selectedPurchase.id}</span>
-              </p>
-              <p className="text-sm text-gray-300 mt-2">
-                Total Amount: <span className="text-white font-medium">{formatCurrency(selectedPurchase.amount)}</span>
-              </p>
-              <p className="text-sm text-gray-300 mt-2">
-                Paid Amount: <span className="text-green-400 font-medium">{formatCurrency(supplierPaidAmounts[selectedPurchase.id] || 0)}</span>
-              </p>
-              <p className="text-sm text-gray-300 mt-2">
-                Pending Amount:{" "}
-                <span className="text-yellow-400 font-medium">
-                  {formatCurrency(selectedPurchase.amount - (supplierPaidAmounts[selectedPurchase.id] || 0))}
-                </span>
-              </p>
-            </div>
-
-            <form onSubmit={processPayment} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Payment Amount</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  required
-                  value={paymentForm.amount}
-                  onChange={(e) => {
-                    setPaymentForm({ ...paymentForm, amount: e.target.value })
-                    setShowError(false)
-                    setPaymentError("")
-                  }}
-                  className={`w-full px-3 py-2 bg-gray-700 border ${showError ? 'border-red-500' : 'border-gray-600'} rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500`}
-                  readOnly={isFullPayMode}
-                />
-                {isFullPayMode && (
-                  <p className="text-xs text-blue-400 mt-1">Payment Amount is set to Pending Amount for Full Pay.</p>
-                )}
-                {showError && (
-                  <div className="mt-2 p-2 bg-red-900/30 border border-red-500 rounded-lg">
-                    <p className="text-sm text-red-400">{paymentError}</p>
-                  </div>
-                )}
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Payment Method</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentForm({ ...paymentForm, method: "cash" })}
-                    className={`flex items-center justify-center space-x-2 p-3 rounded-lg border transition-colors ${paymentForm.method === "cash"
-                      ? "bg-green-600 border-green-500 text-white"
-                      : "bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600"
-                      }`}
-                  >
-                    <Banknote className="h-4 w-4" />
-                    <span>Cash</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPaymentForm({ ...paymentForm, method: "card" })}
-                    className={`flex items-center justify-center space-x-2 p-3 rounded-lg border transition-colors ${paymentForm.method === "card"
-                      ? "bg-blue-600 border-blue-500 text-white"
-                      : "bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600"
-                      }`}
-                  >
-                    <CreditCard className="h-4 w-4" />
-                    <span>Card</span>
-                  </button>
-                </div>
-              </div>
-
-              {paymentForm.method === "card" && (
-                <div className="space-y-4 p-4 bg-gray-700 rounded-lg">
-                  <h3 className="text-sm font-medium text-gray-300">Card Details</h3>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Cardholder Name</label>
-                    <input
-                      type="text"
-                      required
-                      value={paymentForm.cardholderName}
-                      onChange={(e) => setPaymentForm({ ...paymentForm, cardholderName: e.target.value })}
-                      className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Card Number</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="1234 5678 9012 3456"
-                      value={paymentForm.cardNumber}
-                      onChange={(e) =>
-                        setPaymentForm({ ...paymentForm, cardNumber: e.target.value.replace(/\s/g, "") })
-                      }
-                      className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Expiry Date</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="MM/YY"
-                        value={paymentForm.expiryDate}
-                        onChange={(e) => setPaymentForm({ ...paymentForm, expiryDate: e.target.value })}
-                        className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">CVV</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="123"
-                        value={paymentForm.cvv}
-                        onChange={(e) => setPaymentForm({ ...paymentForm, cvv: e.target.value })}
-                        className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
+              {sortedSuppliers.length === 0 && (
+                <div className="text-center py-12">
+                  <Building2 className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+                  <p className="text-gray-400">No suppliers found matching your criteria</p>
                 </div>
               )}
-
-              <div className="flex space-x-3 pt-4">
-                <button
-                  type="submit"
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors"
-                  disabled={showSuccessMessage}
-                >
-                  {showSuccessMessage ? 'Processing...' : 'Process Payment'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowPaymentModal(false);
-                    setSelectedSupplier(null);
-                    setPaymentForm({
-                      amount: "",
-                      method: "cash",
-                      cardNumber: "",
-                      expiryDate: "",
-                      cvv: "",
-                      cardholderName: "",
-                    });
-                    setShowSuccessMessage(false);
-                    setSuccessMessage("");
-                  }}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors"
-                  disabled={showSuccessMessage}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
-        </div>
-      )}
 
-      {/* Add Supplier Modal */}
-      {showAddForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold text-white mb-4">Add New Supplier</h2>
-            <form onSubmit={handleAddSupplier} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Name</label>
-                <input
-                  type="text"
-                  required
-                  value={newSupplier.name}
-                  onChange={(e) => setNewSupplier({ ...newSupplier, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+          {/* Payment Modal */}
+          {showPaymentModal && selectedSupplier && selectedPurchase && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+              <div className="bg-surface border border-border rounded-lg p-6 w-full max-w-md">
+                <h2 className="text-xl font-bold text-white mb-4">Payment for {selectedSupplier.name}</h2>
+                
+                {/* Success Message */}
+                {showSuccessMessage && (
+                  <div className="mb-4 p-4 bg-green-900/30 border border-green-500 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <div className="h-8 w-8 bg-green-500 rounded-full flex items-center justify-center">
+                        <svg className="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <p className="text-green-400 font-medium">{successMessage}</p>
+                    </div>
+                  </div>
+                )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Company</label>
-                <input
-                  type="text"
-                  required
-                  value={newSupplier.company}
-                  onChange={(e) => setNewSupplier({ ...newSupplier, company: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+                <div className="mb-4 p-3 bg-gray-700 rounded-lg">
+                  <p className="text-sm text-gray-300">
+                    Purchase ID: <span className="text-white font-medium">{selectedPurchase.id}</span>
+                  </p>
+                  <p className="text-sm text-gray-300 mt-2">
+                    Total Amount: <span className="text-white font-medium">{formatCurrency(selectedPurchase.amount)}</span>
+                  </p>
+                  <p className="text-sm text-gray-300 mt-2">
+                    Paid Amount: <span className="text-green-400 font-medium">{formatCurrency(supplierPaidAmounts[selectedPurchase.id] || 0)}</span>
+                  </p>
+                  <p className="text-sm text-gray-300 mt-2">
+                    Pending Amount:{" "}
+                    <span className="text-yellow-400 font-medium">
+                      {formatCurrency(selectedPurchase.amount - (supplierPaidAmounts[selectedPurchase.id] || 0))}
+                    </span>
+                  </p>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Website</label>
-                <input
-                  type="url"
-                  value={newSupplier.website}
-                  onChange={(e) => setNewSupplier({ ...newSupplier, website: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+                <form onSubmit={processPayment} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Payment Amount</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      required
+                      value={paymentForm.amount}
+                      onChange={(e) => {
+                        setPaymentForm({ ...paymentForm, amount: e.target.value })
+                        setShowError(false)
+                        setPaymentError("")
+                      }}
+                      className={`w-full px-3 py-2 bg-gray-700 border ${showError ? 'border-red-500' : 'border-border'} rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary`}
+                      readOnly={isFullPayMode}
+                    />
+                    {isFullPayMode && (
+                      <p className="text-xs text-blue-400 mt-1">Payment Amount is set to Pending Amount for Full Pay.</p>
+                    )}
+                    {showError && (
+                      <div className="mt-2 p-2 bg-red-900/30 border border-red-500 rounded-lg">
+                        <p className="text-sm text-red-400">{paymentError}</p>
+                      </div>
+                    )}
+                  </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
-                <input
-                  type="email"
-                  required
-                  value={newSupplier.email}
-                  onChange={(e) => setNewSupplier({ ...newSupplier, email: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Payment Method</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentForm({ ...paymentForm, method: "cash" })}
+                      className={`flex items-center justify-center space-x-2 p-3 rounded-lg border transition-colors ${paymentForm.method === "cash"
+                        ? "bg-green-600 border-green-500 text-white"
+                        : "bg-gray-700 border-border text-gray-300 hover:bg-gray-600"
+                        }`}
+                    >
+                      <Banknote className="h-4 w-4" />
+                      <span>Cash</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPaymentForm({ ...paymentForm, method: "card" })}
+                      className={`flex items-center justify-center space-x-2 p-3 rounded-lg border transition-colors ${paymentForm.method === "card"
+                        ? "bg-blue-600 border-blue-500 text-white"
+                        : "bg-gray-700 border-border text-gray-300 hover:bg-gray-600"
+                        }`}
+                    >
+                      <CreditCard className="h-4 w-4" />
+                      <span>Card</span>
+                    </button>
+                  </div>
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Phone</label>
-                <input
-                  type="tel"
-                  required
-                  value={newSupplier.phone}
-                  onChange={(e) => setNewSupplier({ ...newSupplier, phone: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+                {paymentForm.method === "card" && (
+                  <div className="space-y-4 p-4 bg-gray-700 rounded-lg">
+                    <h3 className="text-sm font-medium text-gray-300">Card Details</h3>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Notes</label>
-                <textarea
-                  value={newSupplier.supplierNotes}
-                  onChange={(e) => setNewSupplier({ ...newSupplier, supplierNotes: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows="2"
-                />
-              </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Cardholder Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={paymentForm.cardholderName}
+                        onChange={(e) => setPaymentForm({ ...paymentForm, cardholderName: e.target.value })}
+                        className="w-full px-3 py-2 bg-gray-600 border border-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
 
-              <div className="flex space-x-3 pt-4">
-                <button
-                  type="submit"
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors"
-                >
-                  Add Supplier
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAddForm(false)}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">Card Number</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="1234 5678 9012 3456"
+                        value={paymentForm.cardNumber}
+                        onChange={(e) =>
+                          setPaymentForm({ ...paymentForm, cardNumber: e.target.value.replace(/\s/g, "") })
+                        }
+                        className="w-full px-3 py-2 bg-gray-600 border border-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Expiry Date</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="MM/YY"
+                          value={paymentForm.expiryDate}
+                          onChange={(e) => setPaymentForm({ ...paymentForm, expiryDate: e.target.value })}
+                          className="w-full px-3 py-2 bg-gray-600 border border-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-1">CVV</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="123"
+                          value={paymentForm.cvv}
+                          onChange={(e) => setPaymentForm({ ...paymentForm, cvv: e.target.value })}
+                          className="w-full px-3 py-2 bg-gray-600 border border-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors"
+                    disabled={showSuccessMessage}
+                  >
+                    {showSuccessMessage ? 'Processing...' : 'Process Payment'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPaymentModal(false);
+                      setSelectedSupplier(null);
+                      setPaymentForm({
+                        amount: "",
+                        method: "cash",
+                        cardNumber: "",
+                        expiryDate: "",
+                        cvv: "",
+                        cardholderName: "",
+                      });
+                      setShowSuccessMessage(false);
+                      setSuccessMessage("");
+                    }}
+                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors"
+                    disabled={showSuccessMessage}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Edit Supplier Modal */}
-      {editingSupplier && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold text-white mb-4">Edit Supplier</h2>
-            <form onSubmit={handleUpdateSupplier} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Name</label>
-                <input
-                  type="text"
-                  required
-                  value={editingSupplier.name}
-                  onChange={(e) => setEditingSupplier({ ...editingSupplier, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+        {/* Add Supplier Modal */}
+        {showAddForm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-surface border border-border rounded-lg p-6 w-full max-w-md">
+              <h2 className="text-xl font-bold text-white mb-4">Add New Supplier</h2>
+              <form onSubmit={handleAddSupplier} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={newSupplier.name}
+                    onChange={(e) => setNewSupplier({ ...newSupplier, name: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-700 border border-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Company</label>
-                <input
-                  type="text"
-                  required
-                  value={editingSupplier.company}
-                  onChange={(e) => setEditingSupplier({ ...editingSupplier, company: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Company</label>
+                  <input
+                    type="text"
+                    required
+                    value={newSupplier.company}
+                    onChange={(e) => setNewSupplier({ ...newSupplier, company: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-700 border border-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Website</label>
-                <input
-                  type="url"
-                  value={editingSupplier.website}
-                  onChange={(e) => setEditingSupplier({ ...editingSupplier, website: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Website</label>
+                  <input
+                    type="url"
+                    value={newSupplier.website}
+                    onChange={(e) => setNewSupplier({ ...newSupplier, website: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-700 border border-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
-                <input
-                  type="email"
-                  required
-                  value={editingSupplier.email}
-                  onChange={(e) => setEditingSupplier({ ...editingSupplier, email: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={newSupplier.email}
+                    onChange={(e) => setNewSupplier({ ...newSupplier, email: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-700 border border-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Phone</label>
-                <input
-                  type="tel"
-                  required
-                  value={editingSupplier.phone}
-                  onChange={(e) => setEditingSupplier({ ...editingSupplier, phone: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Phone</label>
+                  <input
+                    type="tel"
+                    required
+                    value={newSupplier.phone}
+                    onChange={(e) => setNewSupplier({ ...newSupplier, phone: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-700 border border-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Notes</label>
-                <textarea
-                  value={editingSupplier.supplierNotes}
-                  onChange={(e) => setEditingSupplier({ ...editingSupplier, supplierNotes: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows="2"
-                />
-              </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Notes</label>
+                  <textarea
+                    value={newSupplier.supplierNotes}
+                    onChange={(e) => setNewSupplier({ ...newSupplier, supplierNotes: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-700 border border-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                    rows="2"
+                  />
+                </div>
 
-              <div className="flex space-x-3 pt-4">
-                <button
-                  type="submit"
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors"
-                >
-                  Update Supplier
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditingSupplier(null)}
-                  className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors"
+                  >
+                    Add Supplier
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddForm(false)}
+                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
-  )
+        )}
+
+        {/* Edit Supplier Modal */}
+        {editingSupplier && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-surface border border-border rounded-lg p-6 w-full max-w-md">
+              <h2 className="text-xl font-bold text-white mb-4">Edit Supplier</h2>
+              <form onSubmit={handleUpdateSupplier} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingSupplier.name}
+                    onChange={(e) => setEditingSupplier({ ...editingSupplier, name: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-700 border border-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Company</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingSupplier.company}
+                    onChange={(e) => setEditingSupplier({ ...editingSupplier, company: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-700 border border-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Website</label>
+                  <input
+                    type="url"
+                    value={editingSupplier.website}
+                    onChange={(e) => setEditingSupplier({ ...editingSupplier, website: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-700 border border-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={editingSupplier.email}
+                    onChange={(e) => setEditingSupplier({ ...editingSupplier, email: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-700 border border-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Phone</label>
+                  <input
+                    type="tel"
+                    required
+                    value={editingSupplier.phone}
+                    onChange={(e) => setEditingSupplier({ ...editingSupplier, phone: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-700 border border-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Notes</label>
+                  <textarea
+                    value={editingSupplier.supplierNotes}
+                    onChange={(e) => setEditingSupplier({ ...editingSupplier, supplierNotes: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-700 border border-border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                    rows="2"
+                  />
+                </div>
+
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors"
+                  >
+                    Update Supplier
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingSupplier(null)}
+                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+      </>
+    )}
+  </div>
+)
 }

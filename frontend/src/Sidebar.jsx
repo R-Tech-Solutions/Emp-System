@@ -1,5 +1,5 @@
 "use client";
-
+import React from "react";
 import { useState, useEffect, useMemo } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
@@ -399,6 +399,25 @@ function SidebarContent({
   const userData = getUserData();
   const userEmail = userData?.email || sessionStorage.getItem("email") || "admin@example.com";
 
+  // User Manual Dropdown State
+  const [showManualMenu, setShowManualMenu] = useState(false);
+  const manualMenuRef = React.useRef();
+
+  // Close menu on outside click
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (manualMenuRef.current && !manualMenuRef.current.contains(event.target)) {
+        setShowManualMenu(false);
+      }
+    }
+    if (showManualMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showManualMenu]);
+
   const handleLogout = () => {
     try {
       logout();
@@ -499,18 +518,37 @@ function SidebarContent({
     <>
       {/* Header with Search */}
       <div className="p-4 border-b border-border bg-gradient-to-br from-primary-light via-surface to-accent/20">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="relative">
-            <img
-              src="/images/logo1.jpg"
-              className="w-12 h-12 rounded-full border-2 border-primary object-cover shadow-lg hover:shadow-xl transition-shadow duration-300"
-              alt="Avatar"
-            />
-            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full animate-pulse"></div>
-          </div>
+        <div className="flex items-center gap-3 mb-4 relative">
+          
           <div className="flex-1">
             <p className="font-semibold text-text-primary text-sm">Welcome back!</p>
             <p className="text-text-secondary text-xs truncate">{userEmail}</p>
+          </div>
+          {/* User Manual Icon */}
+          <div className="relative" ref={manualMenuRef}>
+            <button
+              className="p-2 rounded-full hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-primary"
+              title="User Manuals"
+              onClick={() => setShowManualMenu((prev) => !prev)}
+            >
+              <BookOpen className="w-5 h-5 text-primary" />
+            </button>
+            {showManualMenu && (
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-border rounded-lg shadow-lg z-50 animate-fade-in">
+                <button
+                  className="w-full text-left px-4 py-2 hover:bg-primary-light text-text-primary rounded-t-lg"
+                  onClick={() => { setShowManualMenu(false); navigate('/User-Hrm'); }}
+                >
+                  HRM User Manual
+                </button>
+                <button
+                  className="w-full text-left px-4 py-2 hover:bg-primary-light text-text-primary rounded-b-lg"
+                  onClick={() => { setShowManualMenu(false); navigate('/User-Sales'); }}
+                >
+                  Sales User Manual
+                </button>
+              </div>
+            )}
           </div>
         </div>
         
