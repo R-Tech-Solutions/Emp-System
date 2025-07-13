@@ -19,6 +19,9 @@ function App() {
   const [selectedPosition, setSelectedPosition] = useState("");
   const [filteredByPositionEmployees, setFilteredByPositionEmployees] = useState([]);
 
+  // Note for Task Management System
+  const taskManagementNote = "Advanced task management system for creating, assigning, and tracking tasks across departments. Features include task assignment to employees, supervisor oversight, status tracking (not-started, in-progress, completed, overtime), file attachments, priority tags, and time tracking. Supports task editing, deletion, and comprehensive task monitoring with email notifications.";
+
   const availableTags = [
     { id: 1, name: "Urgent", color: "bg-red-500" },
     { id: 2, name: "Low Priority", color: "bg-blue-500" },
@@ -108,9 +111,9 @@ function App() {
         title: "Error",
         text: "Failed to fetch supervisor email.",
         icon: "error",
-        background: "#1a202c",
-        color: "#fff",
-        confirmButtonColor: "#805ad5",
+        background: "#FFFFFF",
+        color: "#2D2D2D",
+        confirmButtonColor: "#875A7B",
       });
     }
   };
@@ -136,9 +139,9 @@ function App() {
         title: "Error",
         text: "Failed to fetch employee details.",
         icon: "error",
-        background: "#1a202c",
-        color: "#fff",
-        confirmButtonColor: "#805ad5",
+        background: "#FFFFFF",
+        color: "#2D2D2D",
+        confirmButtonColor: "#875A7B",
       });
     }
   };
@@ -176,12 +179,12 @@ function App() {
       try {
         if (isEditMode && editingTaskId) {
           const result = await dispatch(editTask({ id: editingTaskId, taskData })).unwrap();
-          toast.success("Task updated successfully!", { theme: "dark" }); // Toast for editing
+          toast.success("Task updated successfully!", { theme: "light" }); // Toast for editing
           setIsEditMode(false);
           setEditingTaskId(null);
         } else {
           const result = await dispatch(addTask(taskData)).unwrap();
-          toast.success("Task added successfully!", { theme: "dark" }); // Toast for adding
+          toast.success("Task added successfully!", { theme: "light" }); // Toast for adding
         }
         setNewTask({
           name: "",
@@ -204,9 +207,9 @@ function App() {
           title: "Error",
           text: error || "Failed to submit task. Please try again.",
           icon: "error",
-          background: "#1a202c",
-          color: "#fff",
-          confirmButtonColor: "#805ad5",
+          background: "#FFFFFF",
+          color: "#2D2D2D",
+          confirmButtonColor: "#875A7B",
         });
       } finally {
         setIsSubmitting(false);
@@ -222,7 +225,7 @@ function App() {
   // Handle errors
   useEffect(() => {
     if (error) {
-      toast.error(error, { theme: "dark" });
+      toast.error(error, { theme: "light" });
       dispatch(clearError());
     }
   }, [error, dispatch]);
@@ -230,10 +233,10 @@ function App() {
   const handleDeleteTask = async (taskId) => {
     try {
       await dispatch(deleteTask(taskId)).unwrap();
-      toast.success("Task deleted successfully!", { theme: "dark" }); 
+      toast.success("Task deleted successfully!", { theme: "light" }); 
     } catch (error) {
       console.error("Error deleting task:", error);
-      toast.error(error || "Failed to delete task. Please try again.", { theme: "dark" }); 
+      toast.error(error || "Failed to delete task. Please try again.", { theme: "light" }); 
     }
   };
 
@@ -244,9 +247,9 @@ function App() {
         title: "Action Not Allowed",
         text: "Task status cannot be changed once marked as completed or overtime.",
         icon: "warning",
-        background: "#1a202c", 
-        color: "#fff", 
-        confirmButtonColor: "#805ad5",
+        background: "#FFFFFF", 
+        color: "#2D2D2D", 
+        confirmButtonColor: "#875A7B",
       });
       return;
     }
@@ -256,13 +259,13 @@ function App() {
         title: "Success",
         text: "Task marked as completed.",
         icon: "success",
-        background: "#1a202c",
-        color: "#fff",
-        confirmButtonColor: "#805ad5",
+        background: "#FFFFFF",
+        color: "#2D2D2D",
+        confirmButtonColor: "#875A7B",
       });
     } catch (error) {
       console.error("Error marking task as done:", error);
-      toast.error(error || "Failed to update task status.", { theme: "dark" });
+      toast.error(error || "Failed to update task status.", { theme: "light" });
     }
   };
 
@@ -273,9 +276,9 @@ function App() {
         title: "Action Not Allowed",
         text: "Task status cannot be changed once marked as completed or overtime.",
         icon: "warning",
-        background: "#1a202c",
-        color: "#fff",
-        confirmButtonColor: "#805ad5",
+        background: "#FFFFFF",
+        color: "#2D2D2D",
+        confirmButtonColor: "#875A7B",
       });
       return;
     }
@@ -285,13 +288,13 @@ function App() {
         title: "Success",
         text: "Task marked as overtime.",
         icon: "success",
-        background: "#1a202c",
-        color: "#fff",
-        confirmButtonColor: "#805ad5",
+        background: "#FFFFFF",
+        color: "#2D2D2D",
+        confirmButtonColor: "#875A7B",
       });
     } catch (error) {
       console.error("Error marking task as overtime:", error);
-      toast.error(error || "Failed to update task status.", { theme: "dark" });
+      toast.error(error || "Failed to update task status.", { theme: "light" });
     }
   };
 
@@ -367,11 +370,11 @@ function App() {
       case "in-progress":
         return { color: "bg-blue-500", label: "In Progress" };
       case "not-started":
-        return { color: "bg-gray-500", label: "Not Started" };
+        return { color: "bg-orange-500", label: "Not Started" };
       case "overtime":
         return { color: "bg-red-500", label: "Overtime" };
       default:
-        return { color: "bg-gray-500", label: "Unknown" };
+        return { color: "bg-text-muted", label: "Unknown" };
     }
   };
 
@@ -450,11 +453,27 @@ function App() {
           </div>
         ) : (
           <>
+            {/* System Note */}
+            <div className="mb-6 p-4 bg-primary-light border border-primary rounded-lg">
+                <div className="flex items-start">
+                    <div className="flex-shrink-0">
+                        <svg className="h-5 w-5 text-primary" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                    </div>
+                    <div className="ml-3">
+                        <p className="text-sm text-text-primary">
+                            {taskManagementNote}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             <div className="flex justify-between items-center mb-8">
-              <h1 className="text-3xl font-bold">Task Management</h1>
+              <h1 className="text-3xl font-bold text-text-primary">Task Management</h1>
               <button
                 onClick={handleAddNewTask}
-                className="bg-primary hover:bg-primary-dark px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-transform transform hover:scale-105"
+                className="bg-primary hover:bg-primary-dark px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-transform transform hover:scale-105 text-white"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path
@@ -472,7 +491,7 @@ function App() {
                 ref={formRef}
                 className="bg-surface rounded-lg p-6 mb-8 shadow-lg transition-all duration-300 ease-in-out border border-border"
               >
-                <h2 className="text-xl font-semibold mb-4">{isEditMode ? "Edit Task" : "Add New Task"}</h2>
+                <h2 className="text-xl font-semibold mb-4 text-text-primary">{isEditMode ? "Edit Task" : "Add New Task"}</h2>
                 <form onSubmit={handleSubmit}>
                   {loading && <DotSpinner />}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -483,7 +502,7 @@ function App() {
                         name="name"
                         value={newTask.name}
                         onChange={handleInputChange}
-                        className="w-full bg-background border border-border rounded p-2 text-text-primary"
+                        className="w-full bg-background border border-border rounded p-2 text-text-primary focus:ring-2 focus:ring-primary focus:border-transparent"
                         required
                       />
                     </div>
@@ -495,7 +514,7 @@ function App() {
                         name="dueDate"
                         value={newTask.dueDate}
                         onChange={handleInputChange}
-                        className="w-full bg-background border border-border rounded p-2 text-text-primary"
+                        className="w-full bg-background border border-border rounded p-2 text-text-primary focus:ring-2 focus:ring-primary focus:border-transparent"
                         required
                       />
                     </div>
@@ -507,7 +526,7 @@ function App() {
                         name="totalHours"
                         value={newTask.totalHours}
                         onChange={handleInputChange}
-                        className="w-full bg-background border border-border rounded p-2 text-text-primary"
+                        className="w-full bg-background border border-border rounded p-2 text-text-primary focus:ring-2 focus:ring-primary focus:border-transparent"
                       />
                     </div>
 
@@ -517,7 +536,7 @@ function App() {
                         name="department"
                         value={newTask.department}
                         onChange={handleInputChange}
-                        className="w-full bg-background border border-border rounded p-2 text-text-primary"
+                        className="w-full bg-background border border-border rounded p-2 text-text-primary focus:ring-2 focus:ring-primary focus:border-transparent"
                         required
                       >
                         <option value="">Select Department</option>
@@ -537,8 +556,8 @@ function App() {
                         {filteredEmployees.map((employee) => (
                           <div
                             key={employee.id}
-                            className={`flex items-center p-2 rounded cursor-pointer border border-border ${
-                              newTask.assignedTo === employee.id ? "bg-primary-light" : "bg-background"
+                            className={`flex items-center p-2 rounded cursor-pointer border border-border transition-colors ${
+                              newTask.assignedTo === employee.id ? "bg-primary-light border-primary" : "bg-background hover:bg-primary-light/50"
                             }`}
                             onClick={() => handleEmployeeSelect(employee.id)}
                           >
@@ -565,12 +584,12 @@ function App() {
                       </div>
                       <br />
                       <div>
-                        <label className="block mb-2">Email</label>
+                        <label className="block mb-2 text-text-secondary">Email</label>
                         <input
                           type="email"
-                          value={newTask.email || "example@example.com"} // Replace with the appropriate email value
+                          value={newTask.email || "example@example.com"}
                           readOnly
-                          className="w-full bg-gray-700 rounded p-2 text-white cursor-not-allowed"
+                          className="w-full bg-primary-light border border-primary rounded p-2 text-text-primary cursor-not-allowed"
                         />
                       </div>
 
@@ -578,12 +597,12 @@ function App() {
 
 
                     <div>
-                      <label className="block mb-2">Supervisor By</label>
+                      <label className="block mb-2 text-text-secondary">Supervisor By</label>
                       <select
                         name="position"
                         value={selectedPosition}
                         onChange={(e) => setSelectedPosition(e.target.value)}
-                        className="w-full bg-gray-700 rounded p-2 text-white"
+                        className="w-full bg-background border border-border rounded p-2 text-text-primary focus:ring-2 focus:ring-primary focus:border-transparent"
                         required
                       >
                         <option value="">Select Position</option>
@@ -596,12 +615,12 @@ function App() {
                     </div>
                     {selectedPosition && (
                       <div>
-                        <label className="block mb-2">Employees in {selectedPosition}</label>
+                        <label className="block mb-2 text-text-secondary">Employees in {selectedPosition}</label>
                         <select
                           name="supervisor"
                           value={newTask.supervisor}
                           onChange={handleSupervisorChange}
-                          className="w-full bg-gray-700 rounded p-2 text-white"
+                          className="w-full bg-background border border-border rounded p-2 text-text-primary focus:ring-2 focus:ring-primary focus:border-transparent"
                           required
                         >
                           <option value="">Select Supervisor</option>
@@ -614,24 +633,24 @@ function App() {
                       </div>
                     )}
                     <div>
-                      <label className="block mb-2">Supervisor Email</label>
+                      <label className="block mb-2 text-text-secondary">Supervisor Email</label>
                       <input
                         type="email"
-                        value={newTask.supervisorEmail || "example@example.com"} // Bind supervisor email
+                        value={newTask.supervisorEmail || "example@example.com"}
                         readOnly
-                        className="w-full bg-gray-700 rounded p-2 text-white cursor-not-allowed"
+                        className="w-full bg-primary-light border border-primary rounded p-2 text-text-primary cursor-not-allowed"
                       />
                     </div>
 
 
 
                     <div className="md:col-span-2">
-                      <label className="block mb-2">Task Description</label>
+                      <label className="block mb-2 text-text-secondary">Task Description</label>
                       <textarea
                         name="description"
                         value={newTask.description}
                         onChange={handleInputChange}
-                        className="w-full bg-gray-700 rounded p-2 text-white h-24"
+                        className="w-full bg-background border border-border rounded p-2 text-text-primary h-24 focus:ring-2 focus:ring-primary focus:border-transparent"
                       ></textarea>
                     </div>
 
@@ -642,8 +661,8 @@ function App() {
                           <div
                             key={tag.id}
                             onClick={() => handleTagToggle(tag.name)}
-                            className={`px-3 py-1 rounded-full text-sm cursor-pointer border border-border ${
-                              newTask.tags.includes(tag.name) ? "bg-primary text-white" : "bg-background text-text-secondary"
+                            className={`px-3 py-1 rounded-full text-sm cursor-pointer border border-border transition-colors ${
+                              newTask.tags.includes(tag.name) ? "bg-primary text-white border-primary" : "bg-background text-text-secondary hover:bg-primary-light"
                             }`}
                           >
                             {tag.name}
@@ -653,19 +672,19 @@ function App() {
                     </div>
 
                     <div className="md:col-span-2">
-                      <label className="block mb-2">Attachments</label>
+                      <label className="block mb-2 text-text-secondary">Attachments</label>
                       <div className="flex mb-2">
                         <input
                           type="text"
                           value={attachmentInput}
                           onChange={(e) => setAttachmentInput(e.target.value)}
-                          className="flex-1 bg-gray-700 rounded-l p-2 text-white"
+                          className="flex-1 bg-background border border-border rounded-l p-2 text-text-primary focus:ring-2 focus:ring-primary focus:border-transparent"
                           placeholder="Filename.ext"
                         />
                         <button
                           type="button"
                           onClick={handleAddAttachment}
-                          className="bg-purple-600 hover:bg-purple-700 px-4 rounded-r"
+                          className="bg-primary hover:bg-primary-dark px-4 rounded-r text-white transition-colors"
                         >
                           Add
                         </button>
@@ -674,12 +693,12 @@ function App() {
                       {newTask.attachments.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-2">
                           {newTask.attachments.map((file, index) => (
-                            <div key={index} className="bg-gray-700 rounded px-3 py-1 flex items-center">
-                              <span>{file}</span>
+                            <div key={index} className="bg-primary-light border border-primary rounded px-3 py-1 flex items-center">
+                              <span className="text-text-primary">{file}</span>
                               <button
                                 type="button"
                                 onClick={() => handleRemoveAttachment(index)}
-                                className="ml-2 text-red-400 hover:text-red-300"
+                                className="ml-2 text-red-500 hover:text-red-600"
                               >
                                 ×
                               </button>
@@ -695,7 +714,7 @@ function App() {
                   <div className="mt-6 flex gap-3">
                     <button
                       type="submit"
-                      className={`bg-primary hover:bg-primary-dark px-6 py-2 rounded font-semibold flex items-center justify-center gap-2 text-white ${
+                      className={`bg-primary hover:bg-primary-dark px-6 py-2 rounded font-semibold flex items-center justify-center gap-2 text-white transition-colors ${
                         isSubmitting ? "opacity-50 cursor-not-allowed" : ""
                       }`}
                       disabled={isSubmitting}
@@ -731,7 +750,7 @@ function App() {
                         });
                         setShowTaskForm(false);
                       }}
-                      className="bg-secondary hover:bg-secondary/80 px-6 py-2 rounded font-semibold text-text-primary"
+                      className="bg-secondary hover:bg-secondary/80 px-6 py-2 rounded font-semibold text-text-primary transition-colors"
                     >
                       Cancel
                     </button>
@@ -743,17 +762,17 @@ function App() {
             {/* Task List */}
             <div>
               <div className="flex justify-between items-center mb-4">
-                <div className="text-sm text-gray-400">
+                <div className="text-sm text-text-secondary">
                   {tasks.length} {tasks.length === 1 ? "task" : "tasks"} total
                 </div>
               </div>
               {/* ...existing task list rendering... */}
               {tasks.length === 0 ? (
-                <div className="bg-gray-800 rounded-lg p-8 text-center">
-                  <div className="text-gray-400 mb-4">No tasks available</div>
+                <div className="bg-surface rounded-lg p-8 text-center border border-border">
+                  <div className="text-text-secondary mb-4">No tasks available</div>
                   <button
                     onClick={handleAddNewTask}
-                    className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded inline-flex items-center gap-2 transition-transform transform hover:scale-105"
+                    className="bg-primary hover:bg-primary-dark px-4 py-2 rounded inline-flex items-center gap-2 text-white transition-transform transform hover:scale-105"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path
@@ -792,7 +811,7 @@ function App() {
                               {task.tags.map((tagName, index) => (
                                 <span
                                   key={index}
-                                  className="bg-gray-700 text-xs px-2 py-0.5 rounded-full text-white truncate max-w-[100px]"
+                                  className="bg-primary-light text-primary text-xs px-2 py-0.5 rounded-full truncate max-w-[100px]"
                                   title={tagName}
                                 >
                                   {tagName}
@@ -803,12 +822,12 @@ function App() {
 
                           {task.attachments?.length > 0 && (
                             <div className="mb-4">
-                              <span className="block text-gray-400 text-sm mb-1">Attachments</span>
+                              <span className="block text-text-secondary text-sm mb-1">Attachments</span>
                               <div className="flex flex-wrap gap-2">
                                 {task.attachments.map((attachment, index) => (
                                   <div
                                     key={index}
-                                    className="bg-gray-700 rounded px-2 py-1 text-xs cursor-pointer hover:bg-gray-600 truncate max-w-[120px]"
+                                    className="bg-primary-light border border-primary rounded px-2 py-1 text-xs cursor-pointer hover:bg-primary-light/80 truncate max-w-[120px] text-text-primary"
                                     onClick={() => handleDownloadAttachment(attachment)}
                                     title={`Download ${attachment}`}
                                   >
@@ -819,19 +838,19 @@ function App() {
                             </div>
                           )}
 
-                          <p className="text-gray-300 mb-4 text-sm">{task.description}</p>
+                          <p className="text-text-secondary mb-4 text-sm">{task.description}</p>
                           <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
                             <div>
-                              <span className="block text-gray-400">Due Date</span>
-                              <span>{new Date(task.dueDate).toLocaleDateString()}</span>
+                              <span className="block text-text-secondary">Due Date</span>
+                              <span className="text-text-primary">{new Date(task.dueDate).toLocaleDateString()}</span>
                             </div>
                             <div>
-                              <span className="block text-gray-400">Total Hours</span>
-                              <span>{task.totalHours} hrs</span>
+                              <span className="block text-text-secondary">Total Hours</span>
+                              <span className="text-text-primary">{task.totalHours} hrs</span>
                             </div>
                             <div>
-                              <span className="block text-gray-400">Remaining Time</span>
-                              <span>
+                              <span className="block text-text-secondary">Remaining Time</span>
+                              <span className="text-text-primary">
                                 {(() => {
                                   const totalSeconds = Math.floor(task.remainingTime);
                                   const hours = Math.floor(totalSeconds / 3600);
@@ -842,24 +861,24 @@ function App() {
                               </span>
                             </div>
                             <div>
-                              <span className="block text-gray-400">Department</span>
-                              <span>{task.department}</span>
+                              <span className="block text-text-secondary">Department</span>
+                              <span className="text-text-primary">{task.department}</span>
                             </div>
                             <div>
-                              <span className="block text-gray-400">Supervisor</span>
-                              <span>{task.supervisor || "Not Assigned"}</span>
+                              <span className="block text-text-secondary">Supervisor</span>
+                              <span className="text-text-primary">{task.supervisor || "Not Assigned"}</span>
                             </div>
                             <div>
-                              <span className="block text-gray-400">Supervisor Email</span>
-                              <span>{task.supervisorEmail || "Not Assigned"}</span>
+                              <span className="block text-text-secondary">Supervisor Email</span>
+                              <span className="text-text-primary">{task.supervisorEmail || "Not Assigned"}</span>
                             </div>
                             <div>
-                              <span className="block text-gray-400">Assigned To</span>
-                              <span>{task.assignedTo?.name || "Not Assigned"}</span>
+                              <span className="block text-text-secondary">Assigned To</span>
+                              <span className="text-text-primary">{task.assignedTo?.name || "Not Assigned"}</span>
                             </div>
                             <div>
-                              <span className="block text-gray-400">Assigned Email</span>
-                              <span>{task.email || "Not Assigned"}</span>
+                              <span className="block text-text-secondary">Assigned Email</span>
+                              <span className="text-text-primary">{task.email || "Not Assigned"}</span>
                             </div>
                           </div>
 
@@ -950,11 +969,11 @@ function App() {
 
       {/* Employee Selector Modal */}
       {showEmployeeSelector && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-3xl max-h-[80vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-surface rounded-lg p-6 w-full max-w-3xl max-h-[80vh] overflow-y-auto border border-border shadow-2xl">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">Select Employees</h3>
-              <button onClick={() => setShowEmployeeSelector(false)} className="text-gray-400 hover:text-white">
+              <h3 className="text-xl font-semibold text-text-primary">Select Employees</h3>
+              <button onClick={() => setShowEmployeeSelector(false)} className="text-text-secondary hover:text-text-primary transition-colors">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-6 w-6"
@@ -973,7 +992,7 @@ function App() {
                 placeholder="Search by name or ID..."
                 value={employeeSearch}
                 onChange={(e) => setEmployeeSearch(e.target.value)}
-                className="w-full bg-gray-700 rounded p-2 text-white"
+                className="w-full bg-background border border-border rounded p-2 text-text-primary focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
 
@@ -981,8 +1000,9 @@ function App() {
               {searchedEmployees.map((employee) => (
                 <div
                   key={employee.id}
-                  className={`flex items-center p-3 rounded cursor-pointer ${newTask.assignedTo === employee.id ? "bg-purple-700" : "bg-gray-700"
-                    }`}
+                  className={`flex items-center p-3 rounded cursor-pointer border border-border transition-colors ${
+                    newTask.assignedTo === employee.id ? "bg-primary-light border-primary" : "bg-background hover:bg-primary-light/50"
+                  }`}
                   onClick={() => handleEmployeeSelect(employee.id)}
                 >
                   <img
@@ -991,17 +1011,18 @@ function App() {
                     className="w-10 h-10 rounded-full mr-3"
                   />
                   <div>
-                    <span>{employee.name}</span>
-                    <span className="block text-xs text-gray-400">
+                    <span className="text-text-primary">{employee.name}</span>
+                    <span className="block text-xs text-text-secondary">
                       ID: {employee.id} • {employee.department}
                     </span>
                   </div>
                   <div className="ml-auto">
                     <div
-                      className={`w-5 h-5 rounded-full border-2 border-white flex items-center justify-center ${newTask.assignedTo === employee.id ? "bg-purple-500" : "bg-transparent"
-                        }`}
+                      className={`w-5 h-5 rounded-full border-2 border-primary flex items-center justify-center ${
+                        newTask.assignedTo === employee.id ? "bg-primary" : "bg-transparent"
+                      }`}
                     >
-                      {newTask.assignedTo === employee.id && <span className="text-xs">✓</span>}
+                      {newTask.assignedTo === employee.id && <span className="text-xs text-white">✓</span>}
                     </div>
                   </div>
                 </div>
@@ -1011,7 +1032,7 @@ function App() {
             <div className="mt-4 flex justify-end">
               <button
                 onClick={() => setShowEmployeeSelector(false)}
-                className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded"
+                className="bg-primary hover:bg-primary-dark px-4 py-2 rounded text-white transition-colors"
               >
                 Done
               </button>

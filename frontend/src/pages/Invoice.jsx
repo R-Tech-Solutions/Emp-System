@@ -4851,7 +4851,7 @@ const InvoicesPage = ({ invoices, searchTerm, setSearchTerm, dateRange, setDateR
                           })()}
                         </div>
                         {/* Return Invoices Sub-process */}
-                        {invoice.returnInvoices && invoice.returnInvoices.length > 0 && (
+                        {invoice.returnInvoices && Array.isArray(invoice.returnInvoices) && invoice.returnInvoices.length > 0 && (
                           <div className="mt-2 pl-4 border-l-2 border-yellow-300">
                             <div className="flex items-center space-x-2">
                               <span className="text-xs text-yellow-600 font-medium">🔄 Return Invoices:</span>

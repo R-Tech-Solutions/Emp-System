@@ -276,7 +276,6 @@ export default function SalesDashboard() {
       <div className="p-6 bg-background min-h-screen flex items-center justify-center">
         <div className="text-center">
           <DotSpinner />
-          <p className="text-text-secondary mt-4">Loading dashboard data...</p>
         </div>
       </div>
     );

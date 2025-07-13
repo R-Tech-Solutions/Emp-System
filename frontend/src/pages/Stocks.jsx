@@ -238,32 +238,32 @@ export default function AssetManagement() {
   const getStatusColor = (status) => {
     switch (status) {
       case "Active":
-        return "bg-green-500/20 text-green-500"
+        return "bg-green-100 text-green-800 border border-green-200"
       case "Inactive":
-        return "bg-red-500/20 text-red-500"
+        return "bg-red-100 text-red-800 border border-red-200"
       case "Maintenance":
-        return "bg-yellow-500/20 text-yellow-500"
+        return "bg-yellow-100 text-yellow-800 border border-yellow-200"
       default:
-        return "bg-gray-500/20 text-gray-400"
+        return "bg-gray-100 text-gray-800 border border-gray-200"
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
+    <div className="min-h-screen bg-background text-text-primary">
       {/* Toast Container */}
-      <ToastContainer theme="dark" />
+      <ToastContainer theme="light" />
 
       {/* Header */}
-      <div className="border-b border-gray-800 bg-gray-900 px-6 py-4">
+      <div className="border-b border-border bg-surface px-6 py-4 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <h1 className="text-2xl font-bold text-white">Asset Management</h1>
+          <h1 className="text-2xl font-bold text-text-primary">Asset Management</h1>
           <div className="flex flex-col md:flex-row gap-3">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-secondary" />
               <input
                 type="text"
                 placeholder="Search assets..."
-                className="w-full md:w-64 bg-gray-800 border border-gray-700 rounded-md py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                className="w-full md:w-64 bg-white border border-border rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -272,19 +272,19 @@ export default function AssetManagement() {
             {/* Status Filter Dropdown */}
             <div className="relative">
               <button
-                className="flex items-center justify-between w-full md:w-40 bg-gray-800 border border-gray-700 rounded-md py-2 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-purple-600"
+                className="flex items-center justify-between w-full md:w-40 bg-white border border-border rounded-lg py-2 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-200 hover:border-primary"
                 onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
               >
-                <span>Status: {statusFilter}</span>
-                <ChevronDown className="h-4 w-4 ml-2" />
+                <span className="text-text-primary">Status: {statusFilter}</span>
+                <ChevronDown className="h-4 w-4 ml-2 text-text-secondary" />
               </button>
 
               {isStatusDropdownOpen && (
-                <div className="absolute z-10 mt-1 w-full bg-gray-800 border border-gray-700 rounded-md shadow-lg">
+                <div className="absolute z-10 mt-1 w-full bg-white border border-border rounded-lg shadow-lg">
                   {["All", "Active", "Inactive", "Maintenance"].map((status) => (
                     <div
                       key={status}
-                      className="px-4 py-2 text-sm hover:bg-gray-700 cursor-pointer"
+                      className="px-4 py-2 text-sm hover:bg-primary-light cursor-pointer text-text-primary"
                       onClick={() => {
                         setStatusFilter(status)
                         setIsStatusDropdownOpen(false)
@@ -298,7 +298,7 @@ export default function AssetManagement() {
             </div>
 
             <button
-              className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-md transition-colors"
+              className="flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-white py-2 px-4 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
               onClick={() => {
                 setCurrentAsset(null)
                 resetForm()
@@ -314,37 +314,37 @@ export default function AssetManagement() {
 
       {/* Main Content */}
       <div className="p-6">
-        <div className="bg-gray-800 rounded-lg shadow-xl overflow-hidden">
+        <div className="bg-white rounded-xl shadow-lg border border-border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-900 text-gray-400 text-xs uppercase">
-                  <th className="px-6 py-3 text-left">Asset</th>
-                  <th className="px-6 py-3 text-left">Serial Number</th>
-                  <th className="px-6 py-3 text-left">Assigned To</th>
-                  <th className="px-6 py-3 text-left">Department</th>
-                  <th className="px-6 py-3 text-left">Status</th>
-                  <th className="px-6 py-3 text-right">Actions</th>
+                <tr className="bg-surface text-text-secondary text-xs uppercase font-medium">
+                  <th className="px-6 py-4 text-left">Asset</th>
+                  <th className="px-6 py-4 text-left">Serial Number</th>
+                  <th className="px-6 py-4 text-left">Assigned To</th>
+                  <th className="px-6 py-4 text-left">Department</th>
+                  <th className="px-6 py-4 text-left">Status</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-700">
+              <tbody className="divide-y divide-border">
                 {filterAssets().length > 0 ? (
                   filterAssets().map((asset) => (
-                    <tr key={asset.id} className="hover:bg-gray-750">
+                    <tr key={asset.id} className="hover:bg-primary-light transition-colors duration-200">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-700 flex items-center justify-center">
+                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-accent flex items-center justify-center">
                             {getAssetIcon(asset.type)}
                           </div>
                           <div>
-                            <div className="font-medium text-white">{asset.name}</div>
-                            <div className="text-sm text-gray-400">{asset.type}</div>
+                            <div className="font-medium text-text-primary">{asset.name}</div>
+                            <div className="text-sm text-text-secondary">{asset.type}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm">{asset.serialNumber}</td>
-                      <td className="px-6 py-4 text-sm">{asset.assignedTo}</td>
-                      <td className="px-6 py-4 text-sm">{asset.department}</td>
+                      <td className="px-6 py-4 text-sm text-text-primary">{asset.serialNumber}</td>
+                      <td className="px-6 py-4 text-sm text-text-primary">{asset.assignedTo}</td>
+                      <td className="px-6 py-4 text-sm text-text-primary">{asset.department}</td>
                       <td className="px-6 py-4">
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(asset.status)}`}
@@ -356,19 +356,19 @@ export default function AssetManagement() {
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => handleView(asset)}
-                            className="p-1 rounded-md hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                            className="p-2 rounded-lg hover:bg-accent text-text-secondary hover:text-primary transition-all duration-200"
                           >
                             <Eye className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => handleEdit(asset)}
-                            className="p-1 rounded-md hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                            className="p-2 rounded-lg hover:bg-accent text-text-secondary hover:text-primary transition-all duration-200"
                           >
                             <Edit className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(asset.id)}
-                            className="p-1 rounded-md hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                            className="p-2 rounded-lg hover:bg-red-100 text-text-secondary hover:text-red-600 transition-all duration-200"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -378,7 +378,7 @@ export default function AssetManagement() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7" className="px-6 py-4 text-center text-gray-400">
+                    <td colSpan="7" className="px-6 py-8 text-center text-text-muted">
                       No assets found matching your search criteria
                     </td>
                   </tr>
@@ -391,17 +391,17 @@ export default function AssetManagement() {
 
       {/* Add/Edit Asset Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-gray-700">
-              <h3 className="text-xl font-medium text-white">{currentAsset ? "Edit Asset" : "Add New Asset"}</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-border">
+              <h3 className="text-xl font-semibold text-text-primary">{currentAsset ? "Edit Asset" : "Add New Asset"}</h3>
               <button
                 onClick={() => {
                   setIsModalOpen(false)
                   setCurrentAsset(null)
                   resetForm()
                 }}
-                className="text-gray-400 hover:text-white"
+                className="text-text-secondary hover:text-text-primary transition-colors duration-200"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -410,24 +410,24 @@ export default function AssetManagement() {
             <form onSubmit={handleSubmit}>
               <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">Asset Name</label>
+                  <label className="block text-sm font-medium text-text-primary mb-2">Asset Name</label>
                   <input
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                    className="w-full bg-white border border-border rounded-lg py-3 px-4 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">Asset Type</label>
+                  <label className="block text-sm font-medium text-text-primary mb-2">Asset Type</label>
                   <select
                     name="type"
                     value={formData.type}
                     onChange={handleInputChange}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                    className="w-full bg-white border border-border rounded-lg py-3 px-4 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
                   >
                     <option value="Laptop">Laptop</option>
                     <option value="Phone">Phone</option>
@@ -439,12 +439,12 @@ export default function AssetManagement() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">Assigned To</label>
+                  <label className="block text-sm font-medium text-text-primary mb-2">Assigned To</label>
                   <select
                     name="assignedTo"
                     value={formData.assignedTo}
                     onChange={handleInputChange}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                    className="w-full bg-white border border-border rounded-lg py-3 px-4 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
                   >
                     <option value="">Select Employee</option>
                     {employees.map((employee) => (
@@ -456,50 +456,49 @@ export default function AssetManagement() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">Serial Number</label>
+                  <label className="block text-sm font-medium text-text-primary mb-2">Serial Number</label>
                   <input
                     type="text"
                     name="serialNumber"
                     value={formData.serialNumber}
                     onChange={handleInputChange}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                    className="w-full bg-white border border-border rounded-lg py-3 px-4 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-text-primary mb-2">Email</label>
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent"
-                    
+                    className="w-full bg-white border border-border rounded-lg py-3 px-4 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 bg-gray-50"
                     readOnly
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">Department</label>
+                  <label className="block text-sm font-medium text-text-primary mb-2">Department</label>
                   <input
                     type="text"
                     name="department"
                     value={formData.department}
                     onChange={handleInputChange}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                    className="w-full bg-white border border-border rounded-lg py-3 px-4 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 bg-gray-50"
                     required
                     readOnly
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">Status</label>
+                  <label className="block text-sm font-medium text-text-primary mb-2">Status</label>
                   <select
                     name="status"
                     value={formData.status}
                     onChange={handleInputChange}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                    className="w-full bg-white border border-border rounded-lg py-3 px-4 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
                   >
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
@@ -508,18 +507,18 @@ export default function AssetManagement() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">Purchase Date</label>
+                  <label className="block text-sm font-medium text-text-primary mb-2">Purchase Date</label>
                   <input
                     type="date"
                     name="purchaseDate"
                     value={formData.purchaseDate}
                     onChange={handleInputChange}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent"
+                    className="w-full bg-white border border-border rounded-lg py-3 px-4 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
                     required
                   />
                 </div>
               </div>
-              <div className="px-6 py-4 border-t border-gray-700 flex justify-end gap-3">
+              <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => {
@@ -527,13 +526,13 @@ export default function AssetManagement() {
                     setCurrentAsset(null)
                     resetForm()
                   }}
-                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors"
+                  className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-text-primary rounded-lg transition-all duration-200 font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors flex items-center gap-2"
+                  className="px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-all duration-200 flex items-center gap-2 font-medium shadow-sm hover:shadow-md"
                   disabled={isLoading}
                 >
                   {isLoading ? <DotSpinner /> : <Check className="h-4 w-4" />}
@@ -547,16 +546,16 @@ export default function AssetManagement() {
 
       {/* View Asset Modal */}
       {isViewModalOpen && viewAsset && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl">
-            <div className="flex items-center justify-between p-6 border-b border-gray-700">
-              <h3 className="text-xl font-medium text-white">Asset Details</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl">
+            <div className="flex items-center justify-between p-6 border-b border-border">
+              <h3 className="text-xl font-semibold text-text-primary">Asset Details</h3>
               <button
                 onClick={() => {
                   setIsViewModalOpen(false)
                   setViewAsset(null)
                 }}
-                className="text-gray-400 hover:text-white"
+                className="text-text-secondary hover:text-text-primary transition-colors duration-200"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -564,12 +563,12 @@ export default function AssetManagement() {
 
             <div className="p-6">
               <div className="flex items-center gap-4 mb-6">
-                <div className="h-16 w-16 rounded-full bg-gray-700 flex items-center justify-center">
+                <div className="h-16 w-16 rounded-full bg-accent flex items-center justify-center">
                   {getAssetIcon(viewAsset.type)}
                 </div>
                 <div>
-                  <h4 className="text-xl font-medium text-white">{viewAsset.name}</h4>
-                  <p className="text-gray-400">{viewAsset.type}</p>
+                  <h4 className="text-xl font-semibold text-text-primary">{viewAsset.name}</h4>
+                  <p className="text-text-secondary">{viewAsset.type}</p>
                 </div>
                 <span
                   className={`ml-auto inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(viewAsset.status)}`}
@@ -580,34 +579,34 @@ export default function AssetManagement() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <h5 className="text-sm font-medium text-gray-400 mb-1">Serial Number</h5>
-                  <p className="text-white">{viewAsset.serialNumber}</p>
+                  <h5 className="text-sm font-medium text-text-secondary mb-2">Serial Number</h5>
+                  <p className="text-text-primary font-medium">{viewAsset.serialNumber}</p>
                 </div>
 
                 <div>
-                  <h5 className="text-sm font-medium text-gray-400 mb-1">Assigned To</h5>
-                  <p className="text-white">{viewAsset.assignedTo}</p>
+                  <h5 className="text-sm font-medium text-text-secondary mb-2">Assigned To</h5>
+                  <p className="text-text-primary font-medium">{viewAsset.assignedTo}</p>
                 </div>
 
                 <div>
-                  <h5 className="text-sm font-medium text-gray-400 mb-1">Department</h5>
-                  <p className="text-white">{viewAsset.department}</p>
+                  <h5 className="text-sm font-medium text-text-secondary mb-2">Department</h5>
+                  <p className="text-text-primary font-medium">{viewAsset.department}</p>
                 </div>
 
                 <div>
-                  <h5 className="text-sm font-medium text-gray-400 mb-1">Purchase Date</h5>
-                  <p className="text-white">{viewAsset.purchaseDate}</p>
+                  <h5 className="text-sm font-medium text-text-secondary mb-2">Purchase Date</h5>
+                  <p className="text-text-primary font-medium">{viewAsset.purchaseDate}</p>
                 </div>
               </div>
             </div>
 
-            <div className="px-6 py-4 border-t border-gray-700 flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
               <button
                 onClick={() => {
                   setIsViewModalOpen(false)
                   handleEdit(viewAsset)
                 }}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors flex items-center gap-2"
+                className="px-6 py-2 bg-accent hover:bg-secondary text-text-primary rounded-lg transition-all duration-200 flex items-center gap-2 font-medium"
               >
                 <Edit className="h-4 w-4" />
                 Edit
@@ -617,7 +616,7 @@ export default function AssetManagement() {
                   setIsViewModalOpen(false)
                   setViewAsset(null)
                 }}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors"
+                className="px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-all duration-200 font-medium shadow-sm hover:shadow-md"
               >
                 Close
               </button>

@@ -426,38 +426,38 @@ export default function InventoryManagement() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-900 text-gray-100">
+        <div className="min-h-screen bg-background text-text-primary">
             {/* Header */}
-            <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
+            <header className="bg-primary text-white border-b border-border px-6 py-4 shadow-md">
                 <div className="max-w-7xl mx-auto">
-                    <h1 className="text-3xl font-bold text-white">Inventory Management</h1>
-                    <p className="text-gray-400 mt-1">Manage your inventory items efficiently</p>
+                    <h1 className="text-3xl font-bold">Inventory Management</h1>
+                    <p className="text-text-secondary mt-1">Manage your inventory items efficiently</p>
                 </div>
             </header>
 
             <div className="max-w-7xl mx-auto px-6 py-8">
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                        <h3 className="text-sm font-medium text-gray-400">Total Items</h3>
-                        <p className="text-2xl font-bold text-white mt-2">{totalItems}</p>
+                    <div className="bg-surface rounded-xl p-6 border border-border shadow-lg">
+                        <h3 className="text-sm font-medium text-text-secondary">Total Items</h3>
+                        <p className="text-2xl font-bold text-primary mt-2">{totalItems}</p>
                     </div>
-                    <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                        <h3 className="text-sm font-medium text-gray-400">Total Value</h3>
-                        <p className="text-2xl font-bold text-green-400 mt-2">${totalValue.toFixed(2)}</p>
+                    <div className="bg-surface rounded-xl p-6 border border-border shadow-lg">
+                        <h3 className="text-sm font-medium text-text-secondary">Total Value</h3>
+                        <p className="text-2xl font-bold text-accent mt-2">Rs {totalValue.toFixed(2)}</p>
                     </div>
-                    <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                        <h3 className="text-sm font-medium text-gray-400">Low Stock</h3>
-                        <p className="text-2xl font-bold text-yellow-400 mt-2">{lowStockItems}</p>
+                    <div className="bg-surface rounded-xl p-6 border border-border shadow-lg">
+                        <h3 className="text-sm font-medium text-text-secondary">Low Stock</h3>
+                        <p className="text-2xl font-bold text-secondary mt-2">{lowStockItems}</p>
                     </div>
-                    <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                        <h3 className="text-sm font-medium text-gray-400">Out of Stock</h3>
-                        <p className="text-2xl font-bold text-red-400 mt-2">{outOfStockItems}</p>
+                    <div className="bg-surface rounded-xl p-6 border border-border shadow-lg">
+                        <h3 className="text-sm font-medium text-text-secondary">Out of Stock</h3>
+                        <p className="text-2xl font-bold text-muted mt-2">{outOfStockItems}</p>
                     </div>
                 </div>
 
                 {/* Controls */}
-                <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-8">
+                <div className="bg-surface rounded-xl p-6 border border-border mb-8 shadow">
                     <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
                         <div className="flex flex-col sm:flex-row gap-4 flex-1">
                             <input
@@ -465,12 +465,12 @@ export default function InventoryManagement() {
                                 placeholder="Search items..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="px-4 py-2 bg-background border border-border rounded-lg text-text-primary placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition"
                             />
                             <select
                                 value={selectedCategory}
                                 onChange={(e) => setSelectedCategory(e.target.value)}
-                                className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="px-4 py-2 bg-background border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition"
                             >
                                 {categories.map((category) => (
                                     <option key={category} value={category}>
@@ -481,89 +481,62 @@ export default function InventoryManagement() {
                         </div>
                         <button
                             onClick={() => setShowValuationModal(true)}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background transition shadow"
                         >
                             Stock Valuation
                         </button>
                     </div>
                 </div>
 
-
                 {/* Tables Section */}
-                <div className=" gap-8">
+                <div className="gap-8">
                     {/* Products Table */}
-                    <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-700">
-                            <h2 className="text-xl font-semibold text-white">Products ({filteredItems.length})</h2>
+                    <div className="bg-surface rounded-xl border border-border overflow-hidden shadow-lg">
+                        <div className="px-6 py-4 border-b border-border bg-primary-light">
+                            <h2 className="text-xl font-semibold text-primary">Products ({filteredItems.length})</h2>
                         </div>
 
                         <div className="overflow-x-auto">
                             <table className="w-full">
-                                <thead className="bg-gray-700">
+                                <thead className="bg-primary-light">
                                     <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                            ID
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                            Name
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                            Category
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                            Cost Price
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                            Wholesale Price
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                            Retail Price
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                            Sales Price
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                            totalQuantity
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                            Status
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                            Total Value
-                                        </th>
-                                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                            Action
-                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">ID</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Name</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Category</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Cost Price</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Wholesale Price</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Retail Price</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Sales Price</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">totalQuantity</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">Total Value</th>
+                                        <th className="px-6 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider">Action</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-700">
-                                    {filteredItems.map((item) => {
+                                <tbody className="divide-y divide-border">
+                                    {filteredItems.map((item, idx) => {
                                         // Find the matching inventory item
                                         const inv = inventory.find(i => (i.productId === item.sku || i.productId === item.id));
                                         const totalQuantity = inv ? inv.totalQuantity : 0;
                                         const costPrice = Number(item.costPrice || 0);
                                         const totalValue = totalQuantity * costPrice;
-
+                                        const rowBg = idx % 2 === 0 ? 'bg-background' : 'bg-surface';
                                         return (
-                                            <tr key={item.sku || item.id} className="hover:bg-gray-700 transition-colors duration-200">
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">#{item.sku}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{item.name}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{item.category}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">Rs {costPrice.toFixed(2)}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">Rs {Number(item.marginPrice || 0).toFixed(2)}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">Rs {Number(item.retailPrice || 0).toFixed(2)}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">Rs {Number(item.salesPrice || 0).toFixed(2)}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{totalQuantity}</td>
+                                            <tr key={item.sku || item.id} className={`${rowBg} hover:bg-accent/20 transition-colors duration-200`}>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">#{item.sku}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">{item.name}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">{item.category}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">Rs {costPrice.toFixed(2)}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">Rs {Number(item.marginPrice || 0).toFixed(2)}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">Rs {Number(item.retailPrice || 0).toFixed(2)}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">Rs {Number(item.salesPrice || 0).toFixed(2)}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">{totalQuantity}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(getStatus(totalQuantity))}`}>
-                                                        {getStatus(totalQuantity)}
-                                                    </span>
+                                                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(getStatus(totalQuantity))}`}>{getStatus(totalQuantity)}</span>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                                                    Rs {totalValue.toFixed(2)}
-                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">Rs {totalValue.toFixed(2)}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                    <button onClick={() => handleViewProduct(item)} className="text-blue-400 hover:text-blue-200" title="View Details">
+                                                    <button onClick={() => handleViewProduct(item)} className="text-primary hover:text-primary-dark transition" title="View Details">
                                                         <Eye size={20} />
                                                     </button>
                                                 </td>
@@ -574,8 +547,8 @@ export default function InventoryManagement() {
                             </table>
                             {filteredItems.length === 0 && (
                                 <div className="text-center py-12">
-                                    <p className="text-gray-400 text-lg">No products found</p>
-                                    <p className="text-gray-500 text-sm mt-2">Try adjusting your search or filter criteria</p>
+                                    <p className="text-text-secondary text-lg">No products found</p>
+                                    <p className="text-text-muted text-sm mt-2">Try adjusting your search or filter criteria</p>
                                 </div>
                             )}
                         </div>
@@ -585,61 +558,59 @@ export default function InventoryManagement() {
 
             {/* Product Details Modal */}
             {viewProductModal && selectedProduct && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-                    <div className="bg-gray-900 rounded-lg shadow-2xl p-8 w-full max-w-2xl relative">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 backdrop-blur-sm transition">
+                    <div className="bg-surface rounded-xl shadow-2xl p-8 w-full max-w-2xl relative border border-border">
                         <button
-                            className="absolute top-2 right-2 text-gray-400 hover:text-white text-2xl font-bold"
+                            className="absolute top-2 right-2 text-text-secondary hover:text-primary text-2xl font-bold"
                             onClick={() => setViewProductModal(false)}
                             aria-label="Close"
                         >
                             &times;
                         </button>
-                        <h2 className="text-2xl font-bold mb-4 text-white">Product Details</h2>
+                        <h2 className="text-2xl font-bold mb-4 text-primary">Product Details</h2>
                         <div className="mb-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <div className="text-gray-400 text-sm">Name</div>
-                                    <div className="text-white font-semibold">{selectedProduct.name}</div>
+                                    <div className="text-text-secondary text-sm">Name</div>
+                                    <div className="text-primary font-semibold">{selectedProduct.name}</div>
                                 </div>
                                 <div>
-                                    <div className="text-gray-400 text-sm">SKU</div>
-                                    <div className="text-white font-semibold">{selectedProduct.sku || selectedProduct.id}</div>
+                                    <div className="text-text-secondary text-sm">SKU</div>
+                                    <div className="text-primary font-semibold">{selectedProduct.sku || selectedProduct.id}</div>
                                 </div>
                                 <div>
-                                    <div className="text-gray-400 text-sm">Category</div>
-                                    <div className="text-white font-semibold">{selectedProduct.category}</div>
+                                    <div className="text-text-secondary text-sm">Category</div>
+                                    <div className="text-primary font-semibold">{selectedProduct.category}</div>
                                 </div>
                                 <div>
-                                    <div className="text-gray-400 text-sm">Cost Price</div>
-                                    <div className="text-white font-semibold">Rs {selectedProduct.costPrice}</div>
+                                    <div className="text-text-secondary text-sm">Cost Price</div>
+                                    <div className="text-primary font-semibold">Rs {selectedProduct.costPrice}</div>
                                 </div>
                                 <div>
-                                    <div className="text-gray-400 text-sm">Retail Price</div>
-                                    <div className="text-white font-semibold">Rs {selectedProduct.retailPrice}</div>
+                                    <div className="text-text-secondary text-sm">Retail Price</div>
+                                    <div className="text-primary font-semibold">Rs {selectedProduct.retailPrice}</div>
                                 </div>
                                 <div>
-                                    <div className="text-gray-400 text-sm">Sales Price</div>
-                                    <div className="text-white font-semibold">Rs {selectedProduct.salesPrice}</div>
+                                    <div className="text-text-secondary text-sm">Sales Price</div>
+                                    <div className="text-primary font-semibold">Rs {selectedProduct.salesPrice}</div>
                                 </div>
                             </div>
                         </div>
-                        <h3 className="text-xl font-semibold text-white mt-6 mb-2">Inventory Details</h3>
+                        <h3 className="text-xl font-semibold text-primary mt-6 mb-2">Inventory Details</h3>
                         {inventoryDetails ? (
                             <div className="mb-4">
-                                <div className="text-gray-400 text-sm">Total Quantity</div>
-                                <div className="text-white font-semibold mb-2">{inventoryDetails.totalQuantity}</div>
-                                
+                                <div className="text-text-secondary text-sm">Total Quantity</div>
+                                <div className="text-primary font-semibold mb-2">{inventoryDetails.totalQuantity}</div>
                                 {/* Transaction History Button */}
                                 <button
                                     onClick={() => fetchTransactionHistory(selectedProduct.sku || selectedProduct.id)}
-                                    className="mb-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                                    className="mb-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface transition shadow"
                                 >
                                     📊 View Transaction History
                                 </button>
-                                
-                                <div className="text-gray-400 text-sm mb-1">History</div>
+                                <div className="text-text-secondary text-sm mb-1">History</div>
                                 <div className="max-h-48 overflow-y-auto">
-                                    <table className="w-full text-sm text-gray-200">
+                                    <table className="w-full text-sm text-text-primary">
                                         <thead>
                                             <tr>
                                                 <th className="py-1 px-2 text-left">Date</th>
@@ -650,11 +621,11 @@ export default function InventoryManagement() {
                                         </thead>
                                         <tbody>
                                             {historySuppliers.map((h, idx) => (
-                                                <tr key={idx}>
+                                                <tr key={idx} className={idx % 2 === 0 ? 'bg-background' : 'bg-surface'}>
                                                     <td className="py-1 px-2">{new Date(h.date).toLocaleString()}</td>
                                                     <td className="py-1 px-2">{h.totalQuantity}</td>
                                                     <td className="py-1 px-2">{h.supplierEmail}</td>
-                                                    <td className="py-1 px-2">{h.supplier ? h.supplier.name : <span className="text-gray-500">Not found</span>}</td>
+                                                    <td className="py-1 px-2">{h.supplier ? h.supplier.name : <span className="text-text-muted">Not found</span>}</td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -662,7 +633,7 @@ export default function InventoryManagement() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="text-gray-400">No inventory details found for this product.</div>
+                            <div className="text-text-secondary">No inventory details found for this product.</div>
                         )}
                     </div>
                 </div>
@@ -670,35 +641,35 @@ export default function InventoryManagement() {
 
             {/* Stock Valuation Modal */}
             {showValuationModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-                    <div className="bg-gray-900 rounded-lg shadow-2xl p-8 w-full max-w-6xl relative">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 backdrop-blur-sm transition">
+                    <div className="bg-surface rounded-xl shadow-2xl p-8 w-full max-w-6xl relative border border-border">
                         <button
-                            className="absolute top-2 right-2 text-gray-400 hover:text-white text-2xl font-bold"
+                            className="absolute top-2 right-2 text-text-secondary hover:text-primary text-2xl font-bold"
                             onClick={() => setShowValuationModal(false)}
                             aria-label="Close"
                         >
                             &times;
                         </button>
                         <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-2xl font-bold text-white">Stock Valuation</h2>
+                            <h2 className="text-2xl font-bold text-primary">Stock Valuation</h2>
                             <div className="flex gap-2">
                                 <button
                                     onClick={exportToExcel}
-                                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                                    className="flex items-center gap-2 px-4 py-2 bg-accent text-primary rounded-lg hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-surface transition shadow"
                                 >
                                     <FileDown size={20} />
                                     Export to Excel
                                 </button>
                                 <button
                                     onClick={exportToPDF}
-                                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                                    className="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-lg hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 focus:ring-offset-surface transition shadow"
                                 >
                                     <FileText size={20} />
                                     Export to PDF
                                 </button>
                                 <button
                                     onClick={printValuation}
-                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface transition shadow"
                                 >
                                     <Printer size={20} />
                                     Print
@@ -706,8 +677,8 @@ export default function InventoryManagement() {
                             </div>
                         </div>
                         <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-gray-200">
-                                <thead className="bg-gray-800">
+                            <table className="w-full text-sm text-text-primary">
+                                <thead className="bg-primary-light">
                                     <tr>
                                         <th className="px-4 py-2 text-left">ProductsID</th>
                                         <th className="px-4 py-2 text-left">ProductsName</th>
@@ -718,9 +689,9 @@ export default function InventoryManagement() {
                                         <th className="px-4 py-2 text-right">SalesValuation</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-700">
-                                    {calculateValuations().map((item) => (
-                                        <tr key={item.id} className="hover:bg-gray-800">
+                                <tbody className="divide-y divide-border">
+                                    {calculateValuations().map((item, idx) => (
+                                        <tr key={item.id} className={idx % 2 === 0 ? 'bg-background' : 'bg-surface'}>
                                             <td className="px-4 py-2">{item.id}</td>
                                             <td className="px-4 py-2">{item.name}</td>
                                             <td className="px-4 py-2 text-right">{item.totalQuantity}</td>
@@ -730,7 +701,7 @@ export default function InventoryManagement() {
                                             <td className="px-4 py-2 text-right">Rs {item.salesValuation.toFixed(2)}</td>
                                         </tr>
                                     ))}
-                                    <tr className="bg-gray-800 font-bold">
+                                    <tr className="bg-primary-light font-bold">
                                         <td className="px-4 py-2" colSpan="2">Total</td>
                                         <td className="px-4 py-2"></td>
                                         <td className="px-4 py-2 text-right">Rs {calculateTotals(calculateValuations()).totalCostValuation.toFixed(2)}</td>
@@ -747,22 +718,21 @@ export default function InventoryManagement() {
 
             {/* Transaction History Modal */}
             {showTransactionHistory && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-                    <div className="bg-gray-900 rounded-lg shadow-2xl p-8 w-full max-w-4xl relative">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30 backdrop-blur-sm transition">
+                    <div className="bg-surface rounded-xl shadow-2xl p-8 w-full max-w-4xl relative border border-border">
                         <button
-                            className="absolute top-2 right-2 text-gray-400 hover:text-white text-2xl font-bold"
+                            className="absolute top-2 right-2 text-text-secondary hover:text-primary text-2xl font-bold"
                             onClick={() => setShowTransactionHistory(false)}
                             aria-label="Close"
                         >
                             &times;
                         </button>
-                        <h2 className="text-2xl font-bold mb-4 text-white">Transaction History</h2>
-                        <p className="text-gray-400 mb-4">Product ID: {selectedProductForTransactions}</p>
-                        
+                        <h2 className="text-2xl font-bold mb-4 text-primary">Transaction History</h2>
+                        <p className="text-text-secondary mb-4">Product ID: {selectedProductForTransactions}</p>
                         {transactionHistory.length > 0 ? (
                             <div className="overflow-x-auto">
-                                <table className="w-full text-sm text-gray-200">
-                                    <thead className="bg-gray-800">
+                                <table className="w-full text-sm text-text-primary">
+                                    <thead className="bg-primary-light">
                                         <tr>
                                             <th className="px-4 py-2 text-left">Date</th>
                                             <th className="px-4 py-2 text-left">Type</th>
@@ -772,38 +742,36 @@ export default function InventoryManagement() {
                                             <th className="px-4 py-2 text-left">Supplier Email</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-700">
+                                    <tbody className="divide-y divide-border">
                                         {transactionHistory.map((transaction, index) => (
-                                            <tr key={index} className="hover:bg-gray-800">
-                                                <td className="px-4 py-2">
-                                                    {new Date(transaction.date).toLocaleString()}
-                                                </td>
+                                            <tr key={index} className={index % 2 === 0 ? 'bg-background' : 'bg-surface'}>
+                                                <td className="px-4 py-2">{new Date(transaction.date).toLocaleString()}</td>
                                                 <td className="px-4 py-2">
                                                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                                        transaction.type === 'purchase' 
-                                                            ? 'bg-green-900 text-green-300' 
-                                                            : 'bg-red-900 text-red-300'
+                                                        transaction.type === 'purchase'
+                                                            ? 'bg-primary-light text-primary'
+                                                            : 'bg-secondary text-white'
                                                     }`}>
                                                         {transaction.type === 'purchase' ? '📥 Purchase' : '📤 Sale'}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-2 text-right">
-                                                    <span className={transaction.type === 'purchase' ? 'text-green-400' : 'text-red-400'}>
+                                                    <span className={transaction.type === 'purchase' ? 'text-primary' : 'text-secondary'}>
                                                         {transaction.type === 'purchase' ? '+' : '-'}{transaction.quantity}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-2">{transaction.description}</td>
                                                 <td className="px-4 py-2">
                                                     {transaction.reference ? (
-                                                        <span className="text-blue-400">
+                                                        <span className="text-accent">
                                                             {transaction.type === 'sale' ? `Invoice: ${transaction.reference}` : `Purchase: ${transaction.reference}`}
                                                         </span>
                                                     ) : (
-                                                        <span className="text-gray-500">-</span>
+                                                        <span className="text-text-muted">-</span>
                                                     )}
                                                 </td>
                                                 <td className="px-4 py-2">
-                                                    {transaction.supplierEmail || <span className="text-gray-500">-</span>}
+                                                    {transaction.supplierEmail || <span className="text-text-muted">-</span>}
                                                 </td>
                                             </tr>
                                         ))}
@@ -812,8 +780,8 @@ export default function InventoryManagement() {
                             </div>
                         ) : (
                             <div className="text-center py-8">
-                                <p className="text-gray-400 text-lg">No transaction history found</p>
-                                <p className="text-gray-500 text-sm mt-2">This product has no inventory transactions yet</p>
+                                <p className="text-text-secondary text-lg">No transaction history found</p>
+                                <p className="text-text-muted text-sm mt-2">This product has no inventory transactions yet</p>
                             </div>
                         )}
                     </div>

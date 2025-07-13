@@ -375,7 +375,7 @@ const AdvanceA4Invoice = ({ invoice: invoiceProp, invoiceDocumentId, additionalD
           <div style={{ flex: 1 }}>
             <h4 style={{ fontWeight: 'bold', color: '#333', marginBottom: '0.5rem' }}>Terms & Conditions:</h4>
             <ul style={{ paddingLeft: '1rem', margin: 0 }}>
-              {additionalData.terms && additionalData.terms.length > 0 && (
+              {additionalData.terms && Array.isArray(additionalData.terms) && additionalData.terms.length > 0 && (
                 <>
                   {additionalData.terms.map((term, idx) => (
                     <li key={idx}>{term}</li>

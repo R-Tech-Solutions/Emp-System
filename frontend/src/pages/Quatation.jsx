@@ -574,21 +574,19 @@ const handleSendQuotationEmail = async () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
+    <div className="min-h-screen bg-background text-text-primary">
       {/* Header */}
-      <header className="bg-gray-800 border-b border-gray-700 p-4">
+      <header className="bg-surface border-b border-border p-4 shadow-sm">
         <div className="container mx-auto">
-          <div className="flex border-b border-gray-700 mb-4">
+          <div className="flex border-b border-border mb-4">
             <button
-              className={`px-4 py-2 font-medium ${activeTab === "new" ? "text-blue-400 border-b-2 border-blue-400" : "text-gray-400 hover:text-gray-300"
-                }`}
+              className={`px-4 py-2 font-medium ${activeTab === "new" ? "text-primary border-b-2 border-primary" : "text-text-secondary hover:text-text-primary"}`}
               onClick={() => setActiveTab("new")}
             >
               New Quotation
             </button>
             <button
-              className={`px-4 py-2 font-medium ${activeTab === "all" ? "text-blue-400 border-b-2 border-blue-400" : "text-gray-400 hover:text-gray-300"
-                }`}
+              className={`px-4 py-2 font-medium ${activeTab === "all" ? "text-primary border-b-2 border-primary" : "text-text-secondary hover:text-text-primary"}`}
               onClick={() => setActiveTab("all")}
             >
               View All Quotations
@@ -598,11 +596,10 @@ const handleSendQuotationEmail = async () => {
           {activeTab === "new" && (
             <div className="flex justify-between items-center">
               <h1 className="text-xl font-bold">New Quotation</h1>
-
               <div className="flex space-x-2">
                 <button
                   onClick={handleConfirmQuotation}
-                  className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 rounded-md text-sm"
+                  className="flex items-center px-3 py-2 bg-primary text-white hover:bg-primary-dark rounded-md text-sm shadow transition"
                   disabled={stage === "Sales Order"}
                 >
                   <Check size={16} className="mr-2" /> Confirm
@@ -618,7 +615,7 @@ const handleSendQuotationEmail = async () => {
               <div className="flex space-x-2">
                 <button
                   onClick={() => setActiveTab("new")}
-                  className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm"
+                  className="flex items-center px-3 py-2 bg-primary hover:bg-primary-dark rounded-md text-sm text-white"
                 >
                   <Plus size={16} className="mr-2" /> Create New
                 </button>
@@ -632,29 +629,29 @@ const handleSendQuotationEmail = async () => {
       {activeTab === "new" ? (
         <>
           {/* Status Flow */}
-          <div className="bg-gray-800 py-3 border-b border-gray-700">
+          <div className="bg-surface py-3 border-b border-border">
             <div className="container mx-auto">
               <div className="flex items-center justify-center">
-                <div className={`flex items-center ${stage === "Quotation" ? "text-blue-400" : "text-gray-400"}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${stage === "Quotation" ? "bg-blue-600" : "bg-gray-700"}`}>
+                <div className={`flex items-center ${stage === "Quotation" ? "text-primary" : "text-text-muted"}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${stage === "Quotation" ? "bg-primary" : "bg-surface"}`}>
                     <FileText size={16} />
                   </div>
                   <span className="ml-2">Quotation</span>
                 </div>
 
-                <ArrowRight size={20} className="mx-4 text-gray-600" />
+                <ArrowRight size={20} className="mx-4 text-text-muted" />
 
-                <div className={`flex items-center ${stage === "Quotation Sent" ? "text-blue-400" : "text-gray-400"}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${stage === "Quotation Sent" ? "bg-blue-600" : "bg-gray-700"}`}>
+                <div className={`flex items-center ${stage === "Quotation Sent" ? "text-primary" : "text-text-muted"}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${stage === "Quotation Sent" ? "bg-primary" : "bg-surface"}`}>
                     <Send size={16} />
                   </div>
                   <span className="ml-2">Quotation Sent</span>
                 </div>
 
-                <ArrowRight size={20} className="mx-4 text-gray-600" />
+                <ArrowRight size={20} className="mx-4 text-text-muted" />
 
-                <div className={`flex items-center ${stage === "Sales Order" ? "text-blue-400" : "text-gray-400"}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${stage === "Sales Order" ? "bg-blue-600" : "bg-gray-700"}`}>
+                <div className={`flex items-center ${stage === "Sales Order" ? "text-primary" : "text-text-muted"}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${stage === "Sales Order" ? "bg-primary" : "bg-surface"}`}>
                     <Clipboard size={16} />
                   </div>
                   <span className="ml-2">Sales Order</span>
@@ -668,7 +665,7 @@ const handleSendQuotationEmail = async () => {
               {/* Left Column - Main Form */}
               <div className="flex-1">
                 {/* Customer Info Section */}
-                <div className="bg-gray-800 rounded-lg p-4 mb-6">
+                <div className="bg-surface rounded-lg p-6 mb-6 shadow">
                   <h2 className="text-lg font-semibold mb-4">Customer Information</h2>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -679,7 +676,7 @@ const handleSendQuotationEmail = async () => {
                         <select
                           value={selectedCustomerId}
                           onChange={handleCustomerChange}
-                          className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-3 pr-10 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full bg-background border border-border rounded-md py-2 pl-3 pr-10 appearance-none focus:outline-none focus:ring-2 focus:ring-primary"
                         >
                           <option value="">Select a customer</option>
                           {contacts.map((contact) => (
@@ -689,7 +686,7 @@ const handleSendQuotationEmail = async () => {
                           ))}
                         </select>
                         <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                          <ChevronDown size={16} className="text-gray-400" />
+                          <ChevronDown size={16} className="text-text-muted" />
                         </div>
                       </div>
                     </div>
@@ -699,7 +696,7 @@ const handleSendQuotationEmail = async () => {
                         type="email"
                         value={customerEmail}
                         readOnly
-                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full bg-background border border-border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                     </div>
                     <div>
@@ -708,7 +705,7 @@ const handleSendQuotationEmail = async () => {
                         <select
                           value={selectedProjectId}
                           onChange={handleProjectChange}
-                          className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-3 pr-10 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full bg-background border border-border rounded-md py-2 pl-3 pr-10 appearance-none focus:outline-none focus:ring-2 focus:ring-primary"
                           disabled={!selectedCustomerEmail}
                         >
                           <option value="">Select a Project of the customer</option>
@@ -719,7 +716,7 @@ const handleSendQuotationEmail = async () => {
                           ))}
                         </select>
                         <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                          <ChevronDown size={16} className="text-gray-400" />
+                          <ChevronDown size={16} className="text-text-muted" />
                         </div>
                       </div>
                     </div>
@@ -729,7 +726,7 @@ const handleSendQuotationEmail = async () => {
                         type="text"
                         value={createdBy}
                         readOnly
-                        className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full bg-background border border-border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary"
                       />
                     </div>
                     <div>
@@ -739,10 +736,9 @@ const handleSendQuotationEmail = async () => {
                           type="date"
                           value={expirationDate}
                           onChange={(e) => setExpirationDate(e.target.value)}
-                          className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full bg-background border border-border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary"
                         />
                         <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                          {/* <Calendar size={16} className="text-gray-400" /> */}
                         </div>
                       </div>
                     </div>
@@ -771,14 +767,14 @@ const handleSendQuotationEmail = async () => {
                               })
                             )
                           }}
-                          className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-3 pr-10 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full bg-background border border-border rounded-md py-2 pl-3 pr-10 appearance-none focus:outline-none focus:ring-2 focus:ring-primary"
                         >
                           <option value="Standard">Standard</option>
                           <option value="Wholesale">Wholesale</option>
                           <option value="Retail">Retail</option>
                         </select>
                         <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                          <Tag size={16} className="text-gray-400" />
+                          <Tag size={16} className="text-text-muted" />
                         </div>
                       </div>
                     </div>
@@ -790,7 +786,7 @@ const handleSendQuotationEmail = async () => {
                         <select
                           value={paymentTerms}
                           onChange={(e) => setPaymentTerms(e.target.value)}
-                          className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-3 pr-10 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full bg-background border border-border rounded-md py-2 pl-3 pr-10 appearance-none focus:outline-none focus:ring-2 focus:ring-primary"
                         >
                           <option value="Immediate">Immediate</option>
                           <option value="15 Days">15 Days</option>
@@ -806,13 +802,13 @@ const handleSendQuotationEmail = async () => {
                 </div>
 
                 {/* Product Order Lines */}
-                <div className="bg-gray-800 rounded-lg p-4 mb-6">
+                <div className="bg-surface rounded-lg p-6 mb-6 shadow">
                   <h2 className="text-lg font-semibold mb-4">Order Lines</h2>
 
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
-                        <tr className="text-left text-gray-400 border-b border-gray-700">
+                        <tr className="text-left text-text-muted border-b border-border">
                           <th className="pb-2 font-medium">Product</th>
                           <th className="pb-2 font-medium text-right">Quantity</th>
                           <th className="pb-2 font-medium text-right">Unit Price</th>
@@ -823,7 +819,7 @@ const handleSendQuotationEmail = async () => {
                       </thead>
                       <tbody>
                         {productLines.map((line) => (
-                          <tr key={line.id} className="border-b border-gray-700">
+                          <tr key={line.id} className="border-b border-border hover:bg-surface">
                             <td className="py-3">
                               <div className="relative">
                                 <select
@@ -841,7 +837,7 @@ const handleSendQuotationEmail = async () => {
                                       }
                                     }
                                   }}
-                                  className="w-full bg-gray-700 border border-gray-600 rounded-md py-1 pl-2 pr-8 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  className="w-full bg-background border border-border rounded-md py-1 pl-2 pr-8 appearance-none focus:outline-none focus:ring-2 focus:ring-primary"
                                 >
                                   <option value="">Select a product</option>
                                   {products.map((product, index) => (
@@ -851,7 +847,7 @@ const handleSendQuotationEmail = async () => {
                                   ))}
                                 </select>
                                 <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                                  <ChevronDown size={14} className="text-gray-400" />
+                                  <ChevronDown size={14} className="text-text-muted" />
                                 </div>
                               </div>
                             </td>
@@ -863,7 +859,7 @@ const handleSendQuotationEmail = async () => {
                                 onChange={(e) =>
                                   updateProductLine(line.id, "quantity", Number.parseInt(e.target.value) || 0)
                                 }
-                                className="w-full bg-gray-700 border border-gray-600 rounded-md py-1 px-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full bg-background border border-border rounded-md py-1 px-2 text-right focus:outline-none focus:ring-2 focus:ring-primary"
                               />
                             </td>
                             <td className="py-3">
@@ -874,7 +870,7 @@ const handleSendQuotationEmail = async () => {
                                 onChange={(e) =>
                                   updateProductLine(line.id, "salesPrice", Number.parseFloat(e.target.value) || 0)
                                 }
-                                className="w-full bg-gray-700 border border-gray-600 rounded-md py-1 px-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full bg-background border border-border rounded-md py-1 px-2 text-right focus:outline-none focus:ring-2 focus:ring-primary"
                               />
                             </td>
                             <td className="py-3">
@@ -886,14 +882,14 @@ const handleSendQuotationEmail = async () => {
                                 onChange={(e) =>
                                   updateProductLine(line.id, "taxes", Number.parseFloat(e.target.value) || 0)
                                 }
-                                className="w-full bg-gray-700 border border-gray-600 rounded-md py-1 px-2 text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="w-full bg-background border border-border rounded-md py-1 px-2 text-right focus:outline-none focus:ring-2 focus:ring-primary"
                               />
                             </td>
                             <td className="py-3 text-right font-medium">Rs {line.amount.toLocaleString()}</td>
                             <td className="py-3">
                               <button
                                 onClick={() => removeProductLine(line.id)}
-                                className="text-gray-400 hover:text-red-400"
+                                className="text-text-muted hover:text-primary"
                               >
                                 <X size={16} />
                               </button>
@@ -914,11 +910,11 @@ const handleSendQuotationEmail = async () => {
                             type="text"
                             value={section.sectionName}
                             onChange={(e) => updateSection(section.id, e.target.value)}
-                            className="flex-1 bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="flex-1 bg-background border border-border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary"
                           />
                           <button
                             onClick={() => removeSection(section.id)}
-                            className="text-gray-400 hover:text-red-400"
+                            className="text-text-muted hover:text-primary"
                           >
                             <X size={16} />
                           </button>
@@ -936,12 +932,12 @@ const handleSendQuotationEmail = async () => {
                           <textarea
                             value={note.note}
                             onChange={(e) => updateNote(note.id, e.target.value)}
-                            className="flex-1 bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="flex-1 bg-background border border-border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary"
                             rows={2}
                           />
                           <button
                             onClick={() => removeNote(note.id)}
-                            className="text-gray-400 hover:text-red-400 mt-2"
+                            className="text-text-muted hover:text-primary mt-2"
                           >
                             <X size={16} />
                           </button>
@@ -953,25 +949,25 @@ const handleSendQuotationEmail = async () => {
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
                       onClick={addProductLine}
-                      className="flex items-center text-sm text-blue-400 hover:text-blue-300"
+                      className="flex items-center text-sm text-primary hover:text-primary-dark"
                     >
                       <Plus size={16} className="mr-1" /> Add a product
                     </button>
                     <button
                       onClick={addSection}
-                      className="flex items-center text-sm text-blue-400 hover:text-blue-300"
+                      className="flex items-center text-sm text-primary hover:text-primary-dark"
                     >
                       <Plus size={16} className="mr-1" /> Add a section
                     </button>
                     <button
                       onClick={addNote}
-                      className="flex items-center text-sm text-blue-400 hover:text-blue-300"
+                      className="flex items-center text-sm text-primary hover:text-primary-dark"
                     >
                       <Plus size={16} className="mr-1" /> Add a note
                     </button>
                     <button
                       onClick={() => setCreateProductModalOpen(true)}
-                      className="flex items-center text-sm text-blue-400 hover:text-blue-300"
+                      className="flex items-center text-sm text-primary hover:text-primary-dark"
                     >
                       <Plus size={16} className="mr-1" /> Create new product
                     </button>
@@ -979,29 +975,29 @@ const handleSendQuotationEmail = async () => {
                 </div>
 
                 {/* Terms & Conditions */}
-                <div className="bg-gray-800 rounded-lg p-4 mb-6">
+                <div className="bg-surface rounded-lg p-6 mb-6 shadow">
                   <h2 className="text-lg font-semibold mb-4">Terms & Conditions</h2>
                   <textarea
                     value={termsConditions}
                     onChange={(e) => setTermsConditions(e.target.value)}
-                    className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full bg-background border border-border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary"
                     rows={4}
                   />
                 </div>
 
                 {/* Totals */}
-                <div className="bg-gray-800 rounded-lg p-4">
+                <div className="bg-surface rounded-lg p-6">
                   <div className="flex flex-col items-end">
                     <div className="w-full md:w-64 space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-gray-400">Untaxed Amount:</span>
+                        <span className="text-text-muted">Untaxed Amount:</span>
                         <span>Rs {untaxedAmount.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-400">Taxes:</span>
+                        <span className="text-text-muted">Taxes:</span>
                         <span>Rs {taxAmount.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-700">
+                      <div className="flex justify-between font-bold text-lg pt-2 border-t border-border">
                         <span>Total:</span>
                         <span>Rs {totalAmount.toLocaleString()}</span>
                       </div>
@@ -1014,7 +1010,7 @@ const handleSendQuotationEmail = async () => {
         </>
       ) : (
         <div className="container mx-auto py-6 px-4">
-          <div className="bg-gray-800 rounded-lg p-6">
+          <div className="bg-surface rounded-lg p-6 shadow">
             {/* Search and filter */}
             <div className="flex flex-col md:flex-row gap-4 mb-6">
               <div className="flex-1">
@@ -1022,15 +1018,15 @@ const handleSendQuotationEmail = async () => {
                   <input
                     type="text"
                     placeholder="Search quotations..."
-                    className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full bg-background border border-border rounded-md py-2 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search size={16} className="text-gray-400" />
+                    <Search size={16} className="text-text-muted" />
                   </div>
                 </div>
               </div>
               <div>
-                <select className="bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select className="bg-background border border-border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary">
                   <option value="all">All Stages</option>
                   <option value="Quotation">Quotation</option>
                   <option value="Quotation Sent">Quotation Sent</option>
@@ -1043,7 +1039,7 @@ const handleSendQuotationEmail = async () => {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="text-left text-gray-400 border-b border-gray-700">
+                  <tr className="text-left text-text-muted border-b border-border">
                     <th className="pb-3 font-medium">Reference</th>
                     <th className="pb-3 font-medium">Customer</th>
                     <th className="pb-3 font-medium">Date</th>
@@ -1055,7 +1051,7 @@ const handleSendQuotationEmail = async () => {
                 </thead>
                 <tbody>
                   {quotations.map((quotation) => (
-                    <tr key={quotation.id} className="border-b border-gray-700 hover:bg-gray-750">
+                    <tr key={quotation.id} className="border-b border-border hover:bg-surface">
                       <td className="py-4 font-medium">{quotation.Reference}</td>
                       <td className="py-4">{quotation.Customer}</td>
                       <td className="py-4">{new Date(quotation.Date).toLocaleDateString()}</td>
@@ -1064,10 +1060,10 @@ const handleSendQuotationEmail = async () => {
                       <td className="py-4">
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${quotation.Stage === "Quotation"
-                            ? "bg-gray-600 text-gray-200"
+                            ? "bg-surface text-text-secondary border border-border"
                             : quotation.Stage === "Quotation Sent"
-                              ? "bg-blue-600 text-blue-100"
-                              : "bg-green-600 text-green-100"
+                              ? "bg-primary text-white"
+                              : "bg-secondary text-text-primary"
                             }`}
                         >
                           {quotation.Stage}
@@ -1077,13 +1073,13 @@ const handleSendQuotationEmail = async () => {
                         <div className="flex items-center space-x-2">
                           <button
                             onClick={() => handlePrint(quotation)}
-                            className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm text-white"
+                            className="flex items-center px-3 py-2 bg-primary hover:bg-primary-dark rounded-md text-sm text-white shadow"
                           >
                             <Eye size={16} />
                           </button>
                           <button
                             onClick={() => handleDownload(quotation)}
-                            className="flex items-center px-3 py-2 bg-green-700 hover:bg-green-600 rounded-md text-sm text-white"
+                            className="flex items-center px-3 py-2 bg-accent hover:bg-secondary rounded-md text-sm text-text-primary shadow"
                           >
                             <Download size={16} />
                           </button>
@@ -1092,7 +1088,7 @@ const handleSendQuotationEmail = async () => {
                               setQuotationToSend(quotation);
                               setSendModalOpen(true);
                             }}
-                            className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm text-white"
+                            className="flex items-center px-3 py-2 bg-primary hover:bg-primary-dark rounded-md text-sm text-white shadow"
                           >
                             <Send size={16} />
                           </button>
@@ -1106,11 +1102,11 @@ const handleSendQuotationEmail = async () => {
 
             {/* Pagination */}
             <div className="flex justify-between items-center mt-6">
-              <div className="text-sm text-gray-400">Showing 1 to 5 of 5 entries</div>
+              <div className="text-sm text-text-muted">Showing 1 to 5 of 5 entries</div>
               <div className="flex space-x-1">
-                <button className="px-3 py-1 bg-gray-700 rounded-md text-gray-300 hover:bg-gray-600">Previous</button>
-                <button className="px-3 py-1 bg-blue-600 rounded-md text-white">1</button>
-                <button className="px-3 py-1 bg-gray-700 rounded-md text-gray-300 hover:bg-gray-600">Next</button>
+                <button className="px-3 py-1 bg-background border border-border rounded-md text-text-primary hover:bg-surface">Previous</button>
+                <button className="px-3 py-1 bg-primary rounded-md text-white">1</button>
+                <button className="px-3 py-1 bg-background border border-border rounded-md text-text-primary hover:bg-surface">Next</button>
               </div>
             </div>
           </div>
@@ -1119,8 +1115,8 @@ const handleSendQuotationEmail = async () => {
 
       {/* Send Modal */}
       {sendModalOpen && quotationToSend && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-2xl">
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-surface rounded-lg p-6 w-full max-w-2xl shadow-lg">
             <h2 className="text-xl font-bold mb-4">Send Quotation {quotationToSend.Reference}</h2>
 
             <div className="space-y-4">
@@ -1130,7 +1126,7 @@ const handleSendQuotationEmail = async () => {
                   type="email"
                   value={quotationToSend.Email || ""}
                   readOnly
-                  className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-background border border-border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
 
@@ -1140,40 +1136,30 @@ const handleSendQuotationEmail = async () => {
                   type="text"
                   value={`R-Tech Solutions Quotation ${quotationToSend.Reference}`}
                   readOnly
-                  className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-background border border-border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-1">Message</label>
                 <textarea
-                  value={`Hello,
-
-Your quotation amounting to ${quotationToSend.Total?.toLocaleString()} Rs has been prepared.
-${quotationToSend.Notes?.length > 0 ? '\nNotes:\n' + quotationToSend.Notes.map(note => `- ${note.note}`).join('\n') : ''}
-${quotationToSend.Sections?.length > 0 ? '\nSections:\n' + quotationToSend.Sections.map(section => `- ${section.sectionName}`).join('\n') : ''}
-
-Thank you for your interest!
-Please review the attached quotation and let us know if you have any questions.
-
-Best regards,
-R-Tech Solutions Team`}
+                  value={`Hello,\n\nYour quotation amounting to ${quotationToSend.Total?.toLocaleString()} Rs has been prepared.\n${quotationToSend.Notes?.length > 0 ? '\nNotes:\n' + quotationToSend.Notes.map(note => `- ${note.note}`).join('\n') : ''}\n${quotationToSend.Sections?.length > 0 ? '\nSections:\n' + quotationToSend.Sections.map(section => `- ${section.sectionName}`).join('\n') : ''}\n\nThank you for your interest!\nPlease review the attached quotation and let us know if you have any questions.\n\nBest regards,\nR-Tech Solutions Team`}
                   rows={8}
                   readOnly
-                  className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-background border border-border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
 
-              <div className="bg-gray-700 border border-gray-600 rounded-md p-3">
+              <div className="bg-background border border-border rounded-md p-3">
                 <div className="flex items-center">
-                  <div className="bg-gray-600 p-2 rounded mr-3">
-                    <FileText size={24} className="text-gray-300" />
+                  <div className="bg-surface p-2 rounded mr-3">
+                    <FileText size={24} className="text-text-muted" />
                   </div>
                   <div>
                     <p className="font-medium">Quotation - {quotationToSend.Reference}.pdf</p>
-                    <p className="text-sm text-gray-400">Attachment preview</p>
+                    <p className="text-sm text-text-muted">Attachment preview</p>
                     <button
-                      className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-white text-xs"
+                      className="mt-2 px-3 py-1 bg-primary hover:bg-primary-dark rounded text-white text-xs"
                       onClick={async () => {
                         try {
                           const blob = await pdf(<QuotationPDF quotation={quotationToSend} />).toBlob();
@@ -1206,13 +1192,13 @@ R-Tech Solutions Team`}
                   setSendModalOpen(false);
                   setQuotationToSend(null);
                 }}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md"
+                className="px-4 py-2 bg-background border border-border hover:bg-surface rounded-md"
               >
                 Discard
               </button>
               <button
                 onClick={handleSendQuotationEmail}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md flex items-center"
+                className="px-4 py-2 bg-primary hover:bg-primary-dark rounded-md flex items-center text-white shadow"
                 disabled={!quotationToSend.Email || isSending}
               >
                 {isSending ? (
@@ -1234,52 +1220,52 @@ R-Tech Solutions Team`}
 
       {/* Preview Modal */}
       {previewModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-surface rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-lg">
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h2 className="text-xl font-bold">Quotation Preview</h2>
-                <p className="text-sm text-gray-400 mt-1">ID: {quotationToSend?.Reference}</p>
+                <p className="text-sm text-text-muted mt-1">ID: {quotationToSend?.Reference}</p>
               </div>
-              <button onClick={() => setPreviewModalOpen(false)} className="text-gray-400 hover:text-gray-200">
+              <button onClick={() => setPreviewModalOpen(false)} className="text-text-muted hover:text-text-primary">
                 <X size={24} />
               </button>
             </div>
 
-            <div className="bg-white text-gray-900 p-8 rounded-md">
+            <div className="bg-background text-text-primary p-8 rounded-md">
               {/* Header Information */}
-              <div className="border-b border-gray-200 pb-6 mb-6">
+              <div className="border-b border-border pb-6 mb-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Quotation {quotationToSend?.Reference}</h1>
+                    <h1 className="text-2xl font-bold text-text-primary">Quotation {quotationToSend?.Reference}</h1>
                     <div className="mt-4 space-y-2">
                       <div>
-                        <p className="font-medium text-gray-600">Quotation ID:</p>
-                        <p className="text-gray-800">{quotationToSend?.Reference}</p>
+                        <p className="font-medium text-text-secondary">Quotation ID:</p>
+                        <p className="text-text-primary">{quotationToSend?.Reference}</p>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-600">Created Date:</p>
-                        <p className="text-gray-800">{new Date(quotationToSend?.createdAt).toLocaleDateString()}</p>
+                        <p className="font-medium text-text-secondary">Created Date:</p>
+                        <p className="text-text-primary">{new Date(quotationToSend?.createdAt).toLocaleDateString()}</p>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-600">Expired Date:</p>
-                        <p className="text-red-600 font-medium">{new Date(quotationToSend?.Expiration).toLocaleDateString()}</p>
+                        <p className="font-medium text-text-secondary">Expired Date:</p>
+                        <p className="text-primary font-medium">{new Date(quotationToSend?.Expiration).toLocaleDateString()}</p>
                       </div>
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="space-y-2">
                       <div>
-                        <p className="font-medium text-gray-600">Customer:</p>
-                        <p className="text-gray-800">{quotationToSend?.Customer || "Not specified"}</p>
+                        <p className="font-medium text-text-secondary">Customer:</p>
+                        <p className="text-text-primary">{quotationToSend?.Customer || "Not specified"}</p>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-600">Payment Terms:</p>
-                        <p className="text-gray-800">{quotationToSend?.PaymentTerms}</p>
+                        <p className="font-medium text-text-secondary">Payment Terms:</p>
+                        <p className="text-text-primary">{quotationToSend?.PaymentTerms}</p>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-600">Email:</p>
-                        <p className="text-gray-800">{quotationToSend?.Email || "Not specified"}</p>
+                        <p className="font-medium text-text-secondary">Email:</p>
+                        <p className="text-text-primary">{quotationToSend?.Email || "Not specified"}</p>
                       </div>
                     </div>
                   </div>
@@ -1289,11 +1275,11 @@ R-Tech Solutions Team`}
               {/* Sections */}
               {quotationToSend?.Sections?.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-800">Sections</h3>
+                  <h3 className="text-lg font-semibold mb-3 text-text-primary">Sections</h3>
                   <div className="space-y-2">
                     {quotationToSend.Sections.map((section, index) => (
-                      <div key={index} className="bg-gray-50 p-3 rounded-md">
-                        <p className="font-medium text-gray-800">{section.sectionName}</p>
+                      <div key={index} className="bg-surface p-3 rounded-md">
+                        <p className="font-medium text-text-primary">{section.sectionName}</p>
                       </div>
                     ))}
                   </div>
@@ -1302,20 +1288,20 @@ R-Tech Solutions Team`}
 
               {/* Product Lines */}
               <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-3 text-gray-800">Products</h3>
+                <h3 className="text-lg font-semibold mb-3 text-text-primary">Products</h3>
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="py-2 text-left font-medium text-gray-600">Product</th>
-                      <th className="py-2 text-right font-medium text-gray-600">Quantity</th>
-                      <th className="py-2 text-right font-medium text-gray-600">Unit Price</th>
-                      <th className="py-2 text-right font-medium text-gray-600">Taxes</th>
-                      <th className="py-2 text-right font-medium text-gray-600">Amount</th>
+                    <tr className="border-b border-border">
+                      <th className="py-2 text-left font-medium text-text-secondary">Product</th>
+                      <th className="py-2 text-right font-medium text-text-secondary">Quantity</th>
+                      <th className="py-2 text-right font-medium text-text-secondary">Unit Price</th>
+                      <th className="py-2 text-right font-medium text-text-secondary">Taxes</th>
+                      <th className="py-2 text-right font-medium text-text-secondary">Amount</th>
                     </tr>
                   </thead>
                   <tbody>
                     {quotationToSend?.OrderLines?.map((line, index) => (
-                      <tr key={index} className="border-b border-gray-200">
+                      <tr key={index} className="border-b border-border">
                         <td className="py-3">{line.Product || "Not specified"}</td>
                         <td className="py-3 text-right">{line.Quantity}</td>
                         <td className="py-3 text-right">Rs {line.UnitPrice?.toLocaleString()}</td>
@@ -1330,11 +1316,11 @@ R-Tech Solutions Team`}
               {/* Notes */}
               {quotationToSend?.Notes?.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-800">Notes</h3>
+                  <h3 className="text-lg font-semibold mb-3 text-text-primary">Notes</h3>
                   <div className="space-y-2">
                     {quotationToSend.Notes.map((note, index) => (
-                      <div key={index} className="bg-gray-50 p-3 rounded-md">
-                        <p className="text-gray-800">{note.note}</p>
+                      <div key={index} className="bg-surface p-3 rounded-md">
+                        <p className="text-text-primary">{note.note}</p>
                       </div>
                     ))}
                   </div>
@@ -1345,14 +1331,14 @@ R-Tech Solutions Team`}
               <div className="flex justify-end mb-8">
                 <div className="w-64 space-y-2">
                   <div className="flex justify-between py-1">
-                    <span className="text-gray-600">Untaxed Amount:</span>
+                    <span className="text-text-secondary">Untaxed Amount:</span>
                     <span>Rs {quotationToSend?.UntaxedAmount?.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between py-1">
-                    <span className="text-gray-600">Taxes:</span>
+                    <span className="text-text-secondary">Taxes:</span>
                     <span>Rs {quotationToSend?.TaxesAmount?.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between py-2 border-t border-gray-300 font-bold">
+                  <div className="flex justify-between py-2 border-t border-border font-bold">
                     <span>Total:</span>
                     <span>Rs {quotationToSend?.Total?.toLocaleString()}</span>
                   </div>
@@ -1360,22 +1346,22 @@ R-Tech Solutions Team`}
               </div>
 
               {/* Terms & Conditions */}
-              <div className="border-t border-gray-200 pt-6">
-                <h3 className="font-bold mb-2 text-gray-800">Terms & Conditions</h3>
-                <p className="whitespace-pre-line text-gray-700">{quotationToSend?.TermsConditions}</p>
+              <div className="border-t border-border pt-6">
+                <h3 className="font-bold mb-2 text-text-primary">Terms & Conditions</h3>
+                <p className="whitespace-pre-line text-text-secondary">{quotationToSend?.TermsConditions}</p>
               </div>
             </div>
 
             <div className="flex justify-end mt-6 space-x-2">
               <button
                 onClick={() => handleDownload(quotationToSend)}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-md text-white"
+                className="px-4 py-2 bg-accent hover:bg-secondary rounded-md text-text-primary shadow"
               >
                 Download PDF
               </button>
               <button
                 onClick={() => setPreviewModalOpen(false)}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md"
+                className="px-4 py-2 bg-background border border-border hover:bg-surface rounded-md"
               >
                 Close
               </button>
@@ -1386,11 +1372,11 @@ R-Tech Solutions Team`}
 
       {/* Create Product Modal */}
       {createProductModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 w-full max-w-lg">
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-surface rounded-lg p-6 w-full max-w-lg shadow-lg">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold">Create New Product</h2>
-              <button onClick={() => setCreateProductModalOpen(false)} className="text-gray-400 hover:text-gray-200">
+              <button onClick={() => setCreateProductModalOpen(false)} className="text-text-muted hover:text-text-primary">
                 <X size={24} />
               </button>
             </div>
@@ -1403,7 +1389,7 @@ R-Tech Solutions Team`}
                   value={newProduct.name}
                   onChange={(e) => handleNewProductChange("name", e.target.value)}
                   placeholder="Enter product name"
-                  className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-background border border-border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
 
@@ -1415,7 +1401,7 @@ R-Tech Solutions Team`}
                   value={newProduct.price}
                   onChange={(e) => handleNewProductChange("price", Number.parseFloat(e.target.value) || 0)}
                   placeholder="Enter price"
-                  className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-background border border-border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
 
@@ -1424,7 +1410,7 @@ R-Tech Solutions Team`}
                 <select
                   value={newProduct.category}
                   onChange={(e) => handleNewProductChange("category", e.target.value)}
-                  className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-background border border-border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   {productCategories.map((category, index) => (
                     <option key={index} value={category}>
@@ -1440,7 +1426,7 @@ R-Tech Solutions Team`}
                   value={newProduct.description}
                   onChange={(e) => handleNewProductChange("description", e.target.value)}
                   placeholder="Enter product description"
-                  className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-background border border-border rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-primary"
                   rows={3}
                 />
               </div>
@@ -1449,13 +1435,13 @@ R-Tech Solutions Team`}
             <div className="flex justify-end space-x-2 mt-6">
               <button
                 onClick={() => setCreateProductModalOpen(false)}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-md"
+                className="px-4 py-2 bg-background border border-border hover:bg-surface rounded-md"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateProduct}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md"
+                className="px-4 py-2 bg-primary hover:bg-primary-dark rounded-md text-white"
                 disabled={!newProduct.name || newProduct.price <= 0}
               >
                 Create Product

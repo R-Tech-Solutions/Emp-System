@@ -40,10 +40,13 @@ exports.getCashbookEntries = async (req, res) => {
     // Format supplier entries
     const supplierEntries = suppliersSnapshot.docs.map(doc => {
       const supplier = doc.data();
-      // Get unique payment methods from history
-      const uniquePaymentMethods = [...new Set(
-        supplier.paidAmountHistory.map(payment => payment.method)
-      )];
+      // Get unique payment methods from history - add safety checks
+      let uniquePaymentMethods = [];
+      if (supplier.paidAmountHistory && Array.isArray(supplier.paidAmountHistory)) {
+        uniquePaymentMethods = [...new Set(
+          supplier.paidAmountHistory.map(payment => payment.method)
+        )];
+      }
       
       return {
         date: supplier.updatedAt,

@@ -12,8 +12,18 @@ import {
   Calendar,
   RefreshCw,
   Users,
+  BarChart3,
+  TrendingUp,
+  Clock,
+  UserCheck,
+  Award,
+  Gift,
+  Download,
+  Eye,
+  Filter,
+  Settings,
 } from "lucide-react";
-import DotSpinner from "../loaders/Loader"; // Import the loader
+import DotSpinner from "../loaders/Loader";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function ReportsDashboard() {
@@ -543,7 +553,7 @@ export default function ReportsDashboard() {
             <FileSpreadsheet className="inline h-4 w-4" /> Export
           </button>
         </div>
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-7 gap-3">
           {Array.from({ length: totalDays }, (_, i) => {
             const day = i + 1;
             const hours = workHoursForMonth[day]
@@ -552,10 +562,10 @@ export default function ReportsDashboard() {
             return (
               <div
                 key={day}
-                className="p-2 bg-gray-700 rounded-lg text-center text-gray-300 text-sm"
+                className="p-4 bg-surface rounded-xl text-center text-text-primary text-sm border border-border hover:shadow-md transition-all duration-200 hover:scale-105"
               >
-                <p className="font-bold">{day}</p>
-                <p>{hours} hrs</p>
+                <p className="font-bold text-primary">{day}</p>
+                <p className="text-text-secondary">{hours} hrs</p>
               </div>
             );
           })}
@@ -793,22 +803,22 @@ export default function ReportsDashboard() {
     }
 
     return (
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-gray-800 text-sm border border-gray-700 rounded-lg">
+      <div className="overflow-x-auto rounded-lg border border-border">
+        <table className="min-w-full bg-surface text-sm border border-border rounded-lg">
           <thead>
             {/* Month Header Row */}
-            <tr className="bg-gray-700">
-              <th className="px-4 py-3 text-left border-r border-gray-600">Task Name</th>
+            <tr className="bg-primary-light">
+              <th className="px-6 py-4 text-left border-r border-border font-semibold text-primary">Task Name</th>
               {months.map(month => (
                 <th
                   key={month}
-                  className="px-2 py-3 text-center border-r border-gray-600"
+                  className="px-3 py-4 text-center border-r border-border font-semibold text-primary"
                   style={{ minWidth: '80px' }}
                 >
                   {month.substring(0, 3)}
                 </th>
               ))}
-              <th className="px-4 py-3 text-center font-bold bg-gray-750">Total</th>
+              <th className="px-6 py-4 text-center font-bold bg-secondary text-white">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -818,20 +828,21 @@ export default function ReportsDashboard() {
                 0
               );
               return (
-                <tr key={taskName} className="border-t border-gray-700 hover:bg-gray-750">
-                  <td className="px-4 py-3 border-r border-gray-600 font-medium">
+                <tr key={taskName} className="border-t border-border hover:bg-primary-light transition-colors duration-200">
+                  <td className="px-6 py-4 border-r border-border font-medium text-text-primary">
                     {taskName}
                   </td>
                   {months.map(month => (
                     <td
                       key={month}
-                      className={`px-2 py-3 text-center border-r border-gray-600 ${monthData[month] > 0 ? 'text-green-400' : 'text-gray-500'
-                        }`}
+                      className={`px-3 py-4 text-center border-r border-border ${
+                        monthData[month] > 0 ? 'text-primary font-medium' : 'text-text-muted'
+                      }`}
                     >
                       {monthData[month] > 0 ? monthData[month].toFixed(2) : "0.00"}
                     </td>
                   ))}
-                  <td className="px-4 py-3 text-center font-bold bg-gray-750">
+                  <td className="px-6 py-4 text-center font-bold bg-secondary bg-opacity-10 text-primary">
                     {totalHours.toFixed(2)}
                   </td>
                 </tr>
@@ -1077,61 +1088,83 @@ export default function ReportsDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
+    <div className="min-h-screen bg-background text-text-primary">
       {/* Header */}
-      <header className=" p-4 shadow-md">
+      <header className="bg-surface border-b border-border p-6 shadow-sm">
         <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <button className="bg-gray-700 hover:bg-gray-600 p-2 rounded-full">
-              <RefreshCw className="h-5 w-5" />
+          <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-2">
+              <div className="p-2 bg-primary rounded-lg">
+                <BarChart3 className="h-6 w-6 text-white" />
+              </div>
+              <h1 className="text-2xl font-bold text-primary">Reports Dashboard</h1>
+            </div>
+            <button className="p-3 bg-surface hover:bg-primary-light rounded-xl border border-border transition-all duration-200 hover:shadow-md">
+              <RefreshCw className="h-5 w-5 text-primary" />
             </button>
+          </div>
+          
+          <div className="flex items-center space-x-4">
             <div className="relative">
               <input
                 type="text"
                 placeholder="Search reports..."
-                className="bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
+                className="bg-surface text-text-primary px-4 py-3 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary w-64 pl-10"
               />
-              <Search className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+              <Search className="absolute left-3 top-3.5 h-5 w-5 text-text-secondary" />
             </div>
-            <div className="flex items-center space-x-2 bg-gray-700 px-3 py-2 rounded-lg">
-              <Calendar className="h-5 w-5 text-gray-400" />
-              <span>April 2023</span>
+            <div className="flex items-center space-x-2 bg-surface px-4 py-3 rounded-xl border border-border">
+              <Calendar className="h-5 w-5 text-primary" />
+              <span className="text-text-primary font-medium">April 2023</span>
             </div>
+            <button className="p-3 bg-surface hover:bg-primary-light rounded-xl border border-border transition-all duration-200">
+              <Settings className="h-5 w-5 text-primary" />
+            </button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto p-4">
+      <main className="container mx-auto p-6">
         {/* Employee Reports Section */}
         <section className="mb-8">
           <div
-            className="flex justify-between items-center cursor-pointer mb-4"
+            className="flex justify-between items-center cursor-pointer mb-6 p-4 bg-surface rounded-xl border border-border hover:bg-primary-light transition-all duration-200"
             onClick={() => toggleSection("employeeReports")}
           >
-            <h2 className="text-xl font-bold text-blue-400 border-b border-gray-700 pb-2">
-              Employee Reports
-            </h2>
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-primary rounded-lg">
+                <Users className="h-5 w-5 text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-primary">
+                Employee Reports
+              </h2>
+            </div>
             {expandedSections.employeeReports ? (
-              <ChevronUp className="h-6 w-6 text-gray-400" />
+              <ChevronUp className="h-6 w-6 text-primary" />
             ) : (
-              <ChevronDown className="h-6 w-6 text-gray-400" />
+              <ChevronDown className="h-6 w-6 text-primary" />
             )}
           </div>
           {expandedSections.employeeReports && (
             <>
               {/* Employee Master Report */}
-              <div className="bg-gray-800 rounded-lg shadow-lg mb-4 overflow-hidden">
+              <div className="bg-surface rounded-xl shadow-lg mb-6 overflow-hidden border border-border hover:shadow-xl transition-all duration-200">
                 <div
-                  className="p-4 cursor-pointer flex justify-between items-center border-b border-gray-700"
+                  className="p-6 cursor-pointer flex justify-between items-center border-b border-border bg-gradient-to-r from-primary-light to-surface"
                   onClick={() => toggleReport("employeeMaster")}
                 >
-                  <h3 className="text-lg font-semibold">
-                    Employee Master Report
-                  </h3>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-primary rounded-lg">
+                      <UserCheck className="h-5 w-5 text-white" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-primary">
+                      Employee Master Report
+                    </h3>
+                  </div>
+                  <div className="flex items-center space-x-3">
                     <button
-                      className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md flex items-center text-sm"
+                      className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg flex items-center text-sm transition-all duration-200 hover:shadow-md"
                       onClick={(e) => {
                         e.stopPropagation();
                         fetchAndDownloadExcel(
@@ -1141,58 +1174,62 @@ export default function ReportsDashboard() {
                         );
                       }}
                     >
-                      <FileSpreadsheet className="h-4 w-4 mr-1" />
-                      Excel
+                      <Download className="h-4 w-4 mr-2" />
+                      Export Excel
                     </button>
 
                     {expandedReports.employeeMaster ? (
-                      <ChevronUp className="h-5 w-5" />
+                      <ChevronUp className="h-5 w-5 text-primary" />
                     ) : (
-                      <ChevronDown className="h-5 w-5" />
+                      <ChevronDown className="h-5 w-5 text-primary" />
                     )}
                   </div>
                 </div>
 
                 {expandedReports.employeeMaster && (
-                  <div className="p-4">
+                  <div className="p-6">
                     {loadingStates.employeeMaster ? (
-                      <DotSpinner /> // Show loader
+                      <div className="flex justify-center py-8">
+                        <DotSpinner />
+                      </div>
                     ) : (
-                      <div className="overflow-x-auto">
+                      <div className="overflow-x-auto rounded-lg border border-border">
                         <table
                           id="employeeMasterTable"
-                          className="min-w-full bg-gray-800 text-sm"
+                          className="min-w-full bg-surface text-sm"
                         >
                           <thead>
-                            <tr className="bg-gray-700">
-                              <th className="px-4 py-2 text-left">
+                            <tr className="bg-primary-light">
+                              <th className="px-6 py-4 text-left font-semibold text-primary">
                                 Employee ID
                               </th>
-                              <th className="px-4 py-2 text-left">Name</th>
-                              <th className="px-4 py-2 text-left">
+                              <th className="px-6 py-4 text-left font-semibold text-primary">Name</th>
+                              <th className="px-6 py-4 text-left font-semibold text-primary">
                                 Department
                               </th>
-                              <th className="px-4 py-2 text-left">Position</th>
-                              <th className="px-4 py-2 text-left">Join Date</th>
+                              <th className="px-6 py-4 text-left font-semibold text-primary">Position</th>
+                              <th className="px-6 py-4 text-left font-semibold text-primary">Join Date</th>
                             </tr>
                           </thead>
                           <tbody>
                             {employeeMasterData.map((employee, index) => (
                               <tr
                                 key={index}
-                                className="border-t border-gray-700 hover:bg-gray-750"
+                                className="border-t border-border hover:bg-primary-light transition-colors duration-200"
                               >
-                                <td className="px-4 py-2">
+                                <td className="px-6 py-4 text-text-primary">
                                   {employee.employeeId}
                                 </td>
-                                <td className="px-4 py-2">{employee.name}</td>
-                                <td className="px-4 py-2">
+                                <td className="px-6 py-4 text-text-primary font-medium">
+                                  {employee.name}
+                                </td>
+                                <td className="px-6 py-4 text-text-secondary">
                                   {employee.department}
                                 </td>
-                                <td className="px-4 py-2">
+                                <td className="px-6 py-4 text-text-secondary">
                                   {employee.position}
                                 </td>
-                                <td className="px-4 py-2">
+                                <td className="px-6 py-4 text-text-secondary">
                                   {employee.joinDate}
                                 </td>
                               </tr>
@@ -1206,17 +1243,22 @@ export default function ReportsDashboard() {
               </div>
 
               {/* Department-wise Report */}
-              <div className="bg-gray-800 rounded-lg shadow-lg mb-4 overflow-hidden">
+              <div className="bg-surface rounded-xl shadow-lg mb-6 overflow-hidden border border-border hover:shadow-xl transition-all duration-200">
                 <div
-                  className="p-4 cursor-pointer flex justify-between items-center border-b border-gray-700"
+                  className="p-6 cursor-pointer flex justify-between items-center border-b border-border bg-gradient-to-r from-secondary to-surface"
                   onClick={() => toggleReport("departmentWise")}
                 >
-                  <h3 className="text-lg font-semibold">
-                    Department-wise Report
-                  </h3>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-secondary rounded-lg">
+                      <BarChart3 className="h-5 w-5 text-white" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-primary">
+                      Department-wise Report
+                    </h3>
+                  </div>
+                  <div className="flex items-center space-x-3">
                     <button
-                      className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md flex items-center text-sm"
+                      className="bg-secondary hover:bg-primary text-white px-4 py-2 rounded-lg flex items-center text-sm transition-all duration-200 hover:shadow-md"
                       onClick={(e) => {
                         e.stopPropagation();
                         fetchAndDownloadExcel(
@@ -1226,52 +1268,58 @@ export default function ReportsDashboard() {
                         );
                       }}
                     >
-                      <FileSpreadsheet className="h-4 w-4 mr-1" />
-                      Excel
+                      <Download className="h-4 w-4 mr-2" />
+                      Export Excel
                     </button>
 
                     {expandedReports.departmentWise ? (
-                      <ChevronUp className="h-5 w-5" />
+                      <ChevronUp className="h-5 w-5 text-primary" />
                     ) : (
-                      <ChevronDown className="h-5 w-5" />
+                      <ChevronDown className="h-5 w-5 text-primary" />
                     )}
                   </div>
                 </div>
 
                 {expandedReports.departmentWise && (
-                  <div className="p-4">
+                  <div className="p-6">
                     {loadingStates.departmentWise ? (
-                      <DotSpinner /> // Show loader
+                      <div className="flex justify-center py-8">
+                        <DotSpinner />
+                      </div>
                     ) : (
-                      <div className="overflow-x-auto">
+                      <div className="overflow-x-auto rounded-lg border border-border">
                         <table
                           id="departmentWiseTable"
-                          className="min-w-full bg-gray-800 text-sm"
+                          className="min-w-full bg-surface text-sm"
                         >
                           <thead>
-                            <tr className="bg-gray-700">
-                              <th className="px-4 py-2 text-left">
+                            <tr className="bg-secondary">
+                              <th className="px-6 py-4 text-left font-semibold text-white">
                                 Department
                               </th>
-                              <th className="px-4 py-2 text-left">
+                              <th className="px-6 py-4 text-left font-semibold text-white">
                                 Total Employees
                               </th>
-                              <th className="px-4 py-2 text-left">Male</th>
-                              <th className="px-4 py-2 text-left">Female</th>
+                              <th className="px-6 py-4 text-left font-semibold text-white">Male</th>
+                              <th className="px-6 py-4 text-left font-semibold text-white">Female</th>
                             </tr>
                           </thead>
                           <tbody>
                             {departmentWiseData.map((dept, index) => (
                               <tr
                                 key={index}
-                                className="border-t border-gray-700 hover:bg-gray-750"
+                                className="border-t border-border hover:bg-secondary hover:bg-opacity-10 transition-colors duration-200"
                               >
-                                <td className="px-4 py-2">{dept.department}</td>
-                                <td className="px-4 py-2">
+                                <td className="px-6 py-4 text-text-primary font-medium">
+                                  {dept.department}
+                                </td>
+                                <td className="px-6 py-4 text-text-primary">
                                   {dept.totalEmployees}
                                 </td>
-                                <td className="px-4 py-2">{dept.maleCount}</td>
-                                <td className="px-4 py-2">
+                                <td className="px-6 py-4 text-text-secondary">
+                                  {dept.maleCount}
+                                </td>
+                                <td className="px-6 py-4 text-text-secondary">
                                   {dept.femaleCount}
                                 </td>
                               </tr>
@@ -1444,32 +1492,42 @@ export default function ReportsDashboard() {
         </section>
         <section className="mb-8">
           <div
-            className="flex justify-between items-center cursor-pointer mb-4"
+            className="flex justify-between items-center cursor-pointer mb-6 p-4 bg-surface rounded-xl border border-border hover:bg-accent transition-all duration-200"
             onClick={() => toggleSection("analyticsReports")}
           >
-            <h2 className="text-xl font-bold text-pink-400 border-b border-gray-700 pb-2">
-              Analytics Reports
-            </h2>
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-accent rounded-lg">
+                <TrendingUp className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="text-xl font-bold text-primary">
+                Analytics Reports
+              </h2>
+            </div>
             {expandedSections.analyticsReports ? (
-              <ChevronUp className="h-6 w-6 text-gray-400" />
+              <ChevronUp className="h-6 w-6 text-primary" />
             ) : (
-              <ChevronDown className="h-6 w-6 text-gray-400" />
+              <ChevronDown className="h-6 w-6 text-primary" />
             )}
           </div>
           {expandedSections.analyticsReports && (
             <>
               {/* Work Anniversary Report */}
-              <div className="bg-gray-800 rounded-lg shadow-lg mb-4 overflow-hidden">
+              <div className="bg-surface rounded-xl shadow-lg mb-6 overflow-hidden border border-border hover:shadow-xl transition-all duration-200">
                 <div
-                  className="p-4 cursor-pointer flex justify-between items-center border-b border-gray-700"
+                  className="p-6 cursor-pointer flex justify-between items-center border-b border-border bg-gradient-to-r from-accent to-surface"
                   onClick={() => toggleReport("workAnniversary")}
                 >
-                  <h3 className="text-lg font-semibold">
-                    Work Anniversary Report
-                  </h3>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-accent rounded-lg">
+                      <Award className="h-5 w-5 text-primary" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-primary">
+                      Work Anniversary Report
+                    </h3>
+                  </div>
+                  <div className="flex items-center space-x-3">
                     <button
-                      className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md flex items-center text-sm"
+                      className="bg-accent hover:bg-primary text-white px-4 py-2 rounded-lg flex items-center text-sm transition-all duration-200 hover:shadow-md"
                       onClick={(e) => {
                         e.stopPropagation();
                         fetchAndDownloadExcel(
@@ -1479,14 +1537,14 @@ export default function ReportsDashboard() {
                         );
                       }}
                     >
-                      <FileSpreadsheet className="h-4 w-4 mr-1" />
-                      Excel
+                      <Download className="h-4 w-4 mr-2" />
+                      Export Excel
                     </button>
 
                     {expandedReports.workAnniversary ? (
-                      <ChevronUp className="h-5 w-5" />
+                      <ChevronUp className="h-5 w-5 text-primary" />
                     ) : (
-                      <ChevronDown className="h-5 w-5" />
+                      <ChevronDown className="h-5 w-5 text-primary" />
                     )}
                   </div>
                 </div>
@@ -1558,16 +1616,21 @@ export default function ReportsDashboard() {
 
         <section className="mb-8">
           <div
-            className="flex justify-between items-center cursor-pointer mb-4 transition-all hover:scale-[1.01]"
+            className="flex justify-between items-center cursor-pointer mb-6 p-4 bg-surface rounded-xl border border-border hover:bg-primary-light transition-all duration-200 hover:scale-[1.01]"
             onClick={() => toggleSection("workHoursReport")}
           >
-            <h2 className="text-2xl font-extrabold text-green-400 border-b border-gray-700 pb-2">
-              Work Hours Month by Month
-            </h2>
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-primary rounded-lg">
+                <Clock className="h-5 w-5 text-white" />
+              </div>
+              <h2 className="text-2xl font-extrabold text-primary">
+                Work Hours Month by Month
+              </h2>
+            </div>
             {expandedSections.workHoursReport ? (
-              <ChevronUp className="h-6 w-6 text-gray-400 transition-transform duration-200" />
+              <ChevronUp className="h-6 w-6 text-primary transition-transform duration-200" />
             ) : (
-              <ChevronDown className="h-6 w-6 text-gray-400 transition-transform duration-200" />
+              <ChevronDown className="h-6 w-6 text-primary transition-transform duration-200" />
             )}
           </div>
 
@@ -1578,7 +1641,7 @@ export default function ReportsDashboard() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.3 }}
-                className="bg-gray-800 rounded-2xl shadow-2xl p-6"
+                className="bg-surface rounded-2xl shadow-2xl p-6 border border-border"
               >
                 {!selectedMonth && !selectedEmployee ? (
                   <>
@@ -1605,10 +1668,11 @@ export default function ReportsDashboard() {
                       {months.map((month, index) => (
                         <button
                           key={index}
-                          className={`p-4 rounded-xl font-semibold shadow hover:shadow-lg transition-all ${selectedMonth === month
-                            ? "bg-green-600 text-white"
-                            : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                            }`}
+                          className={`p-4 rounded-xl font-semibold shadow hover:shadow-lg transition-all ${
+                            selectedMonth === month
+                              ? "bg-primary text-white shadow-lg"
+                              : "bg-surface text-text-primary hover:bg-primary-light border border-border"
+                          }`}
                           onClick={() => setSelectedMonth(month)}
                         >
                           {month}
@@ -1630,45 +1694,47 @@ export default function ReportsDashboard() {
                     </h3>
 
                     {loadingEmployees ? (
-                      <DotSpinner />
+                      <div className="flex justify-center py-8">
+                        <DotSpinner />
+                      </div>
                     ) : (
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full bg-gray-800 text-sm rounded-xl">
+                      <div className="overflow-x-auto rounded-lg border border-border">
+                        <table className="min-w-full bg-surface text-sm rounded-xl">
                           <thead>
-                            <tr className="bg-gray-700 text-gray-300">
-                              <th className="px-4 py-3 text-left">
+                            <tr className="bg-primary-light">
+                              <th className="px-6 py-4 text-left font-semibold text-primary">
                                 Employee ID
                               </th>
-                              <th className="px-4 py-3 text-left">
+                              <th className="px-6 py-4 text-left font-semibold text-primary">
                                 Employee Name
                               </th>
-                              <th className="px-4 py-3 text-left">Actions</th>
+                              <th className="px-6 py-4 text-left font-semibold text-primary">Actions</th>
                             </tr>
                           </thead>
                           <tbody>
                             {workHoursData.map((employee) => (
                               <tr
                                 key={employee.id}
-                                className="border-t border-gray-700 hover:bg-gray-750 transition"
+                                className="border-t border-border hover:bg-primary-light transition-colors duration-200"
                               >
-                                <td className="px-4 py-2">{employee.id}</td>
-                                <td className="px-4 py-2">{employee.name}</td>
-                                <td className="px-4 py-2">
+                                <td className="px-6 py-4 text-text-primary">{employee.id}</td>
+                                <td className="px-6 py-4 text-text-primary font-medium">{employee.name}</td>
+                                <td className="px-6 py-4">
                                   <button
-                                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md mr-2"
+                                    className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg mr-2 transition-all duration-200 hover:shadow-md"
                                     onClick={() => {
                                       setSelectedEmployee(employee);
                                       fetchEmployeeWorkHours(employee.id);
                                     }}
                                   >
-                                    <ChevronDown className="inline h-4 w-4" />{" "}
+                                    <Eye className="inline h-4 w-4 mr-1" />
                                     View
                                   </button>
                                   <button
-                                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md"
+                                    className="bg-secondary hover:bg-primary text-white px-4 py-2 rounded-lg transition-all duration-200 hover:shadow-md"
                                     onClick={() => downloadExcel(employee.tasks, `${employee.name}_Tasks`, employee)}
                                   >
-                                    <FileSpreadsheet className="inline h-4 w-4" /> Export
+                                    <Download className="inline h-4 w-4 mr-1" /> Export
                                   </button>
                                 </td>
                               </tr>
@@ -1697,38 +1763,45 @@ export default function ReportsDashboard() {
             )}
           </AnimatePresence>
         </section>
-        <section className="mb-8 bg-gray-800 rounded-xl shadow-lg p-4">
+        <section className="mb-8 bg-surface rounded-xl shadow-lg p-6 border border-border">
           <div
-            className="flex justify-between items-center cursor-pointer mb-4"
+            className="flex justify-between items-center cursor-pointer mb-6 p-4 bg-gradient-to-r from-secondary to-surface rounded-lg border border-border hover:bg-secondary hover:bg-opacity-10 transition-all duration-200"
             onClick={() => setWorkHoursOpen(!workHoursOpen)}
           >
-            <h2 className="text-xl font-bold text-yellow-400 border-b border-gray-700 pb-2">
-              Work Hours for Each Task
-            </h2>
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-secondary rounded-lg">
+                <Clock className="h-5 w-5 text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-primary">
+                Work Hours for Each Task
+              </h2>
+            </div>
             {workHoursOpen ? (
-              <ChevronUp className="text-yellow-400" />
+              <ChevronUp className="text-primary" />
             ) : (
-              <ChevronDown className="text-yellow-400" />
+              <ChevronDown className="text-primary" />
             )}
           </div>
 
           {workHoursOpen && (
             <div className="transition-all duration-300 ease-in-out">
-              <div className="flex space-x-4 mb-4">
+              <div className="flex space-x-4 mb-6">
                 <button
-                  className={`px-4 py-2 rounded-lg transition ${taskViewMode === "monthly"
-                    ? "bg-yellow-600 text-white"
-                    : "bg-gray-700 text-gray-300"
-                    }`}
+                  className={`px-6 py-3 rounded-xl transition-all duration-200 font-medium ${
+                    taskViewMode === "monthly"
+                      ? "bg-primary text-white shadow-lg"
+                      : "bg-surface text-text-primary hover:bg-primary-light border border-border"
+                  }`}
                   onClick={() => setTaskViewMode("monthly")}
                 >
                   Monthly
                 </button>
                 <button
-                  className={`px-4 py-2 rounded-lg transition ${taskViewMode === "yearly"
-                    ? "bg-yellow-600 text-white"
-                    : "bg-gray-700 text-gray-300"
-                    }`}
+                  className={`px-6 py-3 rounded-xl transition-all duration-200 font-medium ${
+                    taskViewMode === "yearly"
+                      ? "bg-primary text-white shadow-lg"
+                      : "bg-surface text-text-primary hover:bg-primary-light border border-border"
+                  }`}
                   onClick={() => setTaskViewMode("yearly")}
                 >
                   Yearly
@@ -1785,39 +1858,39 @@ export default function ReportsDashboard() {
                     {renderMonthlyCalendar(selectedTaskEmployee.tasks)}
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full bg-gray-900 text-sm rounded-lg overflow-hidden">
+                  <div className="overflow-x-auto rounded-lg border border-border">
+                    <table className="min-w-full bg-surface text-sm rounded-lg overflow-hidden">
                       <thead>
-                        <tr className="bg-gray-700">
-                          <th className="px-4 py-2 text-left">Employee ID</th>
-                          <th className="px-4 py-2 text-left">Employee Name</th>
-                          <th className="px-4 py-2 text-left">
+                        <tr className="bg-secondary">
+                          <th className="px-6 py-4 text-left font-semibold text-white">Employee ID</th>
+                          <th className="px-6 py-4 text-left font-semibold text-white">Employee Name</th>
+                          <th className="px-6 py-4 text-left font-semibold text-white">
                             Assigned Tasks
                           </th>
-                          <th className="px-4 py-2 text-left">Actions</th>
+                          <th className="px-6 py-4 text-left font-semibold text-white">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {taskData.map((employee) => (
                           <tr
                             key={employee.id}
-                            className="border-t border-gray-700 hover:bg-gray-750"
+                            className="border-t border-border hover:bg-secondary hover:bg-opacity-10 transition-colors duration-200"
                           >
-                            <td className="px-4 py-2">{employee.id}</td>
-                            <td className="px-4 py-2">{employee.name}</td>
-                            <td className="px-4 py-2">
+                            <td className="px-6 py-4 text-text-primary">{employee.id}</td>
+                            <td className="px-6 py-4 text-text-primary font-medium">{employee.name}</td>
+                            <td className="px-6 py-4 text-text-secondary">
                               {employee.tasks.map((task) => (
-                                <div key={task.taskId}>
+                                <div key={task.taskId} className="mb-1">
                                   {task.name} - {task.status}
                                 </div>
                               ))}
                             </td>
-                            <td className="px-4 py-2">
+                            <td className="px-6 py-4">
                               <button
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md mr-2"
+                                className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg transition-all duration-200 hover:shadow-md"
                                 onClick={() => handleViewTask(employee)}
                               >
-                                <ChevronDown className="inline h-4 w-4" /> View
+                                <Eye className="inline h-4 w-4 mr-1" /> View
                               </button>
                             </td>
                           </tr>
@@ -1902,7 +1975,7 @@ export default function ReportsDashboard() {
                       )}
 
                       <button
-                        className="mt-4 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md"
+                        className="mt-6 bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl flex items-center transition-all duration-200 hover:shadow-lg"
                         onClick={() => downloadYearlyTaskExcel(
                           selectedYearlyEmployee,
                           selectedTaskYear,
@@ -1910,7 +1983,7 @@ export default function ReportsDashboard() {
                           shiftData
                         )}
                       >
-                        <FileSpreadsheet className="inline h-4 w-4" /> Export Yearly Report
+                        <Download className="inline h-5 w-5 mr-2" /> Export Yearly Report
                       </button>
                     </div>
                   )}

@@ -554,9 +554,9 @@ export default function ProductManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-background dark:bg-gray-900 text-text-primary dark:text-gray-100">
+    <div className="min-h-screen bg-background text-text-primary">
       {/* Header */}
-      <header className="bg-surface dark:bg-gray-800 border-b border-border rounded-xl shadow-lg p-6 mb-6 py-6 px-4 transition-all duration-200">
+      <header className="bg-surface border-b border-border rounded-xl shadow-lg p-6 mb-6 py-6 px-4 transition-all duration-200">
         <div className="container mx-auto">
           <div className="flex border-b border-border mb-4">
             <button
@@ -578,7 +578,7 @@ export default function ProductManagement() {
       {/* Main Content */}
       <main className="container mx-auto py-6 px-4">
         {activeTab === "new" ? (
-          <div className="bg-surface dark:bg-gray-800 rounded-xl shadow-lg p-8 mb-8 border border-border transition-all duration-200">
+          <div className="bg-surface rounded-xl shadow-lg p-8 mb-8 border border-border transition-all duration-200">
             <h2 className="text-2xl font-bold text-text-primary mb-8">Product Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Left Column */}
@@ -931,7 +931,7 @@ export default function ProductManagement() {
             </div>
           </div>
         ) : (
-          <div className="bg-surface dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-border transition-all duration-200">
+          <div className="bg-surface rounded-xl shadow-lg p-8 border border-border transition-all duration-200">
             {/* Search and filter */}
             <div className="flex flex-col md:flex-row gap-6 mb-8">
               <div className="flex-1">
@@ -1194,8 +1194,8 @@ export default function ProductManagement() {
 
       {/* Edit Product Modal */}
       {editModalOpen && editProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-surface dark:bg-gray-800 rounded-xl shadow-2xl p-8 w-full max-w-4xl w-[1800px] max-h-screen h-[1000px] overflow-y-auto border border-border transition-all duration-200">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface rounded-xl shadow-2xl p-8 w-full max-w-4xl w-[1800px] max-h-screen h-[1000px] overflow-y-auto border border-border transition-all duration-200">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-2xl font-bold text-text-primary">Edit Product</h2>
               <button
@@ -1546,8 +1546,8 @@ export default function ProductManagement() {
 
       {/* Import Products Modal */}
       {importModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-surface dark:bg-gray-800 rounded-xl shadow-2xl p-8 w-full max-w-lg border border-border transition-all duration-200">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface rounded-xl shadow-2xl p-8 w-full max-w-lg border border-border transition-all duration-200">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-2xl font-bold text-text-primary">Import Products</h2>
               <button
@@ -1622,8 +1622,8 @@ export default function ProductManagement() {
 
       {/* Add Identifiers Modal */}
       {identifiersModalOpen && selectedProductIdentifiers && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-surface dark:bg-gray-800 rounded-xl shadow-2xl p-8 w-full max-w-4xl max-h-[80vh] overflow-y-auto border border-border transition-all duration-200">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface rounded-xl shadow-2xl p-8 w-full max-w-4xl max-h-[80vh] overflow-y-auto border border-border transition-all duration-200">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-2xl font-bold text-text-primary">
                 Identifiers for {selectedProductIdentifiers.product.name}

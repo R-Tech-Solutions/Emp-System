@@ -168,6 +168,24 @@ function Section({ title, data, setData, keys, fetchData }) {
   const [itemToDelete, setItemToDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Notes for each section
+  const getSectionNote = () => {
+    switch (title) {
+      case "Departments":
+        return "Manage organizational departments. Departments help organize employees by functional areas and are used for reporting, permissions, and organizational structure.";
+      case "Employment Types":
+        return "Define different types of employment contracts (e.g., Full-time, Part-time, Contract, Internship). These types are used when creating employee records and for payroll calculations.";
+      case "Employment Status":
+        return "Set employee status categories (e.g., Active, Inactive, Terminated, On Leave). Status affects system access, payroll processing, and reporting capabilities.";
+      case "Certificate Levels":
+        return "Define educational and professional certification levels (e.g., High School, Bachelor's, Master's, PhD, Professional Certifications). Used for employee qualification tracking and reporting.";
+      case "Positions":
+        return "Manage job positions and titles within the organization. Positions define roles, responsibilities, and are linked to salary structures and reporting hierarchies.";
+      default:
+        return "";
+    }
+  };
+
   const handleAdd = () => {
     setIsFormOpen(true);
     setFormData({});
@@ -258,6 +276,24 @@ function Section({ title, data, setData, keys, fetchData }) {
           </button>
         </div>
       </div>
+      
+      {/* Section Note */}
+      {getSectionNote() && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-blue-700">
+                {getSectionNote()}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Enhanced table styling */}
       <div className="overflow-x-auto">
         <table className="w-full text-left">
@@ -379,6 +415,9 @@ function MonthlyWorkHoursSection({ data, setData }) {
   const [loading, setLoading] = useState(false); // Add loading state for actions
   const [fetching, setFetching] = useState(true); // Add fetching state for initial data load
 
+  // Note for Monthly Work Hours section
+  const monthlyWorkHoursNote = "Configure standard working hours for each month. These settings are used for attendance tracking, overtime calculations, and payroll processing. Different months may have different working hours due to holidays or seasonal schedules.";
+
   const monthOrder = [
     "January",
     "February",
@@ -480,6 +519,22 @@ function MonthlyWorkHoursSection({ data, setData }) {
         >
           Add Month
         </button>
+      </div>
+
+      {/* Section Note */}
+      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-start">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <p className="text-sm text-blue-700">
+              {monthlyWorkHoursNote}
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="overflow-x-auto">

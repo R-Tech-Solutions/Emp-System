@@ -1266,11 +1266,11 @@ function App() {
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-gray-800 rounded-lg border border-gray-700 p-6 w-full max-w-md">
+        <div className="bg-surface rounded-lg border border-border p-6 w-full max-w-md">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-white">Edit Entry</h2>
+            <h2 className="text-xl font-bold text-text-primary">Edit Entry</h2>
             <button
-              className="text-gray-400 hover:text-white"
+              className="text-text-muted hover:text-text-primary"
               onClick={onClose}
             >
               ✕
@@ -1283,9 +1283,9 @@ function App() {
             }}
           >
             {/* <div className="mb-4">
-              <label className="block text-gray-300 mb-2">Type</label>
+              <label className="block text-text-secondary mb-2">Type</label>
               <select
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                className="w-full px-4 py-2 bg-background border border-border rounded-lg text-text-primary"
                 value={type}
                 onChange={(e) => setType(e.target.value)}
               >
@@ -1294,10 +1294,10 @@ function App() {
               </select>
             </div> */}
             <div className="mb-4">
-              <label className="block text-gray-300 mb-2">Amount</label>
+              <label className="block text-text-secondary mb-2">Amount</label>
               <input
                 type="number"
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                className="w-full px-4 py-2 bg-background border border-border rounded-lg text-text-primary"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 required
@@ -1306,10 +1306,10 @@ function App() {
               />
             </div>
             <div className="mb-4">
-              <label className="block text-gray-300 mb-2">Note</label>
+              <label className="block text-text-secondary mb-2">Note</label>
               <input
                 type="text"
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                className="w-full px-4 py-2 bg-background border border-border rounded-lg text-text-primary"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
               />
@@ -1317,14 +1317,14 @@ function App() {
             <div className="flex justify-end gap-3">
               <button
                 type="button"
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg"
+                className="px-4 py-2 bg-secondary hover:bg-accent text-white rounded-lg"
                 onClick={onClose}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+                className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg"
               >
                 Save
               </button>
@@ -1336,17 +1336,17 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100">
-      <ToastContainer theme="dark" position="top-right" autoClose={3000} />
+    <div className="min-h-screen bg-background text-text-primary">
+      <ToastContainer theme="light" position="top-right" autoClose={3000} />
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-center mb-8">
+        <h1 className="text-3xl font-bold text-center mb-8 text-text-primary">
           Employee Payroll Calculator
         </h1>
 
         {/* Month Navigation and Calendar */}
-        <div className="flex justify-between items-center mb-6 bg-gray-800 rounded-lg p-4 border border-gray-700">
+        <div className="flex justify-between items-center mb-6 bg-surface rounded-lg p-4 border border-border">
           <button
-            className="flex items-center justify-center p-2 rounded-full bg-gray-700 hover:bg-gray-600 text-white"
+            className="flex items-center justify-center p-2 rounded-full bg-primary hover:bg-primary-dark text-white"
             onClick={handlePreviousMonth}
           >
             <svg
@@ -1367,7 +1367,7 @@ function App() {
 
           <div className="text-center relative">
             <button
-              className="text-xl font-bold text-white flex items-center justify-center gap-2"
+              className="text-xl font-bold text-text-primary flex items-center justify-center gap-2"
               onClick={() => setShowMonthPicker((prev) => !prev)}
             >
               {currentMonthName} {currentYear}
@@ -1386,12 +1386,12 @@ function App() {
                 />
               </svg>
               {isCurrentMonth() && (
-                <span className="ml-2 text-green-400 text-sm px-2 py-0.5 bg-green-900 rounded-full">
+                <span className="ml-2 text-secondary text-sm px-2 py-0.5 bg-accent/30 rounded-full">
                   Current
                 </span>
               )}
               {isFutureMonth() && (
-                <span className="ml-2 text-yellow-400 text-sm px-2 py-0.5 bg-yellow-900 rounded-full">
+                <span className="ml-2 text-accent text-sm px-2 py-0.5 bg-accent/30 rounded-full">
                   Future
                 </span>
               )}
@@ -1404,14 +1404,14 @@ function App() {
             )}
 
             {monthsData[currentMonthId] && (
-              <p className="text-gray-400 text-sm">
+              <p className="text-text-secondary text-sm">
                 Total Hours: {monthsData[currentMonthId].totalHours}
               </p>
             )}
           </div>
 
           <button
-            className="flex items-center justify-center p-2 rounded-full bg-gray-700 hover:bg-gray-600 text-white"
+            className="flex items-center justify-center p-2 rounded-full bg-primary hover:bg-primary-dark text-white"
             onClick={handleNextMonth}
           >
             <svg
@@ -1438,14 +1438,14 @@ function App() {
               <input
                 type="text"
                 placeholder="Search employees..."
-                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 bg-surface border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
             <button
-              className="ml-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2"
+              className="ml-4 px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg flex items-center gap-2"
               onClick={() => setShowAdminForm(true)}
             >
               <svg
@@ -1481,7 +1481,7 @@ function App() {
 
         {/* Future Month Warning */}
         {isFutureMonth() && (
-          <div className="mb-6 bg-yellow-900/30 border border-yellow-700 rounded-lg p-4 text-yellow-200">
+          <div className="mb-6 bg-accent/30 border border-accent rounded-lg p-4 text-text-primary">
             <div className="flex items-start">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -1512,37 +1512,37 @@ function App() {
 
         {/* Employee Table */}
         {!isFutureMonth() && (
-          <div className="overflow-x-auto mb-8 rounded-lg border border-gray-700">
-            <table className="min-w-full divide-y divide-gray-700">
-              <thead className="bg-gray-800">
+          <div className="overflow-x-auto mb-8 rounded-lg border border-border">
+            <table className="min-w-full divide-y divide-border">
+              <thead className="bg-surface">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                     #
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                     Profile
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                     Name
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                     Position
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                     Department
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                     Basic Salary
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                     Monthly Work Hours
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-gray-800 divide-y divide-gray-700">
+              <tbody className="bg-surface divide-y divide-border">
                 {employees.map((employee, index) => {
                   const currentMonthWorkHoursInSeconds =
                     employee.monthlyWorkHours?.[currentMonthId] || 0;
@@ -1553,13 +1553,13 @@ function App() {
                   return (
                     <tr
                       key={employee.employeeId}
-                      className="hover:bg-gray-700 transition-colors text-center"
+                      className="hover:bg-accent/20 transition-colors text-center"
                     >
-                      <td className="px-6 py-4 text-sm text-gray-300">
+                      <td className="px-6 py-4 text-sm text-text-secondary">
                         {String(index + 1).padStart(2, "0")}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-600 flex items-center justify-center mx-auto">
+                        <div className="w-10 h-10 rounded-full overflow-hidden bg-secondary flex items-center justify-center mx-auto">
                           {employee.profile ? (
                             <img
                               src={`${employee.profile}`}
@@ -1567,37 +1567,37 @@ function App() {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <span className="text-gray-500 text-sm">
+                            <span className="text-text-muted text-sm">
                               No Image
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-text-primary">
                         {employee.employeeId} - {employee.name} <br />
                         {employee.email}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
                         {employee.position}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
                         {employee.department}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
                         {employee.basicSalary}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text-secondary">
                         {currentMonthWorkHoursInHours} hours
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm flex justify-center gap-2">
                         <button
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md transition-colors flex items-center gap-2"
+                          className="bg-primary hover:bg-primary-dark text-white px-3 py-1 rounded-md transition-colors flex items-center gap-2"
                           onClick={() => handleSelectEmployee(employee)}
                         >
                           <Eye size={16} />
                         </button>
                         <button
-                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md transition-colors flex items-center gap-2"
+                          className="bg-secondary hover:bg-accent text-white px-3 py-1 rounded-md transition-colors flex items-center gap-2"
                           onClick={async () => {
                             const totalWithIncomeExpense = calculateTotalWithIncomeExpense(
                               employee.employeeId,
@@ -1625,7 +1625,7 @@ function App() {
                           <Download size={16} />
                         </button>
                         <button
-                          className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded-md transition-colors flex items-center gap-2"
+                          className="bg-accent hover:bg-secondary text-white px-3 py-1 rounded-md transition-colors flex items-center gap-2"
                           onClick={async () => {
                             const totalWithIncomeExpense = calculateTotalWithIncomeExpense(
                               employee.employeeId,
@@ -1677,7 +1677,7 @@ function App() {
                           <Printer size={16} />
                         </button>
                         <button
-                          className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-md transition-colors flex items-center gap-2"
+                          className="bg-primary-dark hover:bg-primary text-white px-3 py-1 rounded-md transition-colors flex items-center gap-2"
                           onClick={() => {
                             setEmailDetails({
                               to: employee.email,
@@ -1698,7 +1698,7 @@ function App() {
                   <tr>
                     <td
                       colSpan="6"
-                      className="px-6 py-4 text-center text-gray-400"
+                      className="px-6 py-4 text-center text-text-secondary"
                     >
                       No employees found.
                     </td>
@@ -1711,11 +1711,11 @@ function App() {
 
         {/* Payroll Calculation Section */}
         {isFutureMonth() ? (
-          <div className="bg-gray-800 rounded-lg border border-gray-700 p-8">
+          <div className="bg-surface rounded-lg border border-border p-8">
             <div className="text-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-16 w-16 mx-auto text-yellow-500 mb-4"
+                className="h-16 w-16 mx-auto text-accent mb-4"
                 fill="none"
                 viewBox={svgViewBox} // Use the corrected viewBox
                 stroke="currentColor"
@@ -1727,10 +1727,10 @@ function App() {
                   d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <h2 className="text-xl font-bold text-white mb-2">
+              <h2 className="text-xl font-bold text-text-primary mb-2">
                 Future Month - Payroll Not Available
               </h2>
-              <p className="text-gray-400 max-w-2xl mx-auto">
+              <p className="text-text-secondary max-w-2xl mx-auto">
                 Payroll calculations for {currentMonthName} {currentYear} are
                 not available because this month hasn't started yet. Please
                 select a current or past month to view payroll details.
@@ -1740,9 +1740,9 @@ function App() {
         ) : selectedEmployee && payrollResult ? (
           <div
             id="payroll-section"
-            className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden"
+            className="bg-surface rounded-lg border border-border overflow-hidden"
           >
-            <div className="bg-gray-700 px-6 py-4">
+            <div className="bg-primary px-6 py-4">
               <h2 className="text-xl font-semibold text-white">
                 Payroll Calculation - {selectedEmployee.name} -{" "}
                 {currentMonthName} {currentYear}
@@ -1751,54 +1751,54 @@ function App() {
 
             <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Employee Info */}
-              <div className="bg-gray-750 rounded-lg p-4 border border-gray-600">
-                <h3 className="text-lg font-medium text-white mb-4 pb-2 border-b border-gray-600">
+              <div className="bg-background rounded-lg p-4 border border-border">
+                <h3 className="text-lg font-medium text-text-primary mb-4 pb-2 border-b border-border">
                   Employee Information
                 </h3>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Name:</span>
-                    <span className="text-white font-medium">
+                    <span className="text-text-secondary">Name:</span>
+                    <span className="text-text-primary font-medium">
                       {selectedEmployee.name}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Position:</span>
-                    <span className="text-white">
+                    <span className="text-text-secondary">Position:</span>
+                    <span className="text-text-primary">
                       {selectedEmployee.position}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Department:</span>
-                    <span className="text-white">
+                    <span className="text-text-secondary">Department:</span>
+                    <span className="text-text-primary">
                       {selectedEmployee.department}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Basic Salary:</span>
-                    <span className="text-white">
+                    <span className="text-text-secondary">Basic Salary:</span>
+                    <span className="text-text-primary">
                       {selectedEmployee.basicSalary.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Payroll Salary:</span>
-                    <span className="text-white">
+                    <span className="text-text-secondary">Payroll Salary:</span>
+                    <span className="text-text-primary">
                       {payrollResult?.payrollSalary
                         ? payrollResult.payrollSalary.toLocaleString()
                         : "N/A"}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Overtime Salary:</span>
-                    <span className="text-white">
+                    <span className="text-text-secondary">Overtime Salary:</span>
+                    <span className="text-text-primary">
                       {payrollResult?.overtimeSalary
                         ? payrollResult.overtimeSalary.toLocaleString()
                         : "N/A"}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Total Monthly Salary:</span>
-                    <span className="text-white font-medium">
+                    <span className="text-text-secondary">Total Monthly Salary:</span>
+                    <span className="text-text-primary font-medium">
                       {calculateTotalWithIncomeExpense(
                         selectedEmployee.employeeId,
                         payrollResult.totalMonthlySalary
@@ -1806,30 +1806,30 @@ function App() {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">
+                    <span className="text-text-secondary">
                       Employee EPF Deduction (8%):
                     </span>
-                    <span className="text-white">
+                    <span className="text-text-primary">
                       {payrollResult?.employeeEpfDeduction
                         ? payrollResult.employeeEpfDeduction.toLocaleString()
                         : "N/A"}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">
+                    <span className="text-text-secondary">
                       Company EPF Contribution (12%):
                     </span>
-                    <span className="text-white">
+                    <span className="text-text-primary">
                       {payrollResult?.companyEpfContribution
                         ? payrollResult.companyEpfContribution.toLocaleString()
                         : "N/A"}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">
+                    <span className="text-text-secondary">
                       Company ETF Contribution (3%):
                     </span>
-                    <span className="text-white">
+                    <span className="text-text-primary">
                       {payrollResult?.companyEtfContribution
                         ? payrollResult.companyEtfContribution.toLocaleString()
                         : "N/A"}
@@ -1838,18 +1838,18 @@ function App() {
                 </div>
 
                 {/* Income/Expense Input */}
-                <div className="max-w-2xl mx-auto mt-10 p-6 bg-gray-800 rounded-lg shadow-lg">
+                <div className="max-w-2xl mx-auto mt-10 p-6 bg-surface rounded-lg shadow-lg">
                   <div
                     className="flex justify-between items-center cursor-pointer"
                     onClick={() => setShowAddIncomeExpense((prev) => !prev)}
                   >
-                    <h2 className="text-2xl font-semibold text-white mb-6">
+                    <h2 className="text-2xl font-semibold text-text-primary mb-6">
                       Add Income or Expense
                     </h2>
                     {showAddIncomeExpense ? (
-                      <ChevronUp className="text-white" />
+                      <ChevronUp className="text-text-primary" />
                     ) : (
-                      <ChevronDown className="text-white" />
+                      <ChevronDown className="text-text-primary" />
                     )}
                   </div>
                   {showAddIncomeExpense && (
@@ -1871,14 +1871,14 @@ function App() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <label
-                            className="block text-gray-300 mb-1"
+                            className="block text-text-secondary mb-1"
                             htmlFor="type"
                           >
                             Type
                           </label>
                           <select
                             id="type"
-                            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                            className="w-full px-4 py-2 bg-background border border-border rounded-lg text-text-primary"
                             value={incomeExpenseType}
                             onChange={(e) =>
                               setIncomeExpenseType(e.target.value)
@@ -1891,7 +1891,7 @@ function App() {
 
                         <div>
                           <label
-                            className="block text-gray-300 mb-1"
+                            className="block text-text-secondary mb-1"
                             htmlFor="amount"
                           >
                             Amount
@@ -1900,7 +1900,7 @@ function App() {
                             id="amount"
                             type="number"
                             placeholder="0.00"
-                            className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                            className="w-full px-4 py-2 bg-background border border-border rounded-lg text-text-primary"
                             value={incomeExpenseAmount}
                             onChange={(e) =>
                               setIncomeExpenseAmount(e.target.value)
@@ -1914,7 +1914,7 @@ function App() {
 
                       <div>
                         <label
-                          className="block text-gray-300 mb-1"
+                          className="block text-text-secondary mb-1"
                           htmlFor="note"
                         >
                           Note
@@ -1923,7 +1923,7 @@ function App() {
                           id="note"
                           type="text"
                           placeholder="Add a note (optional)"
-                          className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"
+                          className="w-full px-4 py-2 bg-background border border-border rounded-lg text-text-primary"
                           value={incomeExpenseNote}
                           onChange={(e) => setIncomeExpenseNote(e.target.value)}
                         />
@@ -1932,7 +1932,7 @@ function App() {
                       <div className="flex justify-end">
                         <button
                           type="submit"
-                          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 transition-colors text-white rounded-lg font-medium"
+                          className="px-6 py-2 bg-primary hover:bg-primary-dark transition-colors text-white rounded-lg font-medium"
                         >
                           Add Entry
                         </button>
@@ -1943,28 +1943,28 @@ function App() {
 
                 {/* Income/Expense Table */}
                 <div className="mt-6">
-                  <h4 className="text-white font-medium mb-2">
+                  <h4 className="text-text-primary font-medium mb-2">
                     Income/Expense History
                   </h4>
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-600">
+                    <table className="min-w-full divide-y divide-border">
                       <thead>
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                             Type
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                             Amount
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                             Note
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                          <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                             Actions
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-600">
+                      <tbody className="divide-y divide-border">
                         {incomeExpenseLoading ? (
                           <tr>
                             <td colSpan="4" className="text-center py-6">
@@ -1980,18 +1980,18 @@ function App() {
                               ] || []
                             ).map((entry) => (
                               <tr key={entry[`${type}_id`]}>
-                                <td className="px-4 py-3 text-sm text-gray-300">
+                                <td className="px-4 py-3 text-sm text-text-secondary">
                                   {type}
                                 </td>
-                                <td className="px-4 py-3 text-sm text-gray-300">
+                                <td className="px-4 py-3 text-sm text-text-secondary">
                                   {entry.amount.toLocaleString()}
                                 </td>
-                                <td className="px-4 py-3 text-sm text-gray-300">
+                                <td className="px-4 py-3 text-sm text-text-secondary">
                                   {entry.note}
                                 </td>
                                 <td className="px-4 py-3 text-sm flex gap-2">
                                   <button
-                                    className="text-yellow-400 hover:text-yellow-500"
+                                    className="text-accent hover:text-primary"
                                     onClick={() => {
                                       setEditEntry(entry); // Set the selected entry
                                       setEditModalVisible(true); // Open the modal
@@ -2021,57 +2021,57 @@ function App() {
               </div>
 
               {/* Payroll Breakdown */}
-              <div className="md:col-span-2 bg-gray-750 rounded-lg p-4 border border-gray-600">
-                <h3 className="text-lg font-medium text-white mb-4 pb-2 border-b border-gray-600">
+              <div className="md:col-span-2 bg-background rounded-lg p-4 border border-border">
+                <h3 className="text-lg font-medium text-text-primary mb-4 pb-2 border-b border-border">
                   Payroll Breakdown
                 </h3>
 
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-600">
+                  <table className="min-w-full divide-y divide-border">
                     <thead>
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                           Description
                         </th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
                           Hours
                         </th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
                           Rate
                         </th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
+                        <th className="px-4 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
                           Amount
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-600">
+                    <tbody className="divide-y divide-border">
                       <tr>
-                        <td className="px-4 py-3 text-sm text-gray-300">
+                        <td className="px-4 py-3 text-sm text-text-secondary">
                           Regular Hours
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-300 text-right">
+                        <td className="px-4 py-3 text-sm text-text-secondary text-right">
                           {payrollResult?.totalHours || 0}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-300 text-right">
+                        <td className="px-4 py-3 text-sm text-text-secondary text-right">
                           {payrollResult?.monthlyWorkHours || 0}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-300 text-right">
+                        <td className="px-4 py-3 text-sm text-text-secondary text-right">
                           {payrollResult?.payrollSalary?.toLocaleString() ||
                             "N/A"}
                         </td>
                       </tr>
                       {payrollResult?.overtimeHours > 0 && (
                         <tr>
-                          <td className="px-4 py-3 text-sm text-gray-300">
+                          <td className="px-4 py-3 text-sm text-text-secondary">
                             Overtime Hours
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-300 text-right">
+                          <td className="px-4 py-3 text-sm text-text-secondary text-right">
                             {payrollResult.overtimeHours}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-300 text-right">
+                          <td className="px-4 py-3 text-sm text-text-secondary text-right">
                             {selectedEmployee.OVERTIME_RATE}/hr
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-300 text-right">
+                          <td className="px-4 py-3 text-sm text-text-secondary text-right">
                             {payrollResult.overtimeSalary
                               ? payrollResult.overtimeSalary
                               : "N/A"}
@@ -2079,31 +2079,31 @@ function App() {
                         </tr>
                       )}
                       <tr>
-                        <td className="px-4 py-3 text-sm text-gray-300">
+                        <td className="px-4 py-3 text-sm text-text-secondary">
                           EPF Deduction (8%)
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-300 text-right">
+                        <td className="px-4 py-3 text-sm text-text-secondary text-right">
                           -
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-300 text-right">
+                        <td className="px-4 py-3 text-sm text-text-secondary text-right">
                           -
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-300 text-right">
+                        <td className="px-4 py-3 text-sm text-text-secondary text-right">
                           -
                           {payrollResult?.employeeEpfDeduction
                             ? payrollResult.employeeEpfDeduction
                             : "N/A"}
                         </td>
                       </tr>
-                      <tr className="bg-gray-700">
-                        <td className="px-4 py-3 text-sm font-bold text-white">
+                      <tr className="bg-accent/20">
+                        <td className="px-4 py-3 text-sm font-bold text-text-primary">
                           Total
                         </td>
-                        <td className="px-4 py-3 text-sm font-bold text-white text-right">
+                        <td className="px-4 py-3 text-sm font-bold text-text-primary text-right">
                           {payrollResult?.totalHours || 0}
                         </td>
                         <td className="px-4 py-3"></td>
-                        <td className="px-4 py-3 text-sm font-bold text-white text-right">
+                        <td className="px-4 py-3 text-sm font-bold text-text-primary text-right">
                           {calculateTotalWithIncomeExpense(
                             selectedEmployee.employeeId,
                             payrollResult.totalMonthlySalary
@@ -2114,11 +2114,11 @@ function App() {
                   </table>
                 </div>
 
-                <div className="mt-6 p-4 bg-gray-700 rounded-lg">
-                  <h4 className="font-medium text-white mb-2">
+                <div className="mt-6 p-4 bg-surface rounded-lg">
+                  <h4 className="font-medium text-text-primary mb-2">
                     Payment Summary for {currentMonthName} {currentYear}
                   </h4>
-                  <p className="text-sm text-gray-300">
+                  <p className="text-sm text-text-secondary">
                     {selectedEmployee.name} worked {payrollResult.totalHours}{" "}
                     hours in {currentMonthName} {currentYear} out of the total{" "}
                     {payrollResult.monthlyWorkHours} hours.
@@ -2132,13 +2132,13 @@ function App() {
                         } hours less than the total hours.`
                       : ` The employee worked exactly the total hours.`}
                   </p>
-                  <p className="text-sm text-gray-300 mt-2">
+                  <p className="text-sm text-text-secondary mt-2">
                     The regular salary is calculated as a percentage (
                     {payrollResult.percentage}%) of the monthly salary (
                     {payrollResult.monthlySalary}). This calculation follows the
                     formula: (monthlySalary / 100) * percentage.
                   </p>
-                  <p className="text-sm text-gray-300 mt-2">
+                  <p className="text-sm text-text-secondary mt-2">
                     <strong>EPF/ETF Breakdown:</strong>
                     <br />- Employee EPF Deduction (8%):{" "}
                     {payrollResult.employeeEpfDeduction.toLocaleString()}/=
@@ -2147,7 +2147,7 @@ function App() {
                     <br />- Company ETF Contribution (3%):{" "}
                     {payrollResult.companyEtfContribution.toLocaleString()}/=
                   </p>
-                  <p className="text-sm text-gray-300 mt-2">
+                  <p className="text-sm text-text-secondary mt-2">
                     <strong>Expenses and Income Breakdown:</strong>
                     <br />- Total Income:{" "}
                     {Array.isArray(
@@ -2168,7 +2168,7 @@ function App() {
                       : 0}
                     /=
                   </p>
-                  <p className="text-sm text-gray-300 mt-2">
+                  <p className="text-sm text-text-secondary mt-2">
                     <strong>Total Expense for the Company:</strong>{" "}
                     {(
                       calculateTotalWithIncomeExpense(
@@ -2186,8 +2186,8 @@ function App() {
             </div>
           </div>
         ) : (
-          <div className="bg-gray-800 rounded-lg border border-gray-700 p-8 text-center">
-            <p className="text-gray-400">
+          <div className="bg-surface rounded-lg border border-border p-8 text-center">
+            <p className="text-text-secondary">
               Select an employee from the table above to view payroll
               calculation.
             </p>
@@ -2196,10 +2196,10 @@ function App() {
         {/* PDF Preview Modal */}
         {showPDFPreview && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-lg p-4 w-full max-w-4xl">
+            <div className="bg-surface rounded-lg shadow-lg p-4 w-full max-w-4xl">
               <button
                 onClick={() => setShowPDFPreview(false)}
-                className="absolute top-4 right-4 bg-red-600 text-white px-3 py-1 rounded"
+                className="absolute top-4 right-4 bg-accent text-text-primary px-3 py-1 rounded"
               >
                 Close
               </button>
@@ -2215,8 +2215,8 @@ function App() {
         {/* Email Form Modal */}
         {showEmailForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 rounded-lg border border-gray-700 p-6 w-full max-w-lg">
-              <h2 className="text-xl font-bold text-white mb-4">
+            <div className="bg-surface rounded-lg border border-border p-6 w-full max-w-lg">
+              <h2 className="text-xl font-bold text-text-primary mb-4">
                 Send Payroll Details
               </h2>
               <form
@@ -2226,19 +2226,19 @@ function App() {
                 }}
               >
                 <div className="mb-4">
-                  <label className="block text-gray-300 mb-2">To</label>
+                  <label className="block text-text-secondary mb-2">To</label>
                   <input
                     type="email"
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 bg-background border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
                     value={emailDetails.to}
                     readOnly
                   />
                 </div>
                 <div className="mb-4">
-                  <label className="block text-gray-300 mb-2">Subject</label>
+                  <label className="block text-text-secondary mb-2">Subject</label>
                   <input
                     type="text"
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 bg-background border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
                     value={emailDetails.subject}
                     onChange={(e) =>
                       setEmailDetails((prev) => ({
@@ -2249,9 +2249,9 @@ function App() {
                   />
                 </div>
                 <div className="mb-4">
-                  <label className="block text-gray-300 mb-2">Message</label>
+                  <label className="block text-text-secondary mb-2">Message</label>
                   <textarea
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 bg-background border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
                     rows="4"
                     value={emailDetails.message}
                     onChange={(e) =>
@@ -2263,10 +2263,10 @@ function App() {
                   ></textarea>
                 </div>
                 <div className="mb-4">
-                  <label className="block text-gray-300 mb-2">Attachment</label>
+                  <label className="block text-text-secondary mb-2">Attachment</label>
                   <input
                     type="file"
-                    className="w-full text-gray-300"
+                    className="w-full text-text-secondary"
                     onChange={(e) =>
                       setEmailDetails((prev) => ({
                         ...prev,
@@ -2278,14 +2278,14 @@ function App() {
                 <div className="flex justify-end gap-3">
                   <button
                     type="button"
-                    className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg"
+                    className="px-4 py-2 bg-secondary hover:bg-accent text-white rounded-lg"
                     onClick={() => setShowEmailForm(false)}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2"
+                    className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg flex items-center gap-2"
                     disabled={isSending}
                   >
                     {isSending ? <DotSpinner /> : "Send"}

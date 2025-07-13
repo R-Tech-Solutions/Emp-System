@@ -34,21 +34,30 @@ const CustomerAccounts = () => {
       if ((inv.paymentMethod === 'customer_account' || inv.paymentMethod === 'cash' || inv.paymentMethod === 'card') && 
           inv.customer && inv.customer.length > 0) {
         const cust = inv.customer[0];
-        if (!accounts[cust.customerId]) {
-          accounts[cust.customerId] = {
-            customer: cust,
-            transactions: [],
-            total: 0,
-            paid: 0,
-            pending: 0,
-          };
+        // Ensure customer has required properties
+        if (cust && cust.customerId) {
+          if (!accounts[cust.customerId]) {
+            accounts[cust.customerId] = {
+              customer: {
+                customerId: cust.customerId,
+                customerName: cust.customerName || 'Unknown Customer',
+                customerCompany: cust.customerCompany || '',
+                customerPhone: cust.customerPhone || '',
+                customerEmail: cust.customerEmail || ''
+              },
+              transactions: [],
+              total: 0,
+              paid: 0,
+              pending: 0,
+            };
+          }
+          accounts[cust.customerId].transactions.push(inv);
+          accounts[cust.customerId].total += inv.total || 0;
+          accounts[cust.customerId].paid += inv.amountPaid || 0;
+          // Calculate pending amount for this invoice
+          const invoicePending = (inv.total || 0) - (inv.amountPaid || 0);
+          accounts[cust.customerId].pending += invoicePending;
         }
-        accounts[cust.customerId].transactions.push(inv);
-        accounts[cust.customerId].total += inv.total || 0;
-        accounts[cust.customerId].paid += inv.amountPaid || 0;
-        // Calculate pending amount for this invoice
-        const invoicePending = (inv.total || 0) - (inv.amountPaid || 0);
-        accounts[cust.customerId].pending += invoicePending;
       }
     });
     return Object.values(accounts);
@@ -82,10 +91,10 @@ const CustomerAccounts = () => {
   // Filter and sort customer accounts
   const filteredAndSortedAccounts = useMemo(() => {
     let filtered = customerAccounts.filter(account => 
-      account.customer.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      account.customer.customerCompany?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      account.customer.customerPhone?.includes(searchTerm) ||
-      account.customer.customerEmail?.toLowerCase().includes(searchTerm.toLowerCase())
+      (account.customer.customerName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (account.customer.customerCompany?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (account.customer.customerPhone || '').includes(searchTerm) ||
+      (account.customer.customerEmail?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     );
 
     filtered.sort((a, b) => {
@@ -93,24 +102,24 @@ const CustomerAccounts = () => {
       
       switch (sortBy) {
         case 'customerName':
-          aValue = a.customer.customerName;
-          bValue = b.customer.customerName;
+          aValue = a.customer.customerName || '';
+          bValue = b.customer.customerName || '';
           break;
         case 'total':
-          aValue = a.total;
-          bValue = b.total;
+          aValue = a.total || 0;
+          bValue = b.total || 0;
           break;
         case 'pending':
-          aValue = a.pending;
-          bValue = b.pending;
+          aValue = a.pending || 0;
+          bValue = b.pending || 0;
           break;
         case 'paid':
-          aValue = a.paid;
-          bValue = b.paid;
+          aValue = a.paid || 0;
+          bValue = b.paid || 0;
           break;
         default:
-          aValue = a.customer.customerName;
-          bValue = b.customer.customerName;
+          aValue = a.customer.customerName || '';
+          bValue = b.customer.customerName || '';
       }
 
       if (sortOrder === 'asc') {
@@ -403,12 +412,12 @@ const CustomerAccounts = () => {
                             <div className="flex-shrink-0 h-10 w-10">
                               <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
                                 <span className="text-white font-semibold text-sm">
-                                  {customer.customerName.charAt(0).toUpperCase()}
+                                  {(customer.customerName || 'C').charAt(0).toUpperCase()}
                                 </span>
                               </div>
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{customer.customerName}</div>
+                              <div className="text-sm font-medium text-gray-900">{customer.customerName || 'Unknown Customer'}</div>
                               <div className="text-sm text-gray-500">
                                 {customer.customerCompany && `🏢 ${customer.customerCompany}`}
                               </div>
@@ -500,7 +509,7 @@ const CustomerAccounts = () => {
             <h2 className="text-xl font-semibold mb-4">Pay Outstanding Balance</h2>
             <div className="mb-4">
               <div className="font-medium text-gray-700 mb-2">Customer:</div>
-              <div className="text-lg text-purple-800 font-bold">{payModal.customer.customerName}</div>
+              <div className="text-lg text-purple-800 font-bold">{payModal.customer.customerName || 'Unknown Customer'}</div>
               <div className="text-sm text-gray-600">ID: {payModal.customer.customerId}</div>
             </div>
             <div className="mb-4">
@@ -534,7 +543,7 @@ const CustomerAccounts = () => {
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">Customer Account Details</h2>
                 <p className="text-sm text-gray-600 mt-1">
-                  {detailModal.customer.customerName} - ID: {detailModal.customer.customerId}
+                  {detailModal.customer.customerName || 'Unknown Customer'} - ID: {detailModal.customer.customerId}
                 </p>
               </div>
               <button

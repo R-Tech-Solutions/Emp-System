@@ -2,45 +2,42 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
-import { useTheme } from "./contexts/ThemeContext.jsx";
 import {
-  MenuIcon,
-  XIcon,
-  LogoutIcon,
-  MoonIcon,
-  SunIcon,
-} from "./icons.jsx";
-
-import {
-  Home,
-  Building2,
-  User,
-  Users,
-  ListChecks,
+  Menu,
+  X,
+  LogOut,
+  Search,
+  Bell,
+  HelpCircle,
+  Keyboard,
+  Star,
   Clock,
-  CalendarCheck2,
+  Settings,
+  User,
+  Receipt,
+  ChevronDown,
+  Zap,
+  Home,
+  Building,
+  Users,
+  ClipboardList,
+  Calendar,
   Wallet,
   MessageCircle,
   BarChart2,
-  FileSignature,
+  FileText,
   ShoppingCart,
   Boxes,
   Truck,
   BookOpen,
-  Receipt,
   DollarSign,
-  ChevronDown,
-  Settings,
   TrendingUp,
-  Activity,
-  Zap,
-  Clock as ClockIcon
+  Activity
 } from "lucide-react";
 
 import { logout, getUserData, hasPermission } from './utils/auth';
 
 function Sidebar() {
-  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openSections, setOpenSections] = useState({
@@ -53,6 +50,7 @@ function Sidebar() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const location = useLocation();
 
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -96,15 +94,17 @@ function Sidebar() {
       path: "/dashboard",
       icon: <Home className="w-5 h-5" />,
       description: "Overview and analytics",
-      badge: "New"
+      badge: "New",
+      shortcut: "Ctrl+D"
     },
     { type: "header", name: "Human Resource", section: "hrm" },
     {
       name: "Sections",
       path: "/sections",
-      icon: <Building2 className="w-5 h-5" />,
+      icon: <Building className="w-5 h-5" />,
       section: "hrm",
-      description: "Department management"
+      description: "Department management",
+      shortcut: "Ctrl+S"
     },
     {
       name: "Employees",
@@ -112,41 +112,47 @@ function Sidebar() {
       icon: <Users className="w-5 h-5" />,
       section: "hrm",
       description: "Employee directory",
+      shortcut: "Ctrl+E"
     },
     {
       name: "Tasks",
       path: "/tasks",
-      icon: <ListChecks className="w-5 h-5" />,
+      icon: <ClipboardList className="w-5 h-5" />,
       section: "hrm",
       description: "Task management",
+      shortcut: "Ctrl+T"
     },
     {
       name: "Timesheets",
       path: "/timesheets",
       icon: <Clock className="w-5 h-5" />,
       section: "hrm",
-      description: "Time tracking"
+      description: "Time tracking",
+      shortcut: "Ctrl+H"
     },
     {
       name: "Attendance",
       path: "/attendance",
       icon: <Activity className="w-5 h-5" />,
       section: "hrm",
-      description: "Attendance tracking"
+      description: "Attendance tracking",
+      shortcut: "Ctrl+A"
     },
     {
       name: "Leave Requests",
       path: "/leave-requests",
-      icon: <CalendarCheck2 className="w-5 h-5" />,
+      icon: <Calendar className="w-5 h-5" />,
       section: "hrm",
       description: "Leave management",
+      shortcut: "Ctrl+L"
     },
     {
       name: "Payroll",
       path: "/payroll",
       icon: <Wallet className="w-5 h-5" />,
       section: "hrm",
-      description: "Salary processing"
+      description: "Salary processing",
+      shortcut: "Ctrl+P"
     },
     {
       name: "Messages",
@@ -154,27 +160,31 @@ function Sidebar() {
       icon: <MessageCircle className="w-5 h-5" />,
       section: "hrm",
       description: "Internal messaging",
+      shortcut: "Ctrl+M"
     },
     {
       name: "Assets",
       path: "/assets",
       icon: <Boxes className="w-5 h-5" />,
       section: "hrm",
-      description: "Asset management"
+      description: "Asset management",
+      shortcut: "Ctrl+B"
     },
     {
       name: "Reports",
       path: "/reports",
       icon: <BarChart2 className="w-5 h-5" />,
       section: "hrm",
-      description: "HR analytics"
+      description: "HR analytics",
+      shortcut: "Ctrl+R"
     },
 
     {
       name: "Sales Overview",
       path: "/salesdashboard",
       icon: <TrendingUp className="w-5 h-5" />,
-      description: "Sales performance"
+      description: "Sales performance",
+      shortcut: "Ctrl+O"
     },
     { type: "header", name: "Sales & Inventory", section: "sales" },
     {
@@ -182,77 +192,88 @@ function Sidebar() {
       path: "/crm",
       icon: <Users className="w-5 h-5" />,
       section: "sales",
-      description: "Customer management"
+      description: "Customer management",
+      shortcut: "Ctrl+C"
     },
     {
       name: "Products",
       path: "/products",
       icon: <Boxes className="w-5 h-5" />,
       section: "sales",
-      description: "Product catalog"
+      description: "Product catalog",
+      shortcut: "Ctrl+Q"
     },
     {
       name: "Quotation",
       path: "/quatation",
-      icon: <FileSignature className="w-5 h-5" />,
+      icon: <FileText className="w-5 h-5" />,
       section: "sales",
-      description: "Quote generation"
+      description: "Quote generation",
+      shortcut: "Ctrl+U"
     },
     {
       name: "Purchase",
       path: "/purchase",
       icon: <ShoppingCart className="w-5 h-5" />,
       section: "sales",
-      description: "Purchase orders"
+      description: "Purchase orders",
+      shortcut: "Ctrl+G"
     },
     {
       name: "Inventory",
       path: "/inventory",
       icon: <Boxes className="w-5 h-5" />,
       section: "sales",
-      description: "Stock management"
+      description: "Stock management",
+      shortcut: "Ctrl+I"
     },
     {
       name: "Supplier",
       path: "/supplier",
       icon: <Truck className="w-5 h-5" />,
       section: "sales",
-      description: "Supplier directory"
+      description: "Supplier directory",
+      shortcut: "Ctrl+Y"
     },
     {
       name: "Cashbook",
       path: "/cashbook",
       icon: <BookOpen className="w-5 h-5" />,
       section: "sales",
-      description: "Financial records"
+      description: "Financial records",
+      shortcut: "Ctrl+K"
     },
     {
       name: "Income",
       path: "/income",
       icon: <DollarSign className="w-5 h-5" />,
       section: "sales",
-      description: "Income tracking"
+      description: "Income tracking",
+      shortcut: "Ctrl+N"
     },
     {
       name: "Sales Report",
       path: "/sales-report",
       icon: <BarChart2 className="w-5 h-5" />,
       section: "sales",
-      description: "Sales analytics"
+      description: "Sales analytics",
+      shortcut: "Ctrl+F"
     },
     {
       name: "RETURN",
       path: "/return-dashboard",
       icon: <BarChart2 className="w-5 h-5" />,
       section: "sales",
-      description: "Manage return dashboard"
+      description: "Manage return dashboard",
+      shortcut: "Ctrl+W"
     },
     {
       name: "CUSTOMER",
       path: "/customerAccounts",
       icon: <BarChart2 className="w-5 h-5" />,
       section: "sales",
-      description: "Manage customer accounts"
+      description: "Manage customer accounts",
+      shortcut: "Ctrl+X"
     },
   ];
 
@@ -264,6 +285,7 @@ function Sidebar() {
         setShowNotifications(false);
         setShowHelp(false);
         setShowShortcuts(false);
+        setSearchQuery("");
       }
 
       // Shift shortcuts
@@ -310,6 +332,9 @@ function Sidebar() {
           case 't':
             navigate('/tasks');
             break;
+          case 'd':
+            navigate('/dashboard');
+            break;
         }
       }
     };
@@ -321,10 +346,10 @@ function Sidebar() {
   return (
     <>
       <button
-        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-surface text-text-primary shadow-md border border-border"
+        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-surface text-text-primary shadow-md border border-border hover:bg-primary-light transition-colors"
         onClick={toggleMobileMenu}
       >
-        {isMobileMenuOpen ? <XIcon className="w-5 h-5" /> : <MenuIcon className="w-5 h-5" />}
+        {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </button>
 
       {/* Mobile Sidebar Overlay */}
@@ -340,8 +365,6 @@ function Sidebar() {
       >
         <SidebarContent
           navItems={navItems}
-          toggleTheme={toggleTheme}
-          theme={theme}
           openSections={openSections}
           toggleSection={toggleSection}
           recentPages={recentPages}
@@ -350,6 +373,8 @@ function Sidebar() {
           showNotifications={showNotifications}
           showHelp={showHelp}
           showShortcuts={showShortcuts}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
         />
       </div>
     </>
@@ -358,8 +383,6 @@ function Sidebar() {
 
 function SidebarContent({
   navItems,
-  toggleTheme,
-  theme,
   openSections,
   toggleSection,
   recentPages,
@@ -367,9 +390,12 @@ function SidebarContent({
   setFavorites,
   showNotifications,
   showHelp,
-  showShortcuts
+  showShortcuts,
+  searchQuery,
+  setSearchQuery
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const userData = getUserData();
   const userEmail = userData?.email || sessionStorage.getItem("email") || "admin@example.com";
 
@@ -390,7 +416,7 @@ function SidebarContent({
     );
   };
 
-  // Filter navigation items based on user permissions
+  // Filter navigation items based on user permissions and search
   const filteredNavItems = navItems.filter(item => {
     if (userData?.role === "admin" || userData?.role === "super-admin") return true;
 
@@ -429,9 +455,17 @@ function SidebarContent({
     return hasPermission(requiredPermission);
   });
 
+  // Filter by search query
+  const searchFilteredItems = filteredNavItems.filter(item => {
+    if (item.type === "header") return true;
+    if (!searchQuery) return true;
+    return item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           item.description?.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
   // Group items by section
   const groupedItems = {};
-  filteredNavItems.forEach(item => {
+  searchFilteredItems.forEach(item => {
     if (item.type === "header") {
       if (item.section) {
         groupedItems[item.section] = {
@@ -464,19 +498,43 @@ function SidebarContent({
   return (
     <>
       {/* Header with Search */}
-      <div className="p-4 border-b border-border">
+      <div className="p-4 border-b border-border bg-gradient-to-br from-primary-light via-surface to-accent/20">
         <div className="flex items-center gap-3 mb-4">
-          <img
-            src="/images/logo1.jpg"
-            className="w-10 h-10 rounded-full border-2 border-primary object-cover"
-            alt="Avatar"
-          />
+          <div className="relative">
+            <img
+              src="/images/logo1.jpg"
+              className="w-12 h-12 rounded-full border-2 border-primary object-cover shadow-lg hover:shadow-xl transition-shadow duration-300"
+              alt="Avatar"
+            />
+            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full animate-pulse"></div>
+          </div>
           <div className="flex-1">
             <p className="font-semibold text-text-primary text-sm">Welcome back!</p>
             <p className="text-text-secondary text-xs truncate">{userEmail}</p>
           </div>
         </div>
+        
+        {/* Search Bar */}
+        <div className="relative group">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-secondary group-focus-within:text-primary transition-colors" />
+          <input
+            type="text"
+            placeholder="Search menu... (Ctrl+K)"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 text-sm bg-white border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:border-primary/50"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-secondary hover:text-primary transition-colors"
+            >
+              ×
+            </button>
+          )}
+        </div>
       </div>
+
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto px-2 py-4 scrollbar-thin scrollbar-thumb-border">
         {finalItems.map((item) => {
@@ -486,11 +544,11 @@ function SidebarContent({
                 <div
                   key={item.name}
                   onClick={() => toggleSection(item.section)}
-                  className="flex items-center justify-between px-4 py-3 mt-4 mb-2 text-xs font-semibold text-text-secondary uppercase tracking-wider cursor-pointer hover:bg-surface rounded-lg transition-colors"
+                  className="flex items-center justify-between px-4 py-3 mt-4 mb-2 text-xs font-semibold text-text-secondary uppercase tracking-wider cursor-pointer hover:bg-primary-light rounded-lg transition-all duration-200 group"
                 >
-                  <span>{item.name}</span>
+                  <span className="group-hover:text-primary transition-colors">{item.name}</span>
                   <ChevronDown
-                    className={`w-4 h-4 transition-transform duration-200 ${openSections[item.section] ? "transform rotate-180" : ""}`}
+                    className={`w-4 h-4 transition-transform duration-200 group-hover:text-primary ${openSections[item.section] ? "transform rotate-180" : ""}`}
                   />
                 </div>
               );
@@ -514,66 +572,80 @@ function SidebarContent({
               <NavLink
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex items-center px-4 py-3 mb-1 text-sm font-medium rounded-lg transition-all duration-200 relative ${isActive
-                    ? "bg-primary-light text-primary shadow-sm"
-                    : "text-text-secondary hover:bg-surface"
+                  `flex items-center px-4 py-3 mb-1 text-sm font-medium rounded-lg transition-all duration-300 relative group/item hover:shadow-md ${isActive
+                    ? "bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg transform scale-[1.02] border-l-4 border-accent"
+                    : "text-text-secondary hover:bg-gradient-to-r hover:from-primary-light hover:to-accent/20 hover:text-primary hover:border-l-4 hover:border-primary/30"
                   }`
                 }
               >
                 <div className="flex items-center flex-1">
-                  {item.icon}
+                  <div className={`${location.pathname === item.path ? "text-white" : "text-primary"} transition-colors duration-200`}>
+                    {item.icon}
+                  </div>
                   <div className="ml-3 flex-1">
                     <div className="flex items-center gap-2">
-                      <span>{item.name}</span>
+                      <span className="font-medium">{item.name}</span>
                       {item.badge && (
-                        <span className="px-2 py-0.5 text-xs bg-red-100 text-red-600 rounded-full">New</span>
+                        <span className="px-2 py-0.5 text-xs bg-red-100 text-red-600 rounded-full animate-pulse font-semibold">New</span>
                       )}
                       {item.count && (
-                        <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full">{item.count}</span>
+                        <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full font-medium">{item.count}</span>
                       )}
                       {item.section === "quickActions" && (
-                        <Zap className="w-3 h-3 text-yellow-500" />
+                        <Zap className="w-3 h-3 text-yellow-500 animate-pulse" />
                       )}
                     </div>
                     {item.description && (
-                      <p className="text-xs text-text-secondary mt-0.5">{item.description}</p>
+                      <p className="text-xs text-text-secondary mt-0.5 opacity-75">{item.description}</p>
                     )}
                   </div>
                 </div>
 
                 {/* Action buttons */}
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-all duration-200 transform translate-x-2 group-hover/item:translate-x-0">
                   {item.shortcut && (
-                    <span className="text-xs text-text-secondary bg-surface px-1.5 py-0.5 rounded">
+                    <span className="text-xs text-text-secondary bg-surface px-1.5 py-0.5 rounded border shadow-sm">
                       {item.shortcut}
                     </span>
                   )}
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      toggleFavorite(item.path);
+                    }}
+                    className={`p-1 rounded transition-all duration-200 hover:scale-110 ${isFavorite ? "text-yellow-500" : "text-text-secondary hover:text-yellow-500"}`}
+                    title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                  >
+                    <Star className={`w-3 h-3 ${isFavorite ? "fill-current" : ""}`} />
+                  </button>
                 </div>
               </NavLink>
 
               {/* Recent indicator */}
               {isRecent && (
-                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-blue-500 rounded-r-full"></div>
+                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-blue-500 rounded-r-full animate-pulse"></div>
               )}
             </div>
           );
         })}
       </div>
-      <div className="p-4 border-t border-border">
+
+      {/* Bottom Actions */}
+      <div className="p-4 border-t border-border bg-gradient-to-br from-surface via-primary-light/30 to-accent/10">
         <div className="flex items-center justify-start flex-wrap gap-2">
           {/* Admin-only buttons */}
           {isAdminOrSuperAdmin && (
             <>
               <NavLink
                 to="/user"
-                className="flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+                className="flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 hover:shadow-md hover:scale-105"
                 title="User Management (Admin Only)"
               >
                 <User className="w-4 h-4 mr-1" />
               </NavLink>
               <button
                 onClick={() => navigate('/buisness')}
-                className="flex items-center px-3 py-2 text-sm font-medium text-blue-500 rounded-lg hover:bg-blue-50 transition-colors"
+                className="flex items-center px-3 py-2 text-sm font-medium text-blue-500 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 hover:shadow-md hover:scale-105"
                 title="Business Settings (Admin Only)"
               >
                 <Settings className="w-4 h-4 mr-1" />
@@ -585,7 +657,7 @@ function SidebarContent({
           {hasPermission('my') && (
             <NavLink
               to="/my"
-              className="flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-green-500 hover:bg-green-50 transition-colors"
+              className="flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-green-500 hover:bg-green-50 hover:text-green-700 transition-all duration-200 hover:shadow-md hover:scale-105"
               title="My Settings"
             >
               <User className="w-4 h-4 mr-1" />
@@ -596,7 +668,7 @@ function SidebarContent({
             <div className="relative group">
               <button
                 onClick={() => navigate('/invoice')}
-                className="flex items-center px-3 py-2 text-sm font-medium text-green-500 rounded-lg hover:bg-green-50 transition-colors"
+                className="flex items-center px-3 py-2 text-sm font-medium text-green-500 rounded-lg hover:bg-green-50 hover:text-green-700 transition-all duration-200 hover:shadow-md hover:scale-105"
                 title="Invoice"
               >
                 <Receipt className="w-4 h-4 mr-1" />
@@ -607,15 +679,29 @@ function SidebarContent({
           <div className="relative group">
             <button
               onClick={handleLogout}
-              className="flex items-center px-3 py-2 text-sm font-medium text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+              className="flex items-center px-3 py-2 text-sm font-medium text-red-500 rounded-lg hover:bg-red-50 hover:text-red-700 transition-all duration-200 hover:shadow-md hover:scale-105"
               title="Logout"
             >
-              <LogoutIcon className="w-4 h-4 mr-1" />
+              <LogOut className="w-4 h-4 mr-1" />
             </button>
           </div>
         </div>
-      </div>
 
+        {/* Quick Stats */}
+        <div className="mt-3 pt-3 border-t border-border/50">
+          <div className="flex items-center justify-between text-xs text-text-secondary">
+            <div className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              <span>Recent: {recentPages.length}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Star className="w-3 h-3 text-yellow-500" />
+              <span>Favorites: {favorites.length}</span>
+            </div>
+            <span className="text-primary font-medium bg-primary-light px-2 py-1 rounded-full text-xs">v2.0</span>
+          </div>
+        </div>
+      </div>
     </>
   );
 }

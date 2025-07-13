@@ -11,6 +11,48 @@ const OTP_EXPIRE_SECONDS = 120;
 const TAB_BUSINESS = 'business';
 const TAB_NOTES = 'notes';
 const TAB_DB = 'db';
+const TAB_IMPORT_EXPORT = 'import_export';
+
+const ProgressBar = ({ show, duration = 10, onDone }) => {
+  const [percent, setPercent] = React.useState(0);
+  const [timeLeft, setTimeLeft] = React.useState(duration);
+  React.useEffect(() => {
+    if (!show) {
+      setPercent(0);
+      setTimeLeft(duration);
+      return;
+    }
+    setPercent(0);
+    setTimeLeft(duration);
+    let start = Date.now();
+    let raf;
+    const tick = () => {
+      const elapsed = (Date.now() - start) / 1000;
+      const p = Math.min(100, Math.round((elapsed / duration) * 100));
+      setPercent(p);
+      setTimeLeft(Math.max(0, Math.ceil(duration - elapsed)));
+      if (p < 100) {
+        raf = requestAnimationFrame(tick);
+      } else if (onDone) {
+        onDone();
+      }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => raf && cancelAnimationFrame(raf);
+  }, [show, duration, onDone]);
+  if (!show) return null;
+  return (
+    <div className="w-full mb-3">
+      <div className="w-full h-2 bg-blue-100 rounded overflow-hidden">
+        <div className="h-full bg-blue-500 transition-all" style={{ width: `${percent}%` }}></div>
+      </div>
+      <div className="flex justify-between text-xs mt-1">
+        <span>{percent}%</span>
+        <span>Estimated time: {timeLeft}s</span>
+      </div>
+    </div>
+  );
+};
 
 const BuisnessSettings = () => {
   const [form, setForm] = useState({
@@ -59,6 +101,11 @@ const BuisnessSettings = () => {
   const [activeTab, setActiveTab] = useState(TAB_BUSINESS);
   const [templateUrl, setTemplateUrl] = useState("");
   const [templateLoading, setTemplateLoading] = useState(false);
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [restoreLoading, setRestoreLoading] = useState(false);
+  const [restoreFile, setRestoreFile] = useState(null);
+  const [restoreMsg, setRestoreMsg] = useState("");
+  const [deleteProgress, setDeleteProgress] = useState(false);
 
   useEffect(() => {
     // Fetch settings from backend
@@ -415,22 +462,25 @@ const BuisnessSettings = () => {
           className={`flex-1 py-3 text-lg font-semibold flex items-center justify-center gap-2 transition border-b-2 ${activeTab === TAB_BUSINESS ? 'text-primary border-primary' : 'text-text-secondary border-transparent hover:text-primary'}`}
           onClick={() => setActiveTab(TAB_BUSINESS)}
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2a4 4 0 014-4h6M9 17H7a2 2 0 01-2-2V7a2 2 0 012-2h10a2 2 0 012 2v4" /></svg>
           Business Info
         </button>
         <button
           className={`flex-1 py-3 text-lg font-semibold flex items-center justify-center gap-2 transition border-b-2 ${activeTab === TAB_NOTES ? 'text-primary border-primary' : 'text-text-secondary border-transparent hover:text-primary'}`}
           onClick={() => setActiveTab(TAB_NOTES)}
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 17l4 4 4-4m0-5V3a1 1 0 00-1-1H9a1 1 0 00-1 1v9m12 4a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        > 
           Notes & Terms
         </button>
         <button
           className={`flex-1 py-3 text-lg font-semibold flex items-center justify-center gap-2 transition border-b-2 ${activeTab === TAB_DB ? 'text-primary border-primary' : 'text-text-secondary border-transparent hover:text-primary'}`}
           onClick={() => setActiveTab(TAB_DB)}
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
           Database Management
+        </button>
+        <button
+          className={`flex-1 py-3 text-lg font-semibold flex items-center justify-center gap-2 transition border-b-2 ${activeTab === TAB_IMPORT_EXPORT ? 'text-primary border-primary' : 'text-text-secondary border-transparent hover:text-primary'}`}
+          onClick={() => setActiveTab(TAB_IMPORT_EXPORT)}
+        >
+          Import/Export
         </button>
       </div>
       {/* Tab Panels */}
@@ -717,6 +767,7 @@ const BuisnessSettings = () => {
       {/* Database Management Tab */}
       {activeTab === TAB_DB && (
         <div className="animate-fade-in">
+          {/* Database Delete Section */}
           <div className="mt-8 p-8 bg-red-50 border border-red-200 rounded-2xl shadow-lg relative z-10">
             <h3 className="text-xl font-bold text-red-800 mb-4 flex items-center gap-2">
               <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -726,9 +777,14 @@ const BuisnessSettings = () => {
               This action will permanently delete all operational data (employees, tasks, invoices, products, etc.) 
               while preserving business settings. This action cannot be undone.
             </p>
+            <ProgressBar show={clearDbLoading || deleteProgress} duration={5} />
             <button
               type="button"
-              onClick={openDeleteModal}
+              onClick={async () => {
+                setDeleteProgress(true);
+                setTimeout(() => setDeleteProgress(false), 5000);
+                openDeleteModal();
+              }}
               disabled={!isSuperAdmin}
               className="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold shadow-lg shadow-red-600/10"
             >
@@ -746,6 +802,140 @@ const BuisnessSettings = () => {
                 View Deletion Audit Log
               </button>
             )}
+          </div>
+
+          {/* Backup & Restore Section */}
+          <div className="mt-10 p-8 bg-white border border-blue-200 rounded-2xl shadow-lg relative z-10">
+            <h3 className="text-xl font-bold text-blue-800 mb-4 flex items-center gap-2">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6 1a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              Backup & Restore Database
+            </h3>
+            {/* Backup Section */}
+            <div className="mb-8">
+              <ProgressBar show={backupLoading} duration={10} />
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-semibold text-blue-700">Create a new backup of your database</span>
+                <button
+                  type="button"
+                  className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition font-semibold shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={backupLoading}
+                  onClick={async () => {
+                    setBackupLoading(true);
+                    setRestoreMsg("");
+                    await new Promise(res => setTimeout(res, 10000));
+                    try {
+                      const response = await axios.post(`${backEndURL}/api/business-settings/backup`, {}, { responseType: 'blob' });
+                      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/zip' }));
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.setAttribute('download', 'Backup.zip');
+                      document.body.appendChild(link);
+                      link.click();
+                      link.parentNode.removeChild(link);
+                    } catch (err) {
+                      setRestoreMsg('Backup failed.');
+                    } finally {
+                      setBackupLoading(false);
+                    }
+                  }}
+                >
+                  {backupLoading ? <DotSpinner /> : <><svg className="w-5 h-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg> Create Backup</>}
+                </button>
+              </div>
+              {/* Mocked backup list */}
+              <div className="mt-4 border rounded-lg bg-blue-50 p-3 max-h-40 overflow-y-auto">
+                <div className="text-xs text-blue-900 font-semibold mb-2">Available Backups</div>
+                <div className="text-xs text-gray-400 mt-2">(Backups are downloaded to your computer. No server-side backup list.)</div>
+              </div>
+            </div>
+            {/* Restore Section */}
+            <div className="border-t pt-6 mt-6">
+              <ProgressBar show={restoreLoading} duration={10} />
+              <div className="font-semibold text-blue-700 mb-2">Restore database from a backup file</div>
+              <div className="flex flex-col md:flex-row gap-4 items-center">
+                <input
+                  type="file"
+                  accept=".zip"
+                  className="block file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200"
+                  onChange={e => {
+                    setRestoreFile(e.target.files[0]);
+                    setRestoreMsg("");
+                  }}
+                  disabled={restoreLoading}
+                />
+                <button
+                  type="button"
+                  className="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition font-semibold shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={restoreLoading || !restoreFile}
+                  onClick={async () => {
+                    if (!restoreFile) return;
+                    setRestoreLoading(true);
+                    setRestoreMsg("");
+                    // Wait for fake progress bar
+                    await new Promise(res => setTimeout(res, 10000));
+                    try {
+                      const formData = new FormData();
+                      formData.append('zip', restoreFile);
+                      const response = await axios.post(`${backEndURL}/api/business-settings/restore`, formData, {
+                        headers: { 'Content-Type': 'multipart/form-data' },
+                      });
+                      setRestoreMsg(response.data.success ? 'Restore completed successfully!' : (response.data.message || 'Restore failed.'));
+                    } catch (err) {
+                      setRestoreMsg('Restore failed.');
+                    } finally {
+                      setRestoreLoading(false);
+                      setRestoreFile(null);
+                    }
+                  }}
+                >
+                  {restoreLoading ? <DotSpinner /> : <><svg className="w-5 h-5 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v16h16V4H4zm4 8h8" /></svg> Restore</>}
+                </button>
+              </div>
+              <div className="mt-2 text-xs text-gray-500">Select a backup .zip file to restore your database. This will overwrite existing data in collections present in the backup.</div>
+              {restoreMsg && <div className={`mt-2 text-center font-semibold ${restoreMsg.includes('success') ? 'text-green-600' : 'text-red-600'}`}>{restoreMsg}</div>}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Import/Export Tab */}
+      {activeTab === TAB_IMPORT_EXPORT && (
+        <div className="animate-fade-in">
+          <h2 className="text-3xl font-extrabold mb-8 text-primary flex items-center gap-3 z-10 relative">
+            <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6 1a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            Import / Export Data
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { key: 'employees', label: 'Employees', desc: 'Manage employee data.' },
+              { key: 'tasks', label: 'Tasks', desc: 'Import/export task assignments.' },
+              { key: 'timesheets', label: 'Timesheets', desc: 'Track and manage work hours.' },
+              { key: 'attendance', label: 'Attendance', desc: 'Attendance records for employees.' },
+              { key: 'leave_requests', label: 'Leave Requests', desc: 'Employee leave requests.' },
+              { key: 'payroll', label: 'Payroll', desc: 'Payroll and salary data.' },
+              { key: 'messages', label: 'Messages', desc: 'Internal communication messages.' },
+              { key: 'assets', label: 'Assets', desc: 'Company asset records.' },
+              { key: 'crm', label: 'CRM', desc: 'Customer relationship management.' },
+              { key: 'contacts', label: 'Contacts', desc: 'Business contacts.' },
+              { key: 'products', label: 'Products', desc: 'Product catalog and details.' },
+              { key: 'quotation', label: 'Quotation', desc: 'Sales quotations.' },
+              { key: 'purchase', label: 'Purchase', desc: 'Purchase records.' },
+              { key: 'inventory', label: 'Inventory', desc: 'Inventory management.' },
+              { key: 'supplier', label: 'Supplier', desc: 'Supplier information.' },
+              { key: 'return', label: 'Return', desc: 'Product returns.' },
+              { key: 'customer_accounts', label: 'Customer Accounts', desc: 'Customer account details.' },
+            ].map((item) => (
+              <div key={item.key} className="bg-white border border-border rounded-2xl shadow-lg p-6 flex flex-col gap-4">
+                <div className="flex items-center gap-3">
+                  <svg className="w-7 h-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6 1a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <span className="text-xl font-bold text-primary">{item.label}</span>
+                </div>
+                <div className="text-text-secondary text-sm mb-2">{item.desc}</div>
+                <div className="flex gap-3 mt-auto">
+                  <button className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition font-semibold shadow disabled:opacity-50 disabled:cursor-not-allowed" disabled>Import</button>
+                  <button className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold shadow disabled:opacity-50 disabled:cursor-not-allowed" disabled>Export</button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
