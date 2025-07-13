@@ -5,6 +5,7 @@ import axios from "axios"
 import DotSpinner from "../loaders/Loader"
 import AdvanceA4Invoice from "./Invoice/AdvanceA4invoice"
 import AdvanceThermalInvoice from "./Invoice/Advancethermalinvoice"
+import { LogOut } from "lucide-react"
 
 
 const printStyles = `
@@ -2685,6 +2686,14 @@ const EnhancedBillingPOSSystem = () => {
     }
   }, [activeMainTab]);
 
+  // Detect invoice-only mode
+  const hostname = window.location.hostname;
+  const port = window.location.port;
+  const isInvoiceOnly =
+    hostname.startsWith("in.") ||
+    hostname === "in.erp.rtechsl.lk" ||
+    port === "3002";
+
   if (isLoading) {
     return (
       <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
@@ -2697,28 +2706,41 @@ const EnhancedBillingPOSSystem = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Close button */}
+      {/* Top-right Close/Logout button */}
       <div className="fixed top-4 right-4 z-50">
-        <button
-          onClick={() => navigate('/')}
-          className="p-2 rounded-full bg-white shadow-lg hover:bg-gray-100 transition-colors duration-200"
-          title="Close and return to dashboard"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6 text-gray-600"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+        {isInvoiceOnly ? (
+          <button
+            onClick={() => {
+              sessionStorage.clear();
+              window.location.href = "/login";
+            }}
+            className="p-2 rounded-full bg-white shadow-lg hover:bg-gray-100 transition-colors duration-200"
+            title="Logout"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
+            <LogOut className="h-6 w-6 text-red-600" />
+          </button>
+        ) : (
+          <button
+            onClick={() => navigate('/')}
+            className="p-2 rounded-full bg-white shadow-lg hover:bg-gray-100 transition-colors duration-200"
+            title="Close and return to dashboard"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 text-gray-600"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        )}
       </div>
       {/* Optimized Toast Notification */}
       <OptimizedToast message={toast.message} type={toast.type} isVisible={toast.isVisible} onClose={hideToast} />

@@ -92,7 +92,17 @@ export default function AdvancedLogin() {
             sessionStorage.setItem("jwtToken", adminResult.token);
             sessionStorage.setItem("userData", JSON.stringify(adminResult.user));
             setTimeout(() => {
-              navigate("/user");
+              const hostname = window.location.hostname;
+              const port = window.location.port;
+              const isInvoiceOnly =
+                hostname.startsWith("in.") ||
+                hostname === "in.erp.rtechsl.lk" ||
+                port === "3002";
+              if (isInvoiceOnly) {
+                window.location.href = "/invoice";
+              } else {
+                window.location.href = "/user";
+              }
             }, 1000);
             return;
           } else {
@@ -125,7 +135,17 @@ export default function AdvancedLogin() {
         sessionStorage.setItem("jwtToken", result.token);
         sessionStorage.setItem("userData", JSON.stringify(result.user));
         setTimeout(() => {
-          navigate("/dashboard");
+          const hostname = window.location.hostname;
+          const port = window.location.port;
+          const isInvoiceOnly =
+            hostname.startsWith("in.") ||
+            hostname === "in.erp.rtechsl.lk" ||
+            port === "3002";
+          if (isInvoiceOnly) {
+            window.location.href = "/invoice";
+          } else {
+            window.location.href = "/dashboard";
+          }
         }, 1000);
       } else if (result.user && result.user.status !== "active") {
         setErrors({ form: "Your status is inactive. Please contact support." });
@@ -350,7 +370,7 @@ export default function AdvancedLogin() {
           )}
         </div>
       </div>
-      <style jsx global>{`
+      <style>{`
         @keyframes blob1 {
           0% {
             transform: translate(0px, 0px) scale(1);

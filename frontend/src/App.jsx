@@ -56,13 +56,91 @@ const AdminOnlyRoute = ({ children }) => {
   return <Navigate to="/dashboard" replace />;
 };
 
-function App() {
-  const isLoggedIn = sessionStorage.getItem("isLoggedIn") === "true";
+// Helper to check invoice permission
+function hasInvoicePermission() {
+  const userData = JSON.parse(sessionStorage.getItem("userData") || "{}");
+  if (!userData) return false;
+  if (userData.role === "admin" || userData.role === "super-admin") return true;
+  if (userData.permissions && (userData.permissions.invoice === true || userData.permissions.invoice === 1)) return true;
+  return false;
+}
 
-  // Setup auth interceptor for JWT tokens
+// NoAccess component for users without permission
+function NoAccess() {
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
+      <h1 style={{ color: '#dc2626', fontSize: '2rem', marginBottom: '1rem' }}>🚫 Access Denied</h1>
+      <p style={{ color: '#64748b', fontSize: '1.1rem' }}>You do not have permission to access the Invoice page.<br/>Please contact your administrator if you believe this is a mistake.</p>
+      <a href="/login" style={{ marginTop: '2rem', color: '#2563eb', textDecoration: 'underline' }}>Back to Login</a>
+    </div>
+  );
+}
+
+function App() {
+  // All hooks at the top!
   useEffect(() => {
     setupAuthInterceptor();
   }, []);
+
+  const isLoggedIn = sessionStorage.getItem("isLoggedIn") === "true";
+  const hostname = window.location.hostname;
+  const port = window.location.port;
+  const isInvoiceOnly =
+    hostname.startsWith("in.") ||
+    hostname === "in.erp.rtechsl.lk" ||
+    port === "3002";
+
+  if (isInvoiceOnly) {
+    // Invoice-only mode: only allow login and invoice page
+    return (
+      <Routes>
+        <Route
+          path="/login"
+          element={
+            isLoggedIn && hasInvoicePermission() ? (
+              <Navigate to="/invoice" replace />
+            ) : (
+              <Login />
+            )
+          }
+        />
+        <Route
+          path="/"
+          element={
+            isLoggedIn ? (
+              hasInvoicePermission() ? (
+                <ProtectedRoute>
+                  <Invoice />
+                </ProtectedRoute>
+              ) : (
+                <NoAccess />
+              )
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/invoice"
+          element={
+            isLoggedIn ? (
+              hasInvoicePermission() ? (
+                <ProtectedRoute>
+                  <Invoice />
+                </ProtectedRoute>
+              ) : (
+                <NoAccess />
+              )
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        {/* Fallback: redirect any other route to login */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-text-primary">
