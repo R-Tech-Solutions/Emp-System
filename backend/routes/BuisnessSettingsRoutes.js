@@ -19,4 +19,10 @@ router.post('/upload-template', upload.single('template'), BuisnessSettingsContr
 // Clear all database tables
 router.delete('/clear-all-database', BuisnessSettingsController.clearAllDatabase);
 
+// Backup all collections as Excel in a zip
+router.post('/backup', BuisnessSettingsController.backupAllCollections);
+
+// Restore all collections from zip of Excel files
+router.post('/restore', upload.single('zip'), BuisnessSettingsController.restoreAllCollections);
+
 module.exports = router;

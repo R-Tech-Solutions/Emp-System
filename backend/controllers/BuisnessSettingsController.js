@@ -3,6 +3,11 @@ const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 const { uploadImageToStorage } = require('../utils/storage');
 const { db } = require('../firebaseConfig');
+const ExcelJS = require('exceljs');
+const AdmZip = require('adm-zip');
+const os = require('os');
+const fs = require('fs');
+const path = require('path');
 
 class BuisnessSettingsController {
   static async createOrUpdate(req, res) {
@@ -140,6 +145,89 @@ class BuisnessSettingsController {
       await BuisnessSettings.createOrUpdate({ templateUrl: url });
       res.status(200).json({ success: true, url });
     } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async backupAllCollections(req, res) {
+    try {
+      // Dynamically fetch all collection names
+      const collectionRefs = await db.listCollections();
+      const collections = collectionRefs.map(colRef => colRef.id);
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'backup-'));
+      const excelFiles = [];
+      for (const col of collections) {
+        const snapshot = await db.collection(col).get();
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet(col);
+        let allKeys = new Set();
+        const rows = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          data.__id = doc.id;
+          rows.push(data);
+          Object.keys(data).forEach(k => allKeys.add(k));
+        });
+        allKeys = Array.from(allKeys);
+        sheet.addRow(allKeys);
+        rows.forEach(row => {
+          sheet.addRow(allKeys.map(k => row[k]));
+        });
+        const filePath = path.join(tmpDir, `${col}.xlsx`);
+        await workbook.xlsx.writeFile(filePath);
+        excelFiles.push(filePath);
+      }
+      const zip = new AdmZip();
+      for (const file of excelFiles) {
+        zip.addLocalFile(file);
+      }
+      const zipBuffer = zip.toBuffer();
+      excelFiles.forEach(f => fs.unlinkSync(f));
+      fs.rmdirSync(tmpDir);
+      res.set({
+        'Content-Type': 'application/zip',
+        'Content-Disposition': 'attachment; filename="firestore-backup.zip"',
+      });
+      res.send(zipBuffer);
+    } catch (error) {
+      console.error('Backup error:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async restoreAllCollections(req, res) {
+    try {
+      if (!req.file) return res.status(400).json({ success: false, message: 'No zip file uploaded.' });
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'restore-'));
+      const zipPath = path.join(tmpDir, 'upload.zip');
+      fs.writeFileSync(zipPath, req.file.buffer);
+      const zip = new AdmZip(zipPath);
+      zip.extractAllTo(tmpDir, true);
+      const files = fs.readdirSync(tmpDir).filter(f => f.endsWith('.xlsx'));
+      for (const file of files) {
+        const colName = path.basename(file, '.xlsx');
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.readFile(path.join(tmpDir, file));
+        const sheet = workbook.worksheets[0];
+        if (!sheet) continue;
+        const header = sheet.getRow(1).values.slice(1);
+        for (let i = 2; i <= sheet.rowCount; i++) {
+          const row = sheet.getRow(i).values.slice(1);
+          const doc = {};
+          header.forEach((k, idx) => {
+            doc[k] = row[idx];
+          });
+          const docId = doc.__id;
+          delete doc.__id;
+          if (docId) {
+            await db.collection(colName).doc(docId).set(doc, { merge: true });
+          }
+        }
+      }
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+      res.json({ success: true, message: 'Restore completed.' });
+    } catch (error) {
+      console.error('Restore error:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   }
