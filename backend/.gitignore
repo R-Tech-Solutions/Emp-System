@@ -12,6 +12,7 @@ production
 build
 serviceAccountKey.json
 .env
+credentials.json
 
 misc
 # .DS_Store

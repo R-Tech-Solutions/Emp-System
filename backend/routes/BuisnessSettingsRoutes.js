@@ -25,4 +25,10 @@ router.post('/backup', BuisnessSettingsController.backupAllCollections);
 // Restore all collections from zip of Excel files
 router.post('/restore', upload.single('zip'), BuisnessSettingsController.restoreAllCollections);
 
+// List all backup records
+router.get('/backups', BuisnessSettingsController.getBackups);
+
+// List all deletable collections
+router.get('/collections', BuisnessSettingsController.listDeletableCollections);
+
 module.exports = router;

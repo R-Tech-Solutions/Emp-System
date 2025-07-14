@@ -184,13 +184,49 @@ class BuisnessSettingsController {
       const zipBuffer = zip.toBuffer();
       excelFiles.forEach(f => fs.unlinkSync(f));
       fs.rmdirSync(tmpDir);
+
+      // Upload to Firebase Storage
+      const { storage } = require('../firebaseConfig');
+      const bucket = storage.bucket();
+      const now = new Date();
+      const pad = n => n.toString().padStart(2, '0');
+      const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+      const backupFileName = `backups/backup-${dateStr}.zip`;
+      const file = bucket.file(backupFileName);
+      await file.save(zipBuffer, { contentType: 'application/zip' });
+      await file.makePublic();
+      const url = file.publicUrl();
+
+      // Save backup metadata to Firestore
+      const location = req.body.location || req.query.location || null;
+      const email = req.body.email || null;
+      await db.collection('backups').add({
+        url,
+        createdAt: now.toISOString(),
+        location,
+        fileName: backupFileName,
+        email,
+      });
+
+      // Send zip as download and url in header
       res.set({
         'Content-Type': 'application/zip',
         'Content-Disposition': 'attachment; filename="firestore-backup.zip"',
+        'X-Backup-Url': url,
       });
       res.send(zipBuffer);
     } catch (error) {
       console.error('Backup error:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async getBackups(req, res) {
+    try {
+      const snapshot = await db.collection('backups').orderBy('createdAt', 'desc').get();
+      const backups = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      res.json({ success: true, backups });
+    } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
   }
@@ -204,6 +240,20 @@ class BuisnessSettingsController {
       const zip = new AdmZip(zipPath);
       zip.extractAllTo(tmpDir, true);
       const files = fs.readdirSync(tmpDir).filter(f => f.endsWith('.xlsx'));
+      const collectionsInZip = files.map(file => path.basename(file, '.xlsx'));
+      // Pre-check: If any collection in ZIP exists in Firestore and is not empty, abort
+      const existingCollections = await db.listCollections();
+      const existingMap = {};
+      for (const colRef of existingCollections) {
+        if (collectionsInZip.includes(colRef.id)) {
+          const snap = await db.collection(colRef.id).limit(1).get();
+          if (!snap.empty) {
+            fs.rmSync(tmpDir, { recursive: true, force: true });
+            return res.status(400).json({ success: false, message: `Collection '${colRef.id}' already exists and is not empty. Please empty your database before restoring!` });
+          }
+        }
+      }
+      // Proceed with restore
       for (const file of files) {
         const colName = path.basename(file, '.xlsx');
         const workbook = new ExcelJS.Workbook();
@@ -228,6 +278,17 @@ class BuisnessSettingsController {
       res.json({ success: true, message: 'Restore completed.' });
     } catch (error) {
       console.error('Restore error:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  static async listDeletableCollections(req, res) {
+    try {
+      const exclude = ['backups', 'businessSettings', 'users', 'deletion_audit_log'];
+      const collectionRefs = await db.listCollections();
+      const collections = collectionRefs.map(colRef => colRef.id).filter(name => !exclude.includes(name));
+      res.json({ success: true, collections });
+    } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
   }

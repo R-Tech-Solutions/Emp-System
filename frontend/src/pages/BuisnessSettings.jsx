@@ -5,13 +5,14 @@ import Swal from "sweetalert2";
 import DotSpinner from "../loaders/Loader";
 
 const STORAGE_KEY = "businessSettings";
-const NON_DELETABLE = ["users", "businessSettings", "deletion_audit_log"];
+const NON_DELETABLE = ["users", "businessSettings", "deletion_audit_log", "backups"];
 const OTP_EXPIRE_SECONDS = 120;
 
 const TAB_BUSINESS = 'business';
 const TAB_NOTES = 'notes';
 const TAB_DB = 'db';
 const TAB_IMPORT_EXPORT = 'import_export';
+const TAB_STORAGE_KEY = 'businessSettingsActiveTab';
 
 const ProgressBar = ({ show, duration = 10, onDone }) => {
   const [percent, setPercent] = React.useState(0);
@@ -98,7 +99,7 @@ const BuisnessSettings = () => {
   const [verificationMethod, setVerificationMethod] = useState('sms');
   const [otpTimer, setOtpTimer] = useState(0);
   const [otpInterval, setOtpInterval] = useState(null);
-  const [activeTab, setActiveTab] = useState(TAB_BUSINESS);
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem(TAB_STORAGE_KEY) || TAB_BUSINESS);
   const [templateUrl, setTemplateUrl] = useState("");
   const [templateLoading, setTemplateLoading] = useState(false);
   const [backupLoading, setBackupLoading] = useState(false);
@@ -106,6 +107,7 @@ const BuisnessSettings = () => {
   const [restoreFile, setRestoreFile] = useState(null);
   const [restoreMsg, setRestoreMsg] = useState("");
   const [deleteProgress, setDeleteProgress] = useState(false);
+  const [backups, setBackups] = useState([]);
 
   useEffect(() => {
     // Fetch settings from backend
@@ -139,6 +141,17 @@ const BuisnessSettings = () => {
       if (otpInterval) clearInterval(otpInterval);
     };
   }, []);
+
+  useEffect(() => {
+    if (activeTab === TAB_DB) {
+      // Fetch backups when Database Management tab is active
+      axios.get(`${backEndURL}/api/business-settings/backups`).then(res => {
+        if (res.data && res.data.success) {
+          setBackups(res.data.backups);
+        }
+      }).catch(() => setBackups([]));
+    }
+  }, [activeTab]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -329,12 +342,12 @@ const BuisnessSettings = () => {
   // Fetch all collection names for deletion modal
   const fetchCollections = async () => {
     try {
-      // Use Firestore REST API to list collections (simulate, or hardcode for demo)
-      // In production, you may want to expose a backend endpoint for this
-      // For now, hardcode the list (should match backend)
-      setCollections([
-        "departments", "employmentTypes", "employmentStatus", "certificateLevels", "positions", "employees", "tasks", "groups", "announcements", "leaves", "assets", "shifts", "employeeWorkHours", "monthlyWorkHours", "salaries", "incomeExpenses", "attendance", "products", "contacts", "crm", "quotations", "inventory", "purchases", "suppliers", "cashbook", "finance", "invoices", "additional", "identifiers", "cashin", "additional_summary", "certificate_levels", "crm_leads", "employment_status", "employment_types", "expenses", "leaveRequests", "returns", "salleryAdvance", "serial"
-      ]);
+      const res = await axios.get(`${backEndURL}/api/business-settings/collections`);
+      if (res.data && res.data.success) {
+        setCollections(res.data.collections);
+      } else {
+        setCollections([]);
+      }
     } catch (e) {
       setCollections([]);
     }
@@ -460,25 +473,25 @@ const BuisnessSettings = () => {
       <div className="flex mb-10 z-10 relative border-b border-border">
         <button
           className={`flex-1 py-3 text-lg font-semibold flex items-center justify-center gap-2 transition border-b-2 ${activeTab === TAB_BUSINESS ? 'text-primary border-primary' : 'text-text-secondary border-transparent hover:text-primary'}`}
-          onClick={() => setActiveTab(TAB_BUSINESS)}
+          onClick={() => { setActiveTab(TAB_BUSINESS); localStorage.setItem(TAB_STORAGE_KEY, TAB_BUSINESS); }}
         >
           Business Info
         </button>
         <button
           className={`flex-1 py-3 text-lg font-semibold flex items-center justify-center gap-2 transition border-b-2 ${activeTab === TAB_NOTES ? 'text-primary border-primary' : 'text-text-secondary border-transparent hover:text-primary'}`}
-          onClick={() => setActiveTab(TAB_NOTES)}
+          onClick={() => { setActiveTab(TAB_NOTES); localStorage.setItem(TAB_STORAGE_KEY, TAB_NOTES); }}
         > 
           Notes & Terms
         </button>
         <button
           className={`flex-1 py-3 text-lg font-semibold flex items-center justify-center gap-2 transition border-b-2 ${activeTab === TAB_DB ? 'text-primary border-primary' : 'text-text-secondary border-transparent hover:text-primary'}`}
-          onClick={() => setActiveTab(TAB_DB)}
+          onClick={() => { setActiveTab(TAB_DB); localStorage.setItem(TAB_STORAGE_KEY, TAB_DB); }}
         >
           Database Management
         </button>
         <button
           className={`flex-1 py-3 text-lg font-semibold flex items-center justify-center gap-2 transition border-b-2 ${activeTab === TAB_IMPORT_EXPORT ? 'text-primary border-primary' : 'text-text-secondary border-transparent hover:text-primary'}`}
-          onClick={() => setActiveTab(TAB_IMPORT_EXPORT)}
+          onClick={() => { setActiveTab(TAB_IMPORT_EXPORT); localStorage.setItem(TAB_STORAGE_KEY, TAB_IMPORT_EXPORT); }}
         >
           Import/Export
         </button>
@@ -822,13 +835,20 @@ const BuisnessSettings = () => {
                   onClick={async () => {
                     setBackupLoading(true);
                     setRestoreMsg("");
+                    // Wait for fake progress bar
                     await new Promise(res => setTimeout(res, 10000));
                     try {
-                      const response = await axios.post(`${backEndURL}/api/business-settings/backup`, {}, { responseType: 'blob' });
+                      const userData = JSON.parse(sessionStorage.getItem("userData") || '{}');
+                      const email = userData.email || '';
+                      const response = await axios.post(
+                        `${backEndURL}/api/business-settings/backup`,
+                        { email },
+                        { responseType: 'blob' }
+                      );
                       const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/zip' }));
                       const link = document.createElement('a');
                       link.href = url;
-                      link.setAttribute('download', 'Backup.zip');
+                      link.setAttribute('download', 'firestore-backup.zip');
                       document.body.appendChild(link);
                       link.click();
                       link.parentNode.removeChild(link);
@@ -845,7 +865,27 @@ const BuisnessSettings = () => {
               {/* Mocked backup list */}
               <div className="mt-4 border rounded-lg bg-blue-50 p-3 max-h-40 overflow-y-auto">
                 <div className="text-xs text-blue-900 font-semibold mb-2">Available Backups</div>
-                <div className="text-xs text-gray-400 mt-2">(Backups are downloaded to your computer. No server-side backup list.)</div>
+                {backups.length === 0 ? (
+                  <div className="text-xs text-gray-400 mt-2">No backups found.</div>
+                ) : (
+                  <ul className="text-xs divide-y divide-blue-200">
+                    {backups.map(b => (
+                      <li key={b.id} className="py-1 flex items-center justify-between gap-2">
+                        <a
+                          href={b.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-700 hover:underline font-semibold"
+                          download
+                        >
+                          Download ({b.fileName?.split('/').pop() || 'backup.zip'})
+                        </a>
+                        <span className="text-gray-500 ml-2">{b.createdAt ? new Date(b.createdAt).toLocaleString() : ''}</span>
+                        {b.email && <span className="ml-2 text-gray-400">{b.email}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
             {/* Restore Section */}
@@ -881,7 +921,11 @@ const BuisnessSettings = () => {
                       });
                       setRestoreMsg(response.data.success ? 'Restore completed successfully!' : (response.data.message || 'Restore failed.'));
                     } catch (err) {
-                      setRestoreMsg('Restore failed.');
+                      if (err.response && err.response.data && err.response.data.message) {
+                        setRestoreMsg(err.response.data.message);
+                      } else {
+                        setRestoreMsg('Restore failed.');
+                      }
                     } finally {
                       setRestoreLoading(false);
                       setRestoreFile(null);
