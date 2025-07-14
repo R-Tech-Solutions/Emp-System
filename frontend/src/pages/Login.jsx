@@ -184,7 +184,7 @@ export default function AdvancedLogin() {
           <div className="absolute left-[30%] bottom-[20%] w-72 h-72 bg-accent/20 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob1 animation-delay-4000"></div>
         </div>
         <div className={`max-w-md w-full space-y-8 relative ${shake ? "animate-shake" : ""}`}>
-          <div className="bg-surface p-8 rounded-2xl shadow-2xl border border-border transition-all duration-500">
+        <div className="bg-white/10 backdrop-blur-xl p-8 rounded-2xl shadow-2xl border border-white/30 transition-all duration-500">
             <div className="text-center">
               <div className="mx-auto h-14 w-14 flex items-center justify-center rounded-full bg-primary shadow-lg">
                 <svg
