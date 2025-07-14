@@ -167,8 +167,8 @@ export default function AdvancedLogin() {
     <div
       className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative"
       style={{
-        backgroundImage: "url('/new.jpeg')",
-        backgroundSize: "cover",
+        backgroundImage: "url('/new.png')",
+        backgroundSize: "100% 100%",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
         backgroundAttachment: "fixed",
