@@ -6,6 +6,7 @@ import DotSpinner from "../loaders/Loader"
 import AdvanceA4Invoice from "./Invoice/AdvanceA4invoice"
 import AdvanceThermalInvoice from "./Invoice/Advancethermalinvoice"
 import { LogOut } from "lucide-react"
+import LoadingOverlay from "../components/LoadingOverlay"
 
 
 const printStyles = `
@@ -2695,13 +2696,7 @@ const EnhancedBillingPOSSystem = () => {
     port === "3002";
 
   if (isLoading) {
-    return (
-      <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
-        <div className="flex flex-col items-center">
-          <DotSpinner />
-        </div>
-      </div>
-    )
+    return <LoadingOverlay />;
   }
 
   return (
