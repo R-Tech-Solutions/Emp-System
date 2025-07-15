@@ -3,6 +3,7 @@ import axios from "axios";
 import { backEndURL } from "../Backendurl";
 import Swal from "sweetalert2";
 import DotSpinner from "../loaders/Loader";
+import * as XLSX from 'xlsx';
 
 const STORAGE_KEY = "businessSettings";
 const NON_DELETABLE = ["users", "businessSettings", "deletion_audit_log", "backups"];
@@ -108,6 +109,14 @@ const BuisnessSettings = () => {
   const [restoreMsg, setRestoreMsg] = useState("");
   const [deleteProgress, setDeleteProgress] = useState(false);
   const [backups, setBackups] = useState([]);
+  // Product import/export states
+  const [productImportModalOpen, setProductImportModalOpen] = useState(false);
+  const [productImportFile, setProductImportFile] = useState(null);
+  const [productImportErrors, setProductImportErrors] = useState([]);
+  const [isProductImporting, setIsProductImporting] = useState(false);
+  const [productImportProgress, setProductImportProgress] = useState({ current: 0, total: 0 });
+  const [productBatchTimes, setProductBatchTimes] = useState([]);
+  const [productExportLoading, setProductExportLoading] = useState(false);
 
   useEffect(() => {
     // Fetch settings from backend
@@ -461,6 +470,148 @@ const BuisnessSettings = () => {
       setAuditLog(res.data.logs || []);
     } catch (e) {
       setAuditLog([]);
+    }
+  };
+
+  // Helper for ETA
+  function getProductETA(batchTimes, importProgress) {
+    if (!batchTimes.length || !importProgress.total) return '';
+    const avg = batchTimes.reduce((a, b) => a + b, 0) / batchTimes.length;
+    const remaining = importProgress.total - importProgress.current;
+    const seconds = Math.round(avg * remaining);
+    const min = Math.floor(seconds / 60);
+    const sec = seconds % 60;
+    return `Estimated time left: ${min}m ${sec}s`;
+  }
+  const PRODUCT_BATCH_SIZE = 500;
+  const handleProductImportFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProductImportFile(file);
+      setProductImportErrors([]);
+    }
+  };
+  const handleProductImport = async () => {
+    if (!productImportFile) {
+      setProductImportErrors(["Please select a file to import."]);
+      return;
+    }
+    setIsProductImporting(true);
+    setProductImportErrors([]);
+    setProductImportProgress({ current: 0, total: 0 });
+    setProductBatchTimes([]);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(worksheet);
+        const productsToImport = json.map(row => ({
+          name: row.name || "",
+          description: row.description || "",
+          salesPrice: parseFloat(row.salesPrice) || 0,
+          costPrice: parseFloat(row.costPrice) || 0,
+          sku: row.sku || "",
+          category: row.category || "General",
+          reference: row.reference || "",
+          internalNotes: row.internalNotes || "",
+          productType: row.productType || "Goods",
+          barcode: row.barcode || "",
+          toWeighWithScale: String(row.toWeighWithScale).toLowerCase() === 'true',
+          marginPrice: parseFloat(row.marginPrice) || 0,
+          retailPrice: parseFloat(row.retailPrice) || 0,
+          productIdentifierType: row.productIdentifierType || "none",
+        }));
+        // Validation
+        const validationErrors = productsToImport.reduce((acc, p, index) => {
+          if (!p.name) acc.push(`Row ${index + 2}: Product name is required.`);
+          if (!p.sku) acc.push(`Row ${index + 2}: SKU is required.`);
+          return acc;
+        }, []);
+        if (validationErrors.length > 0) {
+          setProductImportErrors(validationErrors);
+          setIsProductImporting(false);
+          setProductImportProgress({ current: 0, total: 0 });
+          setProductBatchTimes([]);
+          return;
+        }
+        // Split into batches
+        let allSuccess = [];
+        let allErrors = [];
+        const totalBatches = Math.ceil(productsToImport.length / PRODUCT_BATCH_SIZE);
+        setProductImportProgress({ current: 0, total: totalBatches });
+        for (let i = 0; i < productsToImport.length; i += PRODUCT_BATCH_SIZE) {
+          const batch = productsToImport.slice(i, i + PRODUCT_BATCH_SIZE);
+          const batchStart = Date.now();
+          try {
+            await axios.post(`${backEndURL}/api/products/bulk`, { products: batch });
+            allSuccess = allSuccess.concat(batch);
+          } catch (err) {
+            if (err.response && err.response.data && err.response.data.errors) {
+              allErrors = allErrors.concat(err.response.data.errors.map(e => `SKU ${e.product.sku}: ${e.error}`));
+            } else if (err.response && err.response.data && err.response.data.error) {
+              allErrors.push(err.response.data.error);
+            } else {
+              allErrors.push("An unexpected error occurred. See console for details.");
+            }
+          }
+          const batchEnd = Date.now();
+          setProductBatchTimes(prev => [...prev, (batchEnd - batchStart) / 1000]);
+          setProductImportProgress(prev => ({ current: prev.current + 1, total: totalBatches }));
+        }
+        if (allErrors.length > 0) {
+          setProductImportErrors(allErrors);
+        } else {
+          setProductImportModalOpen(false);
+          setProductImportFile(null);
+        }
+      } catch (err) {
+        setProductImportErrors(["An unexpected error occurred. See console for details."]);
+      } finally {
+        setIsProductImporting(false);
+        setProductImportProgress({ current: 0, total: 0 });
+        setProductBatchTimes([]);
+      }
+    };
+    reader.readAsArrayBuffer(productImportFile);
+  };
+  const handleProductDownloadTemplate = () => {
+    const headers = [
+      "name", "description", "salesPrice", "costPrice", "sku", "category",
+      "reference", "internalNotes", "productType", "barcode", "toWeighWithScale",
+      "marginPrice", "retailPrice", "productIdentifierType"
+    ];
+    const ws = XLSX.utils.json_to_sheet([], { header: headers });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Product Template");
+    XLSX.writeFile(wb, "product_template.xlsx");
+  };
+  const handleProductExport = async () => {
+    setProductExportLoading(true);
+    try {
+      const res = await axios.get(`${backEndURL}/api/products`);
+      const headers = [
+        "name", "description", "salesPrice", "costPrice", "sku", "category",
+        "reference", "internalNotes", "productType", "barcode", "toWeighWithScale",
+        "marginPrice", "retailPrice", "productIdentifierType"
+      ];
+      const wsData = res.data.map(p => {
+        let row = {};
+        headers.forEach(header => {
+          row[header] = p[header];
+        });
+        return row;
+      });
+      const ws = XLSX.utils.json_to_sheet(wsData, { header: headers });
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Products");
+      XLSX.writeFile(wb, "products_export.xlsx");
+    } catch (err) {
+      alert('Failed to export products.');
+    } finally {
+      setProductExportLoading(false);
     }
   };
 
@@ -975,8 +1126,29 @@ const BuisnessSettings = () => {
                 </div>
                 <div className="text-text-secondary text-sm mb-2">{item.desc}</div>
                 <div className="flex gap-3 mt-auto">
-                  <button className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition font-semibold shadow disabled:opacity-50 disabled:cursor-not-allowed" disabled>Import</button>
-                  <button className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold shadow disabled:opacity-50 disabled:cursor-not-allowed" disabled>Export</button>
+                  {item.key === 'products' ? (
+                    <>
+                      <button
+                        className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition font-semibold shadow"
+                        onClick={() => setProductImportModalOpen(true)}
+                        disabled={isProductImporting}
+                      >
+                        Import
+                      </button>
+                      <button
+                        className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold shadow"
+                        onClick={handleProductExport}
+                        disabled={productExportLoading}
+                      >
+                        {productExportLoading ? 'Exporting...' : 'Export'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition font-semibold shadow disabled:opacity-50 disabled:cursor-not-allowed" disabled>Import</button>
+                      <button className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold shadow disabled:opacity-50 disabled:cursor-not-allowed" disabled>Export</button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
@@ -1110,6 +1282,94 @@ const BuisnessSettings = () => {
                   </tbody>
                 </table>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {productImportModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface rounded-xl shadow-2xl p-8 w-full max-w-lg border border-border transition-all duration-200">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-2xl font-bold text-text-primary">Import Products</h2>
+              <button
+                onClick={() => { if (!isProductImporting) setProductImportModalOpen(false); }}
+                className={`text-text-muted hover:text-text-primary transition-all duration-200 ${isProductImporting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={isProductImporting}
+              >
+                ×
+              </button>
+            </div>
+            <div className="space-y-6">
+              <div>
+                <p className="text-lg text-text-secondary mb-4">
+                  Download the template, fill it out, and upload it to bulk-import products.
+                </p>
+                <button
+                  onClick={handleProductDownloadTemplate}
+                  className="text-primary hover:text-primary-dark text-lg font-bold transition-all duration-200"
+                >
+                  Download Template.xlsx
+                </button>
+              </div>
+              <div>
+                <label className="block text-lg font-bold text-text-primary mb-4">Upload File</label>
+                <div className="flex items-center justify-center w-full">
+                  <label htmlFor="product-import-file" className="flex flex-col items-center justify-center w-full h-40 border-2 border-border border-dashed rounded-xl cursor-pointer bg-accent hover:bg-secondary transition-all duration-200">
+                    <div className="flex flex-col items-center justify-center pt-8 pb-6">
+                      <span className="mb-4 text-text-muted text-2xl">⬆️</span>
+                      <p className="mb-2 text-lg text-text-primary">
+                        {productImportFile ? productImportFile.name : <><span className="font-bold">Click to upload</span> or drag and drop</>}
+                      </p>
+                      <p className="text-lg text-text-muted">XLSX or CSV file</p>
+                    </div>
+                    <input id="product-import-file" type="file" className="hidden" onChange={handleProductImportFileChange} accept=".xlsx, .csv" disabled={isProductImporting} />
+                  </label>
+                </div>
+              </div>
+              {/* Progress Bar */}
+              {isProductImporting && (
+                <div className="w-full mt-4 space-y-4">
+                  <div className="mb-2 text-lg text-text-primary font-bold text-center">
+                    Importing... Batch {productImportProgress.current} of {productImportProgress.total}
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-6">
+                    <div
+                      className="bg-primary h-6 rounded-full transition-all duration-300"
+                      style={{ width: `${productImportProgress.total ? (productImportProgress.current / productImportProgress.total) * 100 : 0}%` }}
+                    ></div>
+                  </div>
+                  {/* ETA */}
+                  <div className="text-center text-lg text-text-secondary font-semibold">
+                    {getProductETA(productBatchTimes, productImportProgress)}
+                  </div>
+                </div>
+              )}
+              {productImportErrors.length > 0 && (
+                <div className="bg-red-100 border border-red-300 text-red-800 px-6 py-4 rounded-xl">
+                  <h3 className="font-bold text-lg mb-2">Import Errors</h3>
+                  <ul className="mt-2 list-disc list-inside text-lg">
+                    {productImportErrors.map((error, i) => (
+                      <li key={i}>{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end space-x-4 mt-8">
+              <button
+                onClick={() => { if (!isProductImporting) setProductImportModalOpen(false); }}
+                className={`px-6 py-3 bg-secondary hover:bg-accent text-primary rounded-xl font-bold transition-all duration-200 shadow-lg ${isProductImporting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={isProductImporting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleProductImport}
+                disabled={isProductImporting || !productImportFile}
+                className="px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isProductImporting ? 'Importing...' : 'Start Import'}
+              </button>
             </div>
           </div>
         </div>
