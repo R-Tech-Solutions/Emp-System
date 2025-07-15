@@ -7,6 +7,7 @@ import AdvanceA4Invoice from "./Invoice/AdvanceA4invoice"
 import AdvanceThermalInvoice from "./Invoice/Advancethermalinvoice"
 import { LogOut } from "lucide-react"
 import LoadingOverlay from "../components/LoadingOverlay"
+import { HoldBillModal, UnholdBillModal, deleteHoldBillById } from './Invoice/holdunhold';
 
 
 const printStyles = `
@@ -723,6 +724,8 @@ const EnhancedBillingPOSSystem = () => {
   const [focusedElement, setFocusedElement] = useState(null)
   const focusableElementsRef = useRef([])
   const [showHoldBillModal, setShowHoldBillModal] = useState(false);
+  const [showUnholdBillModal, setShowUnholdBillModal] = useState(false);
+  const [restoredHoldBillId, setRestoredHoldBillId] = useState(null);
 
   // Enhanced state for better performance
   const [activeMainTab, setActiveMainTab] = useState("pos")
@@ -742,6 +745,7 @@ const EnhancedBillingPOSSystem = () => {
   const [isLoadingIdentifiers, setIsLoadingIdentifiers] = useState(false)
   const [selectedIdentifiers, setSelectedIdentifiers] = useState([])
 
+  
   // Multi-tab functionality with optimizations
   const [tabs, setTabs] = useState([{ id: 1, number: 1 }])
   const [activeTab, setActiveTab] = useState(1)
@@ -778,6 +782,7 @@ const EnhancedBillingPOSSystem = () => {
     type: "",
     isVisible: false,
   })
+  
 
   // Keyboard shortcuts state
   const [ctrlFPressCount, setCtrlFPressCount] = useState(0)
@@ -1135,80 +1140,41 @@ const EnhancedBillingPOSSystem = () => {
     [tabs]
   );
 
-  const handleHoldBill = useCallback(
-    (tabId) => {
-      const currentData = tabData[tabId]
-      if (currentData && currentData.cart.length > 0) {
-        const holdData = {
-          tabId,
-          ...currentData,
-          heldAt: new Date(),
-        }
+  // Hold bill: open modal, save to DB
+  const handleHoldBill = useCallback(() => {
+    setShowHoldBillModal(true);
+  }, []);
 
-        setHeldBills((prev) => {
-          const filtered = prev.filter((h) => h.tabId !== tabId)
-          return [...filtered, holdData]
-        })
+  // Unhold bill: open modal, restore selected
+  const handleUnholdBill = useCallback(() => {
+    setShowUnholdBillModal(true);
+  }, []);
 
-        setTabData((prev) => ({
-          ...prev,
-          [tabId]: {
-            cart: [],
-            selectedCustomer: null,
-            discount: heldBill.discount,
-            taxRate: heldBill.taxRate,
-            showPayment: currentData.showPayment,
-            showCustomerModal: currentData.showCustomerModal,
-            showProductsModal: currentData.showProductsModal,
-            showInvoice: currentData.showInvoice,
-            showPrintSelection: currentData.showPrintSelection,
-            showInvoiceDetails: currentData.showInvoiceDetails,
-            showCustomSearchModal: currentData.showCustomSearchModal,
-            showHoldBillModal: currentData.showHoldBillModal,
-          },
-        }))
+  // When a hold bill is saved
+  const handleHoldBillSaved = (bill) => {
+    showToast('Bill held successfully', 'success');
+    // Optionally clear cart, etc.
+    updateTabData(activeTab, {
+      cart: [],
+      selectedCustomer: null,
+      discount: { type: 'amount', value: 0 },
+      taxRate: 0,
+    });
+    setShowHoldBillModal(false);
+  };
 
-        const tab = tabs.find((t) => t.id === tabId)
-        showToast(`Bill held for tab ${String(tab?.number || "").padStart(2, "0")}`, "success")
-      } else {
-        showToast("No items to hold", "warning")
-      }
-    },
-    [tabData, tabs],
-  )
-
-  const handleUnholdBill = useCallback(
-    (tabId) => {
-      const heldBill = heldBills.find((h) => h.tabId === tabId)
-      if (heldBill) {
-        setTabData((prev) => ({
-          ...prev,
-          [tabId]: {
-            cart: heldBill.cart,
-            selectedCustomer: heldBill.selectedCustomer,
-            discount: heldBill.discount,
-            taxRate: heldBill.taxRate,
-            showPayment: heldBill.showPayment,
-            showCustomerModal: heldBill.showCustomerModal,
-            showProductsModal: heldBill.showProductsModal,
-            showInvoice: heldBill.showInvoice,
-            showPrintSelection: heldBill.showPrintSelection,
-            showInvoiceDetails: heldBill.showInvoiceDetails,
-            showCustomSearchModal: heldBill.showCustomSearchModal,
-            showHoldBillModal: heldBill.showHoldBillModal,
-          },
-        }))
-
-        setHeldBills((prev) => prev.filter((h) => h.tabId !== tabId))
-
-        const tab = tabs.find((t) => t.id === tabId)
-        showToast(`Bill restored for tab ${String(tab?.number || "").padStart(2, "0")}`, "success")
-      } else {
-        showToast("No held bill found for this tab", "warning")
-      }
-    },
-    [heldBills, tabs],
-  )
+  // When a hold bill is restored
+  const handleRestoreHoldBill = (bill) => {
+    updateTabData(activeTab, {
+      cart: bill.cart || [],
+      selectedCustomer: bill.customer || null,
+      discount: bill.discount || { type: 'amount', value: 0 },
+      taxRate: bill.taxRate || 0,
+    });
+    setRestoredHoldBillId(bill.id);
+    showToast('Bill restored', 'success');
+    setShowUnholdBillModal(false);
+  };
 
   // Fast update tab data function
   const updateTabData = useCallback((tabId, updates) => {
@@ -1802,7 +1768,7 @@ const EnhancedBillingPOSSystem = () => {
           mainProductId: product.id,
           mainProductSku: product.sku || product.id
         }
-
+ 
         updateTabData(activeTab, { cart: [...currentCart, newItem] })
         showToast(`${product.name} with ${product.productIdentifierType.toUpperCase()}: ${identifierValue} added to cart`, "success")
         setBarcodeInput("")
@@ -1974,9 +1940,9 @@ const EnhancedBillingPOSSystem = () => {
         };
 
         setHeldBills((prev) => {
-          const filtered = prev.filter((h) => h.tabId !== tabId);
-          return [...filtered, holdData];
-        });
+          const filtered = prev.filter((h) => h.tabId !== tabId)
+          return [...filtered, holdData]
+        })
 
         setTabData((prev) => ({
           ...prev,
@@ -1994,13 +1960,10 @@ const EnhancedBillingPOSSystem = () => {
             showCustomSearchModal: currentData.showCustomSearchModal,
             showHoldBillModal: currentData.showHoldBillModal,
           },
-        }));
+        }))
 
-        const tab = tabs.find((t) => t.id === tabId);
-        showToast(
-          `Bill "${billName}" held for tab ${String(tab?.number || "").padStart(2, "0")}`,
-          "success"
-        );
+        const tab = tabs.find((t) => t.id === tabId)
+        showToast(`Bill "${billName}" held for tab ${String(tab?.number || "").padStart(2, "0")}`, "success")
       } else {
         showToast("No items to hold", "warning");
       }
@@ -2293,6 +2256,11 @@ const EnhancedBillingPOSSystem = () => {
       } finally {
         setIsProcessing(false);
       }
+      // After payment success:
+      if (restoredHoldBillId) {
+        await deleteHoldBillById(restoredHoldBillId);
+        setRestoredHoldBillId(null);
+      }
     },
     [
       cart,
@@ -2306,7 +2274,8 @@ const EnhancedBillingPOSSystem = () => {
       setProducts,
       backEndURL,
       businessSettings,
-      generateInvoiceHTML
+      generateInvoiceHTML,
+      restoredHoldBillId
     ],
   )
 
@@ -2751,23 +2720,16 @@ const EnhancedBillingPOSSystem = () => {
           ⌨️
         </button>
         <button
-          onClick={() => setShowHoldBillModal(true)}
+          onClick={handleHoldBill}
           className="bg-yellow-500 hover:bg-yellow-600 text-white rounded-full p-3 card-shadow transition-all duration-150 hover:scale-105"
-          title="Hold Current Bill (Shift+H)"
+          title="Hold Current Bill"
         >
           🧾
         </button>
-        {showHoldBillModal && (
-          <HoldBillModal
-            onClose={() => setShowHoldBillModal(false)}
-            onSave={(billName) => handleHoldBillWithName(activeTab, billName)}
-          />
-        )}
-        {/* Unhold Bill */}
         <button
-          onClick={() => handleUnholdBill(activeTab)}
+          onClick={handleUnholdBill}
           className="bg-green-500 hover:bg-green-600 text-white rounded-full p-3 card-shadow transition-all duration-150 hover:scale-105"
-          title="Unhold Current Bill (Shift+U)"
+          title="Unhold Bill"
         >
           ✅
         </button>
@@ -3473,6 +3435,18 @@ const EnhancedBillingPOSSystem = () => {
           selectedPriceType={selectedPriceType}
         />
       )}
+      <HoldBillModal
+        open={showHoldBillModal}
+        onClose={() => setShowHoldBillModal(false)}
+        cart={currentTabData.cart}
+        customer={currentTabData.selectedCustomer}
+        onSaved={handleHoldBillSaved}
+      />
+      <UnholdBillModal
+        open={showUnholdBillModal}
+        onClose={() => setShowUnholdBillModal(false)}
+        onRestore={handleRestoreHoldBill}
+      />
     </div>
   )
 }
@@ -4600,48 +4574,7 @@ const EnhancedCustomerModal = ({ customers, selectedCustomer, setSelectedCustome
     </div>
   )
 }
-const HoldBillModal = ({ onClose, onSave }) => {
-  const [billName, setBillName] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = () => {
-    if (!billName.trim()) return;
-    setIsSaving(true);
-    onSave(billName.trim());
-    setIsSaving(false);
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md card-shadow fade-in">
-        <h3 className="text-lg font-semibold mb-4">🧾 Hold Bill</h3>
-        <input
-          type="text"
-          value={billName}
-          onChange={(e) => setBillName(e.target.value)}
-          placeholder="Enter a name or note for this bill"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-4"
-        />
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={isSaving || !billName.trim()}
-            className="flex-1 btn-primary px-4 py-2 rounded-lg font-medium"
-          >
-            {isSaving ? "Saving..." : "Save Hold Bill"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 // Invoices Page Component
 const InvoicesPage = ({ invoices, searchTerm, setSearchTerm, dateRange, setDateRange, onInvoiceSelect, fetchData, fetchInvoices, isLoadingInvoices }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);

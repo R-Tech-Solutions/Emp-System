@@ -40,6 +40,7 @@ const cashInRoutes = require('./routes/CashInRoutes');
 const returnRoute = require('./routes/ReturnRoute');
 const InvoiceModel = require('./models/InvoiceModel');
 const databaseRoutes = require('./routes/databaseRoutes');
+const holdBillsRoutes = require('./routes/HoldBillsRoutes');
 
 dotenv.config();
 
@@ -101,6 +102,7 @@ app.use('/api/business-settings', buisnessSettingsRoutes);
 app.use('/api/cashin', cashInRoutes);
 app.use('/api/returns', returnRoute);
 app.use('/api/database', databaseRoutes);
+app.use('/api/hold-bills', holdBillsRoutes);
 
 app.get('/', (req, res) => {
     res.send('Hello World!'); 

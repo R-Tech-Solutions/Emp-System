@@ -290,7 +290,7 @@ function StageTransitionDialog({
                 name="contactDetails"
                 onChange={handleInputChange}
                 placeholder="Describe your contact attempt (e.g., phone call, email)"
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                 rows={3}
               />
             </div>
@@ -384,7 +384,7 @@ function StageTransitionDialog({
                 type="number"
                 value={formData.proposalValue || ""}
                 onChange={handleInputChange}
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
               />
             </div>
           </div>
@@ -406,7 +406,7 @@ function StageTransitionDialog({
                 value={formData.followUpDate || ""}
                 onChange={handleInputChange}
                 required
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
               />
             </div>
             <div className="space-y-2">
@@ -418,7 +418,7 @@ function StageTransitionDialog({
                 name="clientFeedback"
                 onChange={handleInputChange}
                 placeholder="What feedback did the client provide on the proposal?"
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                 rows={3}
               />
             </div>
@@ -441,7 +441,7 @@ function StageTransitionDialog({
                 value={formData.finalDealValue || ""}
                 onChange={handleInputChange}
                 required
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
               />
             </div>
             <div className="space-y-2">
@@ -458,7 +458,7 @@ function StageTransitionDialog({
                 value={formData.closingDate || ""}
                 onChange={handleInputChange}
                 required
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
               />
             </div>
           </div>
@@ -476,7 +476,7 @@ function StageTransitionDialog({
                 value={formData.lostReason || ""}
                 onChange={handleInputChange}
                 required
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
               >
                 <option value="">Select a reason</option>
                 <option value="price">Price too high</option>
@@ -502,7 +502,7 @@ function StageTransitionDialog({
                   value={formData.competitorInfo || ""}
                   onChange={handleInputChange}
                   placeholder="Which competitor did they choose?"
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                 />
               </div>
             )}
@@ -520,7 +520,7 @@ function StageTransitionDialog({
                 value={formData.closingDate || ""}
                 onChange={handleInputChange}
                 required
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
               />
             </div>
           </div>
@@ -549,15 +549,15 @@ function StageTransitionDialog({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-md w-full">
+      <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
         <h3 className="text-lg font-bold mb-4">{getDialogTitle()}</h3>
 
         {validationErrors.length > 0 && (
-          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-            <h4 className="text-sm font-medium text-red-800 dark:text-red-300 flex items-center">
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+            <h4 className="text-sm font-medium text-red-800 flex items-center">
               <AlertCircle size={16} className="mr-1" /> Cannot proceed
             </h4>
-            <ul className="mt-1 text-xs text-red-700 dark:text-red-400 list-disc list-inside">
+            <ul className="mt-1 text-xs text-red-700 list-disc list-inside">
               {validationErrors.map((error, index) => (
                 <li key={index}>{error}</li>
               ))}
@@ -575,7 +575,7 @@ function StageTransitionDialog({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add notes about this stage change"
               rows={3}
-              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
             />
           </div>
         </div>
@@ -583,7 +583,7 @@ function StageTransitionDialog({
         <div className="mt-6 flex justify-end space-x-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-sm font-medium"
+            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium"
           >
             Cancel
           </button>
@@ -609,7 +609,7 @@ function StageTransitionDialog({
 function ActionHistoryTimeline({ history }) {
   if (!history || history.length === 0) {
     return (
-      <div className="text-center text-sm text-gray-500 dark:text-gray-400 py-4">
+      <div className="text-center text-sm text-gray-500 py-4">
         No history available
       </div>
     );
@@ -621,11 +621,11 @@ function ActionHistoryTimeline({ history }) {
         <div key={index} className="relative pl-6">
           <div className="absolute left-0 top-1 h-4 w-4 rounded-full bg-blue-500"></div>
           {index !== history.length - 1 && (
-            <div className="absolute left-2 top-5 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
+            <div className="absolute left-2 top-5 bottom-0 w-0.5 bg-gray-200"></div>
           )}
           <div className="mb-1">
             <span className="text-xs font-medium">{item.stage}</span>
-            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
+            <span className="text-xs text-gray-500 ml-2">
               {new Date(item.date).toLocaleDateString()}{" "}
               {new Date(item.date).toLocaleTimeString([], {
                 hour: "2-digit",
@@ -634,11 +634,11 @@ function ActionHistoryTimeline({ history }) {
             </span>
           </div>
           {item.notes && (
-            <p className="text-xs text-gray-600 dark:text-gray-300 mb-1">
+            <p className="text-xs text-gray-600 mb-1">
               {item.notes}
             </p>
           )}
-          <div className="text-xs text-gray-500 dark:text-gray-400">
+          <div className="text-xs text-gray-500">
             by {item.changedBy}
           </div>
         </div>
@@ -675,7 +675,7 @@ function ValidationIndicator({ lead, nextStage }) {
 
   if (validationErrors.length === 0) {
     return (
-      <div className="flex items-center text-green-600 dark:text-green-400 text-xs">
+      <div className="flex items-center text-green-600 text-xs">
         <CheckCircle2 size={14} className="mr-1" />
         Ready to move
       </div>
@@ -683,7 +683,7 @@ function ValidationIndicator({ lead, nextStage }) {
   }
 
   return (
-    <div className="text-red-600 dark:text-red-400 text-xs">
+    <div className="text-red-600 text-xs">
       <div className="flex items-center">
         <AlertCircle size={14} className="mr-1" />
         <span>Missing requirements:</span>
@@ -746,7 +746,7 @@ function NotesManager({ notes = [], onAddNote, onEditNote, title = "Notes" }) {
         {!isAdding && !isEditing && (
           <button
             onClick={handleAddClick}
-            className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-md flex items-center"
+            className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-md flex items-center"
           >
             <Plus size={12} className="mr-1" /> Add Note
           </button>
@@ -760,12 +760,12 @@ function NotesManager({ notes = [], onAddNote, onEditNote, title = "Notes" }) {
             onChange={(e) => setNoteContent(e.target.value)}
             placeholder="Enter your note..."
             rows={3}
-            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-xs"
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-xs"
           />
           <div className="flex justify-end space-x-2">
             <button
               onClick={handleCancel}
-              className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-700 rounded-md"
+              className="text-xs px-2 py-1 border border-gray-300 rounded-md"
             >
               Cancel
             </button>
@@ -784,27 +784,27 @@ function NotesManager({ notes = [], onAddNote, onEditNote, title = "Notes" }) {
           {notes.map((note, index) => (
             <div
               key={index}
-              className="bg-gray-50 dark:bg-gray-900 p-2 rounded-md"
+              className="bg-gray-50 p-2 rounded-md"
             >
               <div className="flex justify-between items-start">
-                <div className="text-xs text-gray-600 dark:text-gray-300">
+                <div className="text-xs text-gray-600">
                   {note.content}
                 </div>
                 <button
                   onClick={() => handleEditClick(index)}
-                  className="ml-1 text-gray-500 hover:text-blue-500 dark:text-gray-400"
+                  className="ml-1 text-gray-500 hover:text-blue-500"
                 >
                   <Edit size={12} />
                 </button>
               </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <div className="text-xs text-gray-500 mt-1">
                 {new Date(note.date).toLocaleString()} • {note.createdBy}
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="text-xs text-gray-500 dark:text-gray-400 italic">
+        <div className="text-xs text-gray-500 italic">
           No notes yet
         </div>
       )}
@@ -988,11 +988,11 @@ function LeadCard({ lead, onEdit, onStageTransition }) {
   return (
     <div
       className={cn(
-        "bg-white dark:bg-gray-800 rounded-lg border shadow-sm transition-all relative",
+        "bg-white rounded-lg border shadow-sm transition-all relative",
         expanded ? "ring-1 ring-blue-500" : "",
         lead.stage === "Won" &&
-        "border-green-500 bg-green-50 dark:bg-green-900/20",
-        lead.stage === "Lost" && "border-red-500 bg-red-50 dark:bg-red-900/20",
+        "border-green-500 bg-green-50",
+        lead.stage === "Lost" && "border-red-500 bg-red-50",
         lead.isExistingClient && "border-l-4 border-l-blue-500"
       )}
     >
@@ -1002,7 +1002,7 @@ function LeadCard({ lead, onEdit, onStageTransition }) {
         <div className="flex justify-between items-start mb-2">
           <div>
             <h4 className="font-medium text-sm">{lead.clientName}</h4>
-            <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[180px]">
+            <p className="text-xs text-gray-500 truncate max-w-[180px]">
               {lead.opportunityName}
             </p>
           </div>
@@ -1013,7 +1013,7 @@ function LeadCard({ lead, onEdit, onStageTransition }) {
               </span>
             )}
             <button
-              className="h-6 w-6 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center"
+              className="h-6 w-6 rounded-md hover:bg-gray-100 flex items-center justify-center"
               onClick={() => setExpanded(!expanded)}
             >
               {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -1021,11 +1021,11 @@ function LeadCard({ lead, onEdit, onStageTransition }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
+        <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
           <Mail size={12} />
           <span className="truncate">{lead.email}</span>
         </div>
-        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+        <div className="flex items-center gap-2 text-xs text-gray-500">
           <Phone size={12} />
           <span>{lead.phone}</span>
         </div>
@@ -1038,12 +1038,12 @@ function LeadCard({ lead, onEdit, onStageTransition }) {
         )}
 
         {expanded && (
-          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex border-b border-gray-200 dark:border-gray-700">
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <div className="flex border-b border-gray-200">
               <button
                 className={`flex-1 py-1 px-2 text-xs font-medium ${activeTab === "details"
                   ? "border-b-2 border-blue-500"
-                  : "text-gray-500 dark:text-gray-400"
+                  : "text-gray-500"
                   }`}
                 onClick={() => setActiveTab("details")}
               >
@@ -1052,7 +1052,7 @@ function LeadCard({ lead, onEdit, onStageTransition }) {
               <button
                 className={`flex-1 py-1 px-2 text-xs font-medium ${activeTab === "actions"
                   ? "border-b-2 border-blue-500"
-                  : "text-gray-500 dark:text-gray-400"
+                  : "text-gray-500"
                   }`}
                 onClick={() => setActiveTab("actions")}
               >
@@ -1061,7 +1061,7 @@ function LeadCard({ lead, onEdit, onStageTransition }) {
               <button
                 className={`flex-1 py-1 px-2 text-xs font-medium ${activeTab === "notes"
                   ? "border-b-2 border-blue-500"
-                  : "text-gray-500 dark:text-gray-400"
+                  : "text-gray-500"
                   }`}
                 onClick={() => setActiveTab("notes")}
               >
@@ -1070,7 +1070,7 @@ function LeadCard({ lead, onEdit, onStageTransition }) {
               <button
                 className={`flex-1 py-1 px-2 text-xs font-medium ${activeTab === "history"
                   ? "border-b-2 border-blue-500"
-                  : "text-gray-500 dark:text-gray-400"
+                  : "text-gray-500"
                   }`}
                 onClick={() => setActiveTab("history")}
               >
@@ -1081,7 +1081,7 @@ function LeadCard({ lead, onEdit, onStageTransition }) {
             {activeTab === "details" && (
               <div className="space-y-2 text-xs pt-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">
+                  <span className="text-gray-500">
                     Expected Revenue:
                   </span>
                   <span className="font-medium">
@@ -1089,14 +1089,14 @@ function LeadCard({ lead, onEdit, onStageTransition }) {
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">
+                  <span className="text-gray-500">
                     Assigned To:
                   </span>
                   <span className="font-medium">{lead.assignedToName}</span>
                 </div>
                 {lead.company && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">
+                    <span className="text-gray-500">
                       Company:
                     </span>
                     <span className="font-medium">{lead.company}</span>
@@ -1104,7 +1104,7 @@ function LeadCard({ lead, onEdit, onStageTransition }) {
                 )}
                 {lead.nextFollowUp && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">
+                    <span className="text-gray-500">
                       Next Follow-up:
                     </span>
                     <span className="font-medium">
@@ -1114,7 +1114,7 @@ function LeadCard({ lead, onEdit, onStageTransition }) {
                 )}
                 {lead.lastContactDate && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">
+                    <span className="text-gray-500">
                       Last Contact:
                     </span>
                     <span className="font-medium">
@@ -1124,7 +1124,7 @@ function LeadCard({ lead, onEdit, onStageTransition }) {
                 )}
                 {lead.stage === "Won" && lead.dealValue && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">
+                    <span className="text-gray-500">
                       Final Deal Value:
                     </span>
                     <span className="font-medium text-green-600">
@@ -1134,7 +1134,7 @@ function LeadCard({ lead, onEdit, onStageTransition }) {
                 )}
                 {lead.stage === "Lost" && lead.lostReason && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">
+                    <span className="text-gray-500">
                       Lost Reason:
                     </span>
                     <span className="font-medium text-red-600">
@@ -1144,7 +1144,7 @@ function LeadCard({ lead, onEdit, onStageTransition }) {
                 )}
                 {lead.stage === "Lost" && lead.competitorInfo && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500 dark:text-gray-400">
+                    <span className="text-gray-500">
                       Competitor:
                     </span>
                     <span className="font-medium">{lead.competitorInfo}</span>
@@ -1153,11 +1153,11 @@ function LeadCard({ lead, onEdit, onStageTransition }) {
 
                 {/* Internal notes display */}
                 {lead.internalNotes && (
-                  <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <div className="mt-3 pt-2 border-t border-gray-200">
                     <div className="text-xs font-medium mb-1">
                       Internal Notes:
                     </div>
-                    <div className="text-xs text-gray-600 dark:text-gray-300">
+                    <div className="text-xs text-gray-600">
                       {lead.internalNotes}
                     </div>
                   </div>
@@ -1170,28 +1170,28 @@ function LeadCard({ lead, onEdit, onStageTransition }) {
                 <div className="text-xs">
                   <h5 className="font-medium mb-1">Required Actions:</h5>
                   {lead.stage === "New" && (
-                    <ul className="list-disc list-inside text-gray-600 dark:text-gray-300 space-y-1 ml-2">
+                    <ul className="list-disc list-inside text-gray-600 space-y-1 ml-2">
                       <li>Make initial contact</li>
                       <li>Assess qualification criteria</li>
                       <li>Schedule discovery call</li>
                     </ul>
                   )}
                   {lead.stage === "Qualified" && (
-                    <ul className="list-disc list-inside text-gray-600 dark:text-gray-300 space-y-1 ml-2">
+                    <ul className="list-disc list-inside text-gray-600 space-y-1 ml-2">
                       <li>Prepare proposal document</li>
                       <li>Get internal approval</li>
                       <li>Send proposal to client</li>
                     </ul>
                   )}
                   {lead.stage === "Proposal Sent" && (
-                    <ul className="list-disc list-inside text-gray-600 dark:text-gray-300 space-y-1 ml-2">
+                    <ul className="list-disc list-inside text-gray-600 space-y-1 ml-2">
                       <li>Follow up on proposal</li>
                       <li>Address client questions</li>
                       <li>Schedule negotiation call</li>
                     </ul>
                   )}
                   {lead.stage === "Negotiation" && (
-                    <ul className="list-disc list-inside text-gray-600 dark:text-gray-300 space-y-1 ml-2">
+                    <ul className="list-disc list-inside text-gray-600 space-y-1 ml-2">
                       <li>Prepare contract</li>
                       <li>Get final approval</li>
                       <li>Send contract for signature</li>
@@ -1202,7 +1202,7 @@ function LeadCard({ lead, onEdit, onStageTransition }) {
                 {renderStageActions()}
 
                 <button
-                  className="w-full text-xs h-8 border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-center"
+                  className="w-full text-xs h-8 border border-gray-200 rounded-md hover:bg-gray-100 flex items-center justify-center"
                   onClick={() => onEdit(lead)}
                 >
                   <Edit size={12} className="mr-1" /> Edit Lead
@@ -1281,7 +1281,7 @@ function KanbanColumn({
   onStageTransition,
 }) {
   return (
-    <div className="flex-shrink-0 w-80 flex flex-col rounded-lg bg-gray-50 dark:bg-gray-900 border">
+    <div className="flex-shrink-0 w-80 flex flex-col rounded-lg bg-gray-50 border">
       <div className={`p-3 ${color} rounded-t-lg`}>
         <h3 className="font-medium text-white flex justify-between items-center">
           {title}
@@ -1300,7 +1300,7 @@ function KanbanColumn({
           />
         ))}
         {leads.length === 0 && (
-          <div className="h-20 border border-dashed border-gray-300 dark:border-gray-700 rounded-md flex items-center justify-center text-gray-500 dark:text-gray-400 text-sm">
+          <div className="h-20 border border-dashed border-gray-300 rounded-md flex items-center justify-center text-gray-500 text-sm">
             No leads in this stage
           </div>
         )}
@@ -1544,7 +1544,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts, allEmployees 
     }
   };
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-auto mx-auto">
+    <div className="bg-white rounded-lg shadow-lg p-6 max-w-auto mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold">
           {lead ? "Edit Lead" : "Add New Lead"}
@@ -1595,7 +1595,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts, allEmployees 
                   id="contactId"
                   value={formData.contactId || ""}
                   onChange={(e) => handleContactSelect(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                 >
                   <option value="">Select a client</option>
                   {contacts.map((contact) => (
@@ -1620,7 +1620,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts, allEmployees 
                 value={formData.opportunityName || ""}
                 onChange={handleChange}
                 required
-                className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
               />
             </div>
 
@@ -1668,7 +1668,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts, allEmployees 
                             value={formData.clientName || ""}
                             onChange={handleChange}
                             required
-                            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                           />
                         </div>
                         <div className="space-y-2">
@@ -1685,7 +1685,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts, allEmployees 
                             value={formData.email || ""}
                             onChange={handleChange}
                             required
-                            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                           />
                         </div>
                         <div className="space-y-2">
@@ -1701,7 +1701,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts, allEmployees 
                             value={formData.phone || ""}
                             onChange={handleChange}
                             required
-                            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                           />
                         </div>
                         <div className="space-y-2">
@@ -1716,7 +1716,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts, allEmployees 
                             name="company"
                             value={formData.company || ""}
                             onChange={handleChange}
-                            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                           />
                         </div>
                         <div className="space-y-2">
@@ -1731,7 +1731,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts, allEmployees 
                             name="website"
                             value={formData.website || ""}
                             onChange={handleChange}
-                            className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                           />
                         </div>
                       </>
@@ -1754,7 +1754,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts, allEmployees 
                       onChange={handleChange}
                       rows={8}
                       placeholder="Add any internal notes or observations about this lead"
-                      className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                      className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                     />
                   </div>
                 )}
@@ -1775,7 +1775,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts, allEmployees 
                   type="number"
                   value={formData.expectedRevenue || ""}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -1791,7 +1791,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts, allEmployees 
                   onChange={(e) =>
                     handleSelectChange("assignedToDepartment", e.target.value)
                   }
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                 >
                   <option value="">Select the Department</option>
                   {departments.map((dept) => (
@@ -1814,7 +1814,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts, allEmployees 
                   onChange={(e) =>
                     handleSelectChange("assignedTo", e.target.value)
                   }
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                   // disabled={!formData.assignedToDepartment}
                 >
                   <option value="">Select the employee</option>
@@ -1839,7 +1839,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts, allEmployees 
                   type="text"
                   value={formData.AssighnedToEmail || ""}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                   readOnly
                 >
                 </input>
@@ -1857,7 +1857,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts, allEmployees 
                   type="text"
                   value={formData.leadSource || ""}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                 >
                 </input>
               </div>
@@ -1876,7 +1876,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts, allEmployees 
                   max="100"
                   value={formData.leadScore || ""}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -1892,7 +1892,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts, allEmployees 
                   type="date"
                   value={formData.lastContactDate || ""}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -1908,7 +1908,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts, allEmployees 
                   type="date"
                   value={formData.nextFollowUp || ""}
                   onChange={handleChange}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
                 />
               </div>
             </div>
@@ -1918,7 +1918,7 @@ function LeadForm({ lead, onSave, onCancel, salespeople, contacts, allEmployees 
             <button
               type="button"
               onClick={onCancel}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-sm font-medium"
+              className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium"
             >
               Cancel
             </button>
@@ -1973,7 +1973,7 @@ function ContactForm({ contact, onSave, onCancel }) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 sm:p-10 max-w-3xl w-full min-h-[500px] mx-auto transition-all duration-300">
+    <div className="bg-white rounded-2xl shadow-2xl p-8 sm:p-10 max-w-3xl w-full min-h-[500px] mx-auto transition-all duration-300">
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-2xl sm:text-3xl font-semibold text-gray-800 dark:text-gray-100">
           {contact ? "Edit Contact" : "Add New Contact"}
@@ -2009,7 +2009,7 @@ function ContactForm({ contact, onSave, onCancel }) {
                 required={required}
                 value={formData[id] || ""}
                 onChange={handleChange}
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition"
+                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition"
               />
             </div>
           ))}
@@ -2025,7 +2025,7 @@ function ContactForm({ contact, onSave, onCancel }) {
               onChange={handleChange}
               rows={3}
               placeholder="Additional notes about this contact"
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition"
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition"
             />
           </div>
 
@@ -2040,7 +2040,7 @@ function ContactForm({ contact, onSave, onCancel }) {
               value={formData.categoryType || "Customer"}
               onChange={handleChange}
               required
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition"
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition"
             >
               <option value="Customer">Customer</option>
               <option value="Supplier">Supplier</option>
@@ -2051,7 +2051,7 @@ function ContactForm({ contact, onSave, onCancel }) {
           <button
             type="button"
             onClick={onCancel}
-            className="px-5 py-2 border border-gray-300 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+            className="px-5 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
             disabled={loading}
           >
             Cancel
@@ -2102,14 +2102,14 @@ function ContactsTable({ contacts, onEdit, onDelete }) {
   );
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+    <div className="bg-white rounded-lg shadow p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold">Contacts</h2>
         <div className="relative max-w-xs">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
           <input
             placeholder="Search contacts..."
-            className="pl-8 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+            className="pl-8 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -2119,52 +2119,52 @@ function ContactsTable({ contacts, onEdit, onDelete }) {
         <div className="bg-red-100 text-red-700 px-3 py-2 rounded mb-2 text-sm">{error}</div>
       )}
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-gray-900">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Email
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Phone
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Company
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Category Type
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Contact
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody className="bg-white divide-y divide-gray-200">
             {filteredContacts.length > 0 ? (
               filteredContacts.map((contact) => (
                 <tr key={contact.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     {contact.name}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {contact.email}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {contact.phone}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {contact.company || "-"}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {contact.categoryType || "-"}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {contact.contactType || "-"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -2192,7 +2192,7 @@ function ContactsTable({ contacts, onEdit, onDelete }) {
               <tr>
                 <td
                   colSpan={5}
-                  className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400"
+                  className="px-6 py-4 text-center text-sm text-gray-500"
                 >
                   {searchTerm
                     ? "No contacts found matching your search."
@@ -2213,16 +2213,16 @@ function DeleteConfirmationDialog({ isOpen, onClose, onConfirm }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-md w-full">
+      <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
         <h3 className="text-lg font-bold mb-2">Are you sure?</h3>
-        <p className="text-gray-500 dark:text-gray-400 mb-4">
+        <p className="text-gray-500 mb-4">
           This will permanently delete this contact. This action cannot be
           undone.
         </p>
         <div className="flex justify-end space-x-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-sm font-medium"
+            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium"
           >
             Cancel
           </button>
@@ -2303,6 +2303,12 @@ export default function CrmPipeline() {
     fetchEmployees();
     // eslint-disable-next-line
   }, []);
+
+  // Defensive: Always close the Lead Form after leads/contacts/employees load
+  useEffect(() => {
+    setIsLeadFormOpen(false);
+    setEditingLead(null);
+  }, [leads, contacts, allEmployees]);
 
   const fetchLeads = async () => {
     try {
@@ -2604,7 +2610,7 @@ export default function CrmPipeline() {
   });
 
   return (
-    <div className="min-h-screen bg-background dark:bg-gray-900 text-text-primary dark:text-gray-100">
+    <div className="min-h-screen bg-background text-text-primary">
       {/* Header */}
       <header>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -2614,7 +2620,7 @@ export default function CrmPipeline() {
                 onClick={() => setActiveView("pipeline")}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 shadow-sm ${activeView === "pipeline"
                   ? "bg-primary text-white hover:bg-primary-dark"
-                  : "bg-surface dark:bg-gray-700 text-text-primary dark:text-gray-200 hover:bg-accent"
+                  : "bg-surface text-text-primary hover:bg-accent"
                   }`}
               >
                 Pipeline
@@ -2623,7 +2629,7 @@ export default function CrmPipeline() {
                 onClick={() => setActiveView("contacts")}
                 className={`px-4 py-2 rounded-xl text-sm font-medium flex items-center transition-all duration-200 shadow-sm ${activeView === "contacts"
                   ? "bg-primary text-white hover:bg-primary-dark"
-                  : "bg-surface dark:bg-gray-700 text-text-primary dark:text-gray-200 hover:bg-accent"
+                  : "bg-surface text-text-primary hover:bg-accent"
                   }`}
               >
                 <Users size={16} className="mr-1" /> Contacts
@@ -2654,10 +2660,10 @@ export default function CrmPipeline() {
             {/* Search and Filters */}
             <div className="mb-6 flex flex-wrap gap-3">
               <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                 <input
                   placeholder="Search leads..."
-                  className="pl-8 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  className="pl-8 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -2665,7 +2671,7 @@ export default function CrmPipeline() {
               <div className="flex items-center gap-2">
                 <Filter
                   size={16}
-                  className="text-gray-500 dark:text-gray-400"
+                  className="text-gray-500"
                 />
                 <select
                   value={filterStage || ""}
@@ -2674,7 +2680,7 @@ export default function CrmPipeline() {
                       e.target.value === "" ? null : e.target.value
                     )
                   }
-                  className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  className="rounded-md border border-gray-300 px-3 py-2 text-sm"
                 >
                   <option value="">All Stages</option>
                   <option value="New">New</option>
@@ -2693,7 +2699,7 @@ export default function CrmPipeline() {
                       e.target.value === "" ? null : e.target.value
                     )
                   }
-                  className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  className="rounded-md border border-gray-300 px-3 py-2 text-sm"
                 >
                   <option value="">All Salespeople</option>
                   {salespeople.map((person) => (
