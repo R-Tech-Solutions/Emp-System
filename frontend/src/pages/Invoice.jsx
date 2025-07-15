@@ -2660,8 +2660,8 @@ const EnhancedBillingPOSSystem = () => {
   const hostname = window.location.hostname;
   const port = window.location.port;
   const isInvoiceOnly =
-    hostname.startsWith("in.") ||
-    hostname === "in.erp.rtechsl.lk" ||
+    hostname.startsWith("inv.") ||
+    hostname === "inv.erp.rtechsl.lk" ||
     port === "3002";
 
   if (isLoading) {

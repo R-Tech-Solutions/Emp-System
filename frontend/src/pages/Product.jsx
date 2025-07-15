@@ -47,6 +47,12 @@ export default function ProductManagement() {
   const [importFile, setImportFile] = useState(null);
   const [importErrors, setImportErrors] = useState([]);
   const [isImporting, setIsImporting] = useState(false);
+  // Add progress state for batch import
+  const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
+  // Add per-product progress state
+  const [productProgress, setProductProgress] = useState({ current: 0, total: 0 });
+  // Add batch timing for ETA
+  const [batchTimes, setBatchTimes] = useState([]);
 
   // Activity logs
   const [activities, setActivities] = useState([
@@ -61,6 +67,8 @@ export default function ProductManagement() {
   const [identifiersModalOpen, setIdentifiersModalOpen] = useState(false);
   const [selectedProductIdentifiers, setSelectedProductIdentifiers] = useState(null);
   const [isLoadingIdentifiers, setIsLoadingIdentifiers] = useState(false);
+
+  const BATCH_SIZE = 500; // Batch size for import
 
   // Helper to calculate margin percentage
   const getMarginPercent = (price, cost) => {
@@ -450,6 +458,9 @@ export default function ProductManagement() {
 
     setIsImporting(true);
     setImportErrors([]);
+    setImportProgress({ current: 0, total: 0 });
+    setProductProgress({ current: 0, total: 0 });
+    setBatchTimes([]);
 
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -477,6 +488,7 @@ export default function ProductManagement() {
           productIdentifierType: row.productIdentifierType || "none",
         }));
 
+        // Validation
         const validationErrors = productsToImport.reduce((acc, p, index) => {
           if (!p.name) acc.push(`Row ${index + 2}: Product name is required.`);
           if (!p.sku) acc.push(`Row ${index + 2}: SKU is required.`);
@@ -486,19 +498,57 @@ export default function ProductManagement() {
         if (validationErrors.length > 0) {
           setImportErrors(validationErrors);
           setIsImporting(false);
+          setImportProgress({ current: 0, total: 0 });
+          setProductProgress({ current: 0, total: 0 });
+          setBatchTimes([]);
           return;
         }
 
-        const res = await axios.post(`${backEndURL}/api/products/bulk`, { products: productsToImport });
+        // Split into batches
+        let allSuccess = [];
+        let allErrors = [];
+        const totalBatches = Math.ceil(productsToImport.length / BATCH_SIZE);
+        setImportProgress({ current: 0, total: totalBatches });
+
+        for (let i = 0; i < productsToImport.length; i += BATCH_SIZE) {
+          const batch = productsToImport.slice(i, i + BATCH_SIZE);
+          setProductProgress({ current: 0, total: batch.length });
+          const batchStart = Date.now();
+          try {
+            // Simulate per-product progress (since backend is bulk, we just animate)
+            for (let p = 1; p <= batch.length; p++) {
+              setProductProgress({ current: p, total: batch.length });
+              // Optionally, add a small delay for UI effect (remove in production)
+              // await new Promise(res => setTimeout(res, 1));
+            }
+            const res = await axios.post(`${backEndURL}/api/products/bulk`, { products: batch });
+            if (res.status === 207 && res.data.errors.length > 0) {
+              allSuccess = allSuccess.concat(res.data.success);
+              allErrors = allErrors.concat(res.data.errors.map(e => `SKU ${e.product.sku}: ${e.error}`));
+            } else {
+              allSuccess = allSuccess.concat(res.data.success);
+            }
+          } catch (err) {
+            if (err.response && err.response.data && err.response.data.errors) {
+              allErrors = allErrors.concat(err.response.data.errors.map(e => `SKU ${e.product.sku}: ${e.error}`));
+            } else if (err.response && err.response.data && err.response.data.error) {
+              allErrors.push(err.response.data.error);
+            } else {
+              allErrors.push("An unexpected error occurred. See console for details.");
+            }
+          }
+          const batchEnd = Date.now();
+          setBatchTimes(prev => [...prev, (batchEnd - batchStart) / 1000]); // seconds
+          setImportProgress(prev => ({ current: prev.current + 1, total: totalBatches }));
+        }
 
         fetchProducts(); // Refresh the product list
 
-        if (res.status === 207 && res.data.errors.length > 0) {
-          addActivity(`Import partially successful. ${res.data.success.length} created, ${res.data.errors.length} failed.`);
-          const backendErrors = res.data.errors.map(e => `SKU ${e.product.sku}: ${e.error}`);
-          setImportErrors(backendErrors);
+        if (allErrors.length > 0) {
+          addActivity(`Import partially successful. ${allSuccess.length} created, ${allErrors.length} failed.`);
+          setImportErrors(allErrors);
         } else {
-          addActivity(`Successfully imported ${res.data.success.length} products.`);
+          addActivity(`Successfully imported ${allSuccess.length} products.`);
           setImportModalOpen(false);
           setImportFile(null);
         }
@@ -506,21 +556,27 @@ export default function ProductManagement() {
       } catch (err) {
         console.error("Error importing products:", err);
         addActivity("Failed to import products.");
-        if (err.response && err.response.data && err.response.data.errors) {
-          const backendErrors = err.response.data.errors.map(e => `SKU ${e.product.sku}: ${e.error}`);
-          setImportErrors(backendErrors);
-        } else if (err.response && err.response.data && err.response.data.error) {
-          setImportErrors([err.response.data.error]);
-        }
-        else {
-          setImportErrors(["An unexpected error occurred. See console for details."]);
-        }
+        setImportErrors(["An unexpected error occurred. See console for details."]);
       } finally {
         setIsImporting(false);
+        setImportProgress({ current: 0, total: 0 });
+        setProductProgress({ current: 0, total: 0 });
+        setBatchTimes([]);
       }
     };
     reader.readAsArrayBuffer(importFile);
   };
+
+  // Helper to get ETA string
+  function getETA(batchTimes, importProgress) {
+    if (!batchTimes.length || !importProgress.total) return '';
+    const avg = batchTimes.reduce((a, b) => a + b, 0) / batchTimes.length;
+    const remaining = importProgress.total - importProgress.current;
+    const seconds = Math.round(avg * remaining);
+    const min = Math.floor(seconds / 60);
+    const sec = seconds % 60;
+    return `Estimated time left: ${min}m ${sec}s`;
+  }
 
   // Render helpers
   const renderSortIcon = (key) => {
@@ -1551,13 +1607,13 @@ export default function ProductManagement() {
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-2xl font-bold text-text-primary">Import Products</h2>
               <button
-                onClick={() => setImportModalOpen(false)}
-                className="text-text-muted hover:text-text-primary transition-all duration-200"
+                onClick={() => { if (!isImporting) setImportModalOpen(false); }}
+                className={`text-text-muted hover:text-text-primary transition-all duration-200 ${isImporting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={isImporting}
               >
                 <X size={24} />
               </button>
             </div>
-            
             <div className="space-y-6">
               <div>
                 <p className="text-lg text-text-secondary mb-4">
@@ -1570,23 +1626,53 @@ export default function ProductManagement() {
                   Download Template.xlsx
                 </button>
               </div>
-
               <div>
                 <label className="block text-lg font-bold text-text-primary mb-4">Upload File</label>
                 <div className="flex items-center justify-center w-full">
-                    <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-40 border-2 border-border border-dashed rounded-xl cursor-pointer bg-accent hover:bg-secondary transition-all duration-200">
-                        <div className="flex flex-col items-center justify-center pt-8 pb-6">
-                            <Upload size={32} className="mb-4 text-text-muted"/>
-                            <p className="mb-2 text-lg text-text-primary">
-                              {importFile ? importFile.name : <><span className="font-bold">Click to upload</span> or drag and drop</>}
-                            </p>
-                            <p className="text-lg text-text-muted">XLSX or CSV file</p>
-                        </div>
-                        <input id="dropzone-file" type="file" className="hidden" onChange={handleImportFileChange} accept=".xlsx, .csv" />
-                    </label>
-                </div> 
+                  <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-40 border-2 border-border border-dashed rounded-xl cursor-pointer bg-accent hover:bg-secondary transition-all duration-200">
+                    <div className="flex flex-col items-center justify-center pt-8 pb-6">
+                      <Upload size={32} className="mb-4 text-text-muted"/>
+                      <p className="mb-2 text-lg text-text-primary">
+                        {importFile ? importFile.name : <><span className="font-bold">Click to upload</span> or drag and drop</>}
+                      </p>
+                      <p className="text-lg text-text-muted">XLSX or CSV file</p>
+                    </div>
+                    <input id="dropzone-file" type="file" className="hidden" onChange={handleImportFileChange} accept=".xlsx, .csv" disabled={isImporting} />
+                  </label>
+                </div>
               </div>
-
+              {/* Progress Bar */}
+              {isImporting && (
+                <div className="w-full mt-4 space-y-4">
+                  <div className="mb-2 text-lg text-text-primary font-bold text-center">
+                    Importing... Batch {importProgress.current} of {importProgress.total}
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-6">
+                    <div
+                      className="bg-primary h-6 rounded-full transition-all duration-300"
+                      style={{ width: `${importProgress.total ? (importProgress.current / importProgress.total) * 100 : 0}%` }}
+                    ></div>
+                  </div>
+                  {/* ETA */}
+                  <div className="text-center text-lg text-text-secondary font-semibold">
+                    {getETA(batchTimes, importProgress)}
+                  </div>
+                  {/* Per-product loader */}
+                  <div className="w-full">
+                    <div className="mb-1 text-base text-text-primary text-center">
+                      {productProgress.total > 0 && (
+                        <>Uploading product {productProgress.current} of {productProgress.total} in current batch</>
+                      )}
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-4">
+                      <div
+                        className="bg-secondary h-4 rounded-full transition-all duration-200"
+                        style={{ width: `${productProgress.total ? (productProgress.current / productProgress.total) * 100 : 0}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              )}
               {importErrors.length > 0 && (
                 <div className="bg-red-100 border border-red-300 text-red-800 px-6 py-4 rounded-xl">
                   <h3 className="font-bold text-lg mb-2">Import Errors</h3>
@@ -1597,13 +1683,12 @@ export default function ProductManagement() {
                   </ul>
                 </div>
               )}
-
             </div>
-
             <div className="flex justify-end space-x-4 mt-8">
               <button
-                onClick={() => setImportModalOpen(false)}
-                className="px-6 py-3 bg-secondary hover:bg-accent text-primary rounded-xl font-bold transition-all duration-200 shadow-lg"
+                onClick={() => { if (!isImporting) setImportModalOpen(false); }}
+                className={`px-6 py-3 bg-secondary hover:bg-accent text-primary rounded-xl font-bold transition-all duration-200 shadow-lg ${isImporting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={isImporting}
               >
                 Cancel
               </button>
@@ -1615,7 +1700,6 @@ export default function ProductManagement() {
                 {isImporting ? 'Importing...' : 'Start Import'}
               </button>
             </div>
-
           </div>
         </div>
       )}

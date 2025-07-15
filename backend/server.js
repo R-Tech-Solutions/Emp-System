@@ -4,11 +4,11 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const db = require('./firebaseConfig'); 
 
-const departmentRoutes = require("./routes/system/departmentRoutes");
-const employmentTypeRoutes = require("./routes/system/employmentTypeRoutes");
-const employmentStatusRoutes = require("./routes/system/employmentStatusRoutes");
-const certificateLevelRoutes = require("./routes/system/certificateLevelRoutes");
-const positionsRoutes = require("./routes/system/positionsRoutes");
+const departmentRoutes = require("./routes/system/DepartmentRoutes");
+const employmentTypeRoutes = require("./routes/system/EmploymentTypeRoutes");
+const employmentStatusRoutes = require("./routes/system/EmploymentStatusRoutes");
+const certificateLevelRoutes = require("./routes/system/CertificateLevelRoutes");
+const positionsRoutes = require("./routes/system/PositionsRoutes");
 
 const employeeRoutes = require('./routes/employee/employeeRoutes');
 const taskRoutes = require('./routes/taskRoutes');
