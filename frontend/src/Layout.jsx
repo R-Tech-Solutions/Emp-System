@@ -1,8 +1,22 @@
 import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { RightSidebar } from './Sidebar';
+import { getUserData, hasPermission, logout } from './utils/auth';
 
 function FullScreenPageWrapper({ children, onBack }) {
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Only trigger on Backspace if not in an input/textarea
+      if (e.key === 'Backspace' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+        e.preventDefault();
+        onBack();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onBack]);
+
   return (
     <div className="w-screen h-screen flex flex-col bg-background">
       <div className="flex items-center p-4 bg-white shadow-md">
@@ -21,6 +35,15 @@ export default function Layout() {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // User/role info for RightSidebar
+  const userData = getUserData();
+  const isAdmin = userData?.role === 'admin';
+  const isSuperAdmin = userData?.role === 'super-admin';
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   // Show sidebar only on root ("/")
   React.useEffect(() => {
@@ -45,6 +68,14 @@ export default function Layout() {
 
   return (
     <div className="w-screen h-screen">
+      {/* Always render the hover right sidebar on all pages */}
+      <RightSidebar
+        isAdmin={isAdmin}
+        isSuperAdmin={isSuperAdmin}
+        hasPermission={hasPermission}
+        handleLogout={handleLogout}
+        navigate={navigate}
+      />
       {sidebarVisible ? (
         <Sidebar onModuleClick={handleModuleClick} />
       ) : (
