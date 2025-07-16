@@ -171,13 +171,13 @@ const FinanceDashboard = () => {
   const filteredAndSortedIncomes = useMemo(() => {
     const filtered = incomes.filter((income) => {
       const matchesSearch =
-        income.title.toLowerCase().includes(incomeFilters.search.toLowerCase()) ||
-        income.receivedFrom.toLowerCase().includes(incomeFilters.search.toLowerCase()) ||
-        income.description.toLowerCase().includes(incomeFilters.search.toLowerCase())
+        String(income.title || '').toLowerCase().includes(incomeFilters.search.toLowerCase()) ||
+        String(income.receivedFrom || '').toLowerCase().includes(incomeFilters.search.toLowerCase()) ||
+        String(income.description || '').toLowerCase().includes(incomeFilters.search.toLowerCase())
       const matchesCategory = !incomeFilters.category || income.category === incomeFilters.category
       const matchesReceivedFrom =
         !incomeFilters.receivedFrom ||
-        income.receivedFrom.toLowerCase().includes(incomeFilters.receivedFrom.toLowerCase())
+        String(income.receivedFrom || '').toLowerCase().includes(incomeFilters.receivedFrom.toLowerCase())
       const matchesProject = !incomeFilters.project || income.project === incomeFilters.project
       const matchesStatus = !incomeFilters.status || income.status === incomeFilters.status
 
@@ -220,12 +220,12 @@ const FinanceDashboard = () => {
   const filteredAndSortedExpenses = useMemo(() => {
     const filtered = expenses.filter((expense) => {
       const matchesSearch =
-        expense.title.toLowerCase().includes(expenseFilters.search.toLowerCase()) ||
-        expense.paidBy.toLowerCase().includes(expenseFilters.search.toLowerCase())
+        String(expense.title || '').toLowerCase().includes(expenseFilters.search.toLowerCase()) ||
+        String(expense.paidBy || '').toLowerCase().includes(expenseFilters.search.toLowerCase())
       const matchesCategory = !expenseFilters.category || expense.category === expenseFilters.category
       const matchesDepartment = !expenseFilters.department || expense.department === expenseFilters.department
       const matchesPaidBy =
-        !expenseFilters.paidBy || expense.paidBy.toLowerCase().includes(expenseFilters.paidBy.toLowerCase())
+        !expenseFilters.paidBy || String(expense.paidBy || '').toLowerCase().includes(expenseFilters.paidBy.toLowerCase())
       const matchesStatus = !expenseFilters.status || expense.status === expenseFilters.status
 
       let matchesDateRange = true

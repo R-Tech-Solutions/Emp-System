@@ -35,12 +35,13 @@ import UserHrm from "./pages/Usermanual/userHRM.jsx";
 import UserSales from "./pages/Usermanual/userSales.jsx";
 import ReturnDashboard from "./pages/Retrundashboard.jsx";
 import CustomerAccounts from "./pages/CustomerAccounts.jsx";
+import Sidebar from "./Sidebar.jsx"
 // Permission-based route component
 const PermissionRoute = ({ permission, children }) => {
   if (hasPermission(permission)) {
     return children;
   }
-  return <Navigate to="/dashboard" replace />;
+  return <Navigate to="/" replace />;
 };
 
 // Admin-only route component
@@ -53,7 +54,7 @@ const AdminOnlyRoute = ({ children }) => {
   if (userData.role === "admin" || userData.role === "super-admin" || (email === "info@rtechsl.lk" && restrictedUser)) {
     return children;
   }
-  return <Navigate to="/dashboard" replace />;
+  return <Navigate to="/" replace />;
 };
 
 // Helper to check invoice permission
@@ -67,7 +68,7 @@ function hasInvoicePermission() {
 
 // NoAccess component for users without permission
 function NoAccess() {
-  return (
+  return ( 
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
       <h1 style={{ color: '#dc2626', fontSize: '2rem', marginBottom: '1rem' }}>🚫 Access Denied</h1>
       <p style={{ color: '#64748b', fontSize: '1.1rem' }}>You do not have permission to access the Invoice page.<br/>Please contact your administrator if you believe this is a mistake.</p>
@@ -75,6 +76,7 @@ function NoAccess() {
     </div>
   );
 }
+
 
 function App() {
   // All hooks at the top!
@@ -160,6 +162,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+          
           <Route
             path="dashboard"
             element={
@@ -194,6 +197,16 @@ function App() {
               <ProtectedRoute>
                 <PermissionRoute permission="tasks">
                   <TaskManagement />
+                </PermissionRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="sidebar"
+            element={
+              <ProtectedRoute>
+                <PermissionRoute>
+                  <Sidebar />
                 </PermissionRoute>
               </ProtectedRoute>
             }
@@ -262,9 +275,7 @@ function App() {
             path="my"
             element={
               <ProtectedRoute>
-                <PermissionRoute permission="my">
-                  <Mysettings />
-                </PermissionRoute>
+                <Mysettings />
               </ProtectedRoute>
             }
           />

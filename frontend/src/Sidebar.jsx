@@ -1,22 +1,16 @@
-"use client";
-import React from "react";
-import { useState, useEffect, useMemo } from "react";
-import { NavLink, useNavigate, useLocation } from "react-router-dom";
+"use client"
+import React from "react"
+import { useState, useEffect } from "react"
+import { NavLink, useNavigate, useLocation } from "react-router-dom"
 import {
   Menu,
   X,
   LogOut,
   Search,
-  Bell,
-  HelpCircle,
-  Keyboard,
-  Star,
   Clock,
   Settings,
   User,
   Receipt,
-  ChevronDown,
-  Zap,
   Home,
   Building,
   Users,
@@ -32,61 +26,61 @@ import {
   BookOpen,
   DollarSign,
   TrendingUp,
-  Activity
-} from "lucide-react";
+  Activity,
+} from "lucide-react"
 
-import { logout, getUserData, hasPermission } from './utils/auth';
+import { logout, getUserData, hasPermission } from "./utils/auth"
 
-function Sidebar() {
-  const navigate = useNavigate();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+function Sidebar({ onModuleClick }) {
+  const navigate = useNavigate()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [openSections, setOpenSections] = useState({
     hrm: false,
     sales: false,
-    quickActions: false
-  });
-  const [recentPages, setRecentPages] = useState([]);
-  const [favorites, setFavorites] = useState([]);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
-  const [showShortcuts, setShowShortcuts] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const location = useLocation();
+    quickActions: false,
+  })
+  const [recentPages, setRecentPages] = useState([])
+  const [favorites, setFavorites] = useState([])
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [showHelp, setShowHelp] = useState(false)
+  const [showShortcuts, setShowShortcuts] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const location = useLocation()
 
-  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
+  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen)
 
   const handleLogout = () => {
     try {
-      logout();
+      logout()
     } catch (error) {
-      console.error("Error during logout:", error);
-      alert("An error occurred while logging out. Please try again.");
+      console.error("Error during logout:", error)
+      alert("An error occurred while logging out. Please try again.")
     }
-  };
+  }
 
   const toggleSection = (section) => {
-    setOpenSections(prev => {
+    setOpenSections((prev) => {
       const newState = {
         hrm: false,
         sales: false,
-        quickActions: false
-      };
-      if (!prev[section]) {
-        newState[section] = true;
+        quickActions: false,
       }
-      return newState;
-    });
-  };
+      if (!prev[section]) {
+        newState[section] = true
+      }
+      return newState
+    })
+  }
 
   // Track recent pages
   useEffect(() => {
     if (location.pathname !== "/") {
-      setRecentPages(prev => {
-        const newPages = [location.pathname, ...prev.filter(p => p !== location.pathname)].slice(0, 5);
-        return newPages;
-      });
+      setRecentPages((prev) => {
+        const newPages = [location.pathname, ...prev.filter((p) => p !== location.pathname)].slice(0, 5)
+        return newPages
+      })
     }
-  }, [location.pathname]);
+  }, [location.pathname])
 
   const navItems = [
     {
@@ -95,273 +89,239 @@ function Sidebar() {
       icon: <Home className="w-5 h-5" />,
       description: "Overview and analytics",
       badge: "New",
-      shortcut: "Ctrl+D"
+      shortcut: "Ctrl+D",
     },
-    { type: "header", name: "Human Resource", section: "hrm" },
+    // Human Resource
     {
       name: "Sections",
       path: "/sections",
       icon: <Building className="w-5 h-5" />,
-      section: "hrm",
       description: "Department management",
-      shortcut: "Ctrl+S"
+      shortcut: "Ctrl+S",
     },
     {
       name: "Employees",
       path: "/employees",
       icon: <Users className="w-5 h-5" />,
-      section: "hrm",
       description: "Employee directory",
-      shortcut: "Ctrl+E"
+      shortcut: "Ctrl+E",
     },
     {
       name: "Tasks",
       path: "/tasks",
       icon: <ClipboardList className="w-5 h-5" />,
-      section: "hrm",
       description: "Task management",
-      shortcut: "Ctrl+T"
+      shortcut: "Ctrl+T",
     },
     {
       name: "Timesheets",
       path: "/timesheets",
       icon: <Clock className="w-5 h-5" />,
-      section: "hrm",
       description: "Time tracking",
-      shortcut: "Ctrl+H"
+      shortcut: "Ctrl+H",
     },
     {
       name: "Attendance",
       path: "/attendance",
       icon: <Activity className="w-5 h-5" />,
-      section: "hrm",
       description: "Attendance tracking",
-      shortcut: "Ctrl+A"
+      shortcut: "Ctrl+A",
     },
     {
       name: "Leave Requests",
       path: "/leave-requests",
       icon: <Calendar className="w-5 h-5" />,
-      section: "hrm",
       description: "Leave management",
-      shortcut: "Ctrl+L"
+      shortcut: "Ctrl+L",
     },
     {
       name: "Payroll",
       path: "/payroll",
       icon: <Wallet className="w-5 h-5" />,
-      section: "hrm",
       description: "Salary processing",
-      shortcut: "Ctrl+P"
+      shortcut: "Ctrl+P",
     },
     {
       name: "Messages",
       path: "/messages",
       icon: <MessageCircle className="w-5 h-5" />,
-      section: "hrm",
       description: "Internal messaging",
-      shortcut: "Ctrl+M"
+      shortcut: "Ctrl+M",
     },
     {
       name: "Assets",
       path: "/assets",
       icon: <Boxes className="w-5 h-5" />,
-      section: "hrm",
       description: "Asset management",
-      shortcut: "Ctrl+B"
+      shortcut: "Ctrl+B",
     },
     {
       name: "Reports",
       path: "/reports",
       icon: <BarChart2 className="w-5 h-5" />,
-      section: "hrm",
       description: "HR analytics",
-      shortcut: "Ctrl+R"
+      shortcut: "Ctrl+R",
     },
-
+    // Sales & Inventory
     {
       name: "Sales Overview",
       path: "/salesdashboard",
       icon: <TrendingUp className="w-5 h-5" />,
       description: "Sales performance",
-      shortcut: "Ctrl+O"
+      shortcut: "Ctrl+O",
     },
-    { type: "header", name: "Sales & Inventory", section: "sales" },
     {
       name: "CRM",
       path: "/crm",
       icon: <Users className="w-5 h-5" />,
-      section: "sales",
       description: "Customer management",
-      shortcut: "Ctrl+C"
+      shortcut: "Ctrl+C",
     },
     {
       name: "Products",
       path: "/products",
       icon: <Boxes className="w-5 h-5" />,
-      section: "sales",
       description: "Product catalog",
-      shortcut: "Ctrl+Q"
+      shortcut: "Ctrl+Q",
     },
     {
       name: "Quotation",
       path: "/quatation",
       icon: <FileText className="w-5 h-5" />,
-      section: "sales",
       description: "Quote generation",
-      shortcut: "Ctrl+U"
+      shortcut: "Ctrl+U",
     },
     {
       name: "Purchase",
       path: "/purchase",
       icon: <ShoppingCart className="w-5 h-5" />,
-      section: "sales",
       description: "Purchase orders",
-      shortcut: "Ctrl+G"
+      shortcut: "Ctrl+G",
     },
     {
       name: "Inventory",
       path: "/inventory",
       icon: <Boxes className="w-5 h-5" />,
-      section: "sales",
       description: "Stock management",
-      shortcut: "Ctrl+I"
+      shortcut: "Ctrl+I",
     },
     {
       name: "Supplier",
       path: "/supplier",
       icon: <Truck className="w-5 h-5" />,
-      section: "sales",
       description: "Supplier directory",
-      shortcut: "Ctrl+Y"
+      shortcut: "Ctrl+Y",
     },
     {
       name: "Cashbook",
       path: "/cashbook",
       icon: <BookOpen className="w-5 h-5" />,
-      section: "sales",
       description: "Financial records",
-      shortcut: "Ctrl+K"
+      shortcut: "Ctrl+K",
     },
     {
       name: "Income",
       path: "/income",
       icon: <DollarSign className="w-5 h-5" />,
-      section: "sales",
       description: "Income tracking",
-      shortcut: "Ctrl+N"
+      shortcut: "Ctrl+N",
     },
     {
       name: "Sales Report",
       path: "/sales-report",
       icon: <BarChart2 className="w-5 h-5" />,
-      section: "sales",
       description: "Sales analytics",
-      shortcut: "Ctrl+F"
+      shortcut: "Ctrl+F",
     },
-    {
-      name: "RETURN",
-      path: "/return-dashboard",
-      icon: <BarChart2 className="w-5 h-5" />,
-      section: "sales",
-      description: "Manage return dashboard",
-      shortcut: "Ctrl+W"
-    },
-    {
-      name: "CUSTOMER",
-      path: "/customerAccounts",
-      icon: <BarChart2 className="w-5 h-5" />,
-      section: "sales",
-      description: "Manage customer accounts",
-      shortcut: "Ctrl+X"
-    },
-  ];
+  ]
 
   // Enhanced keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (event) => {
       // Global shortcuts (no modifier needed)
-      if (event.key === 'Escape') {
-        setShowNotifications(false);
-        setShowHelp(false);
-        setShowShortcuts(false);
-        setSearchQuery("");
+      if (event.key === "Escape") {
+        setShowNotifications(false)
+        setShowHelp(false)
+        setShowShortcuts(false)
+        setSearchQuery("")
       }
 
       // Shift shortcuts
       if (event.shiftKey) {
         switch (event.key.toLowerCase()) {
-          case 'p':
-            if (hasPermission('invoice')) {
-              navigate('/invoice');
+          case "p":
+            if (hasPermission("invoice")) {
+              navigate("/invoice")
             }
-            break;
-          case 'l':
-            handleLogout();
-            break;
-          case 's':
-            navigate('/buisness');
-            break;
-          case 'h':
-            setShowHelp(!showHelp);
-            break;
-          case 'k':
-            setShowShortcuts(!showShortcuts);
-            break;
-          case 'n':
-            setShowNotifications(!showNotifications);
-            break;
+            break
+          case "l":
+            handleLogout()
+            break
+          case "s":
+            navigate("/buisness")
+            break
+          case "h":
+            setShowHelp(!showHelp)
+            break
+          case "k":
+            setShowShortcuts(!showShortcuts)
+            break
+          case "n":
+            setShowNotifications(!showNotifications)
+            break
         }
       }
 
       // Ctrl shortcuts
       if (event.ctrlKey) {
         switch (event.key.toLowerCase()) {
-          case 'k':
-            event.preventDefault();
-            document.querySelector('input[placeholder="Search menu..."]')?.focus();
-            break;
-          case 'i':
-            if (hasPermission('invoice')) {
-              navigate('/invoice');
+          case "k":
+            event.preventDefault()
+            document.querySelector('input[placeholder="Search menu..."]')?.focus()
+            break
+          case "i":
+            if (hasPermission("invoice")) {
+              navigate("/invoice")
             }
-            break;
-          case 'e':
-            navigate('/employees');
-            break;
-          case 't':
-            navigate('/tasks');
-            break;
-          case 'd':
-            navigate('/dashboard');
-            break;
+            break
+          case "e":
+            navigate("/employees")
+            break
+          case "t":
+            navigate("/tasks")
+            break
+          case "d":
+            navigate("/sidebar")
+            break
         }
       }
-    };
+    }
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [navigate]);
+    window.addEventListener("keydown", handleKeyPress)
+    return () => window.removeEventListener("keydown", handleKeyPress)
+  }, [navigate])
 
   return (
     <>
+      {/* Mobile Menu Button */}
       <button
-        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-surface text-text-primary shadow-md border border-border hover:bg-primary-light transition-colors"
+        className="md:hidden fixed top-4 left-4 z-50 p-3 rounded-xl bg-white/90 backdrop-blur-md text-slate-700 shadow-2xl border border-slate-200/50 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:border-blue-300/50 transition-all duration-300 hover:scale-105 hover:shadow-blue-200/50"
         onClick={toggleMobileMenu}
       >
-        {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
       </button>
 
       {/* Mobile Sidebar Overlay */}
       <div
-        className={`fixed inset-0 z-40 bg-black bg-opacity-40 transition-opacity duration-300 ease-in-out md:hidden ${isMobileMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        className={`fixed inset-0 z-40 bg-gradient-to-br from-slate-900/60 via-blue-900/40 to-indigo-900/60 backdrop-blur-sm transition-all duration-500 ease-out md:hidden ${isMobileMenuOpen ? "opacity-100 visible" : "opacity-0 invisible"
+          }`}
         onClick={toggleMobileMenu}
-      ></div>
+      />
 
       {/* Sidebar Container */}
       <div
-        className={`fixed md:static z-50 transform transition-transform duration-300 ease-in-out md:translate-x-0 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-          } md:flex flex-col w-72 h-full bg-background border-r border-border shadow-lg`}
+        className={`fixed inset-0 z-50 transform transition-all duration-500 ease-out md:translate-x-0 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          } flex flex-col w-screen h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 border-r border-slate-200/50 shadow-2xl backdrop-blur-xl`}
       >
         <SidebarContent
           navItems={navItems}
@@ -375,10 +335,11 @@ function Sidebar() {
           showShortcuts={showShortcuts}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
+          onModuleClick={onModuleClick}
         />
       </div>
     </>
-  );
+  )
 }
 
 function SidebarContent({
@@ -392,53 +353,85 @@ function SidebarContent({
   showHelp,
   showShortcuts,
   searchQuery,
-  setSearchQuery
+  setSearchQuery,
+  onModuleClick,
 }) {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const userData = getUserData();
-  const userEmail = userData?.email || sessionStorage.getItem("email") || "admin@example.com";
+  const navigate = useNavigate()
+  const location = useLocation()
+  const userData = getUserData()
+  const userEmail = userData?.email || sessionStorage.getItem("email") || "admin@example.com"
+
+  // Debug: log permissions
+  console.log("User permissions:", userData?.permissions);
+
+  // Helper for permission check
+  function hasModulePermission(key) {
+    if (userData?.role === "admin" || userData?.role === "super-admin") return true;
+    return userData?.permissions && userData.permissions[key] === true;
+  }
+
+  // Human Resource and Sales & Inventory modules
+  const humanResourceModules = [
+    { name: "Sections", icon: <Building className="w-6 h-6" />, path: "/sections", desc: "Department management", color: "blue", key: "sections" },
+    { name: "Employees", icon: <Users className="w-6 h-6" />, path: "/employees", desc: "Employee directory", color: "indigo", key: "employees" },
+    { name: "Tasks", icon: <ClipboardList className="w-6 h-6" />, path: "/tasks", desc: "Task management", color: "purple", key: "tasks" },
+    { name: "Timesheets", icon: <Clock className="w-6 h-6" />, path: "/timesheets", desc: "Time tracking", color: "pink", key: "timesheets" },
+    { name: "Attendance", icon: <Activity className="w-6 h-6" />, path: "/attendance", desc: "Attendance tracking", color: "rose", key: "attendance" },
+    { name: "Leave Requests", icon: <Calendar className="w-6 h-6" />, path: "/leave-requests", desc: "Leave management", color: "orange", key: "leave-requests" },
+    { name: "Payroll", icon: <Wallet className="w-6 h-6" />, path: "/payroll", desc: "Salary processing", color: "amber", key: "payroll" },
+    { name: "Messages", icon: <MessageCircle className="w-6 h-6" />, path: "/messages", desc: "Internal messaging", color: "yellow", key: "messages" },
+    { name: "Assets", icon: <Boxes className="w-6 h-6" />, path: "/assets", desc: "Asset management", color: "lime", key: "assets" },
+    { name: "Reports", icon: <BarChart2 className="w-6 h-6" />, path: "/reports", desc: "HR analytics", color: "green", key: "reports" },
+  ];
+  const salesInventoryModules = [
+    { name: "CRM", icon: <Users className="w-6 h-6" />, path: "/crm", desc: "Customer management", color: "green", key: "crm" },
+    { name: "Inventory", icon: <Boxes className="w-6 h-6" />, path: "/inventory", desc: "Stock management", color: "emerald", key: "inventory" },
+    { name: "Purchase", icon: <ShoppingCart className="w-6 h-6" />, path: "/purchase", desc: "Purchase orders", color: "teal", key: "purchase" },
+    { name: "Products", icon: <Boxes className="w-6 h-6" />, path: "/products", desc: "Product catalog", color: "cyan", key: "products" },
+    { name: "Quotation", icon: <FileText className="w-6 h-6" />, path: "/quatation", desc: "Quote generation", color: "sky", key: "quatation" },
+    { name: "Supplier", icon: <Truck className="w-6 h-6" />, path: "/supplier", desc: "Supplier directory", color: "blue", key: "supplier" },
+    { name: "Cashbook", icon: <BookOpen className="w-6 h-6" />, path: "/cashbook", desc: "Financial records", color: "indigo", key: "cashbook" },
+    { name: "Income", icon: <DollarSign className="w-6 h-6" />, path: "/income", desc: "Income tracking", color: "purple", key: "income" },
+    { name: "Sales Report", icon: <BarChart2 className="w-6 h-6" />, path: "/sales-report", desc: "Sales analytics", color: "pink", key: "sales-report" },
+    { name: "Customer", icon: <Users className="w-6 h-6" />, path: "/customerAccounts", desc: "Manage customer accounts", color: "rose", key: "customerAccounts" },
+    { name: "Return", icon: <TrendingUp className="w-6 h-6" />, path: "/return-dashboard", desc: "Manage return dashboard", color: "orange", key: "return-dashboard" },
+  ];
 
   // User Manual Dropdown State
-  const [showManualMenu, setShowManualMenu] = useState(false);
-  const manualMenuRef = React.useRef();
+  const [showManualMenu, setShowManualMenu] = useState(false)
+  const manualMenuRef = React.useRef()
 
   // Close menu on outside click
   useEffect(() => {
     function handleClickOutside(event) {
       if (manualMenuRef.current && !manualMenuRef.current.contains(event.target)) {
-        setShowManualMenu(false);
+        setShowManualMenu(false)
       }
     }
     if (showManualMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside)
     } else {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside)
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showManualMenu]);
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [showManualMenu])
 
   const handleLogout = () => {
     try {
-      logout();
+      logout()
     } catch (error) {
-      console.error("Error during logout:", error);
-      alert("An error occurred while logging out. Please try again.");
+      console.error("Error during logout:", error)
+      alert("An error occurred while logging out. Please try again.")
     }
-  };
+  }
 
   const toggleFavorite = (path) => {
-    setFavorites(prev =>
-      prev.includes(path)
-        ? prev.filter(p => p !== path)
-        : [...prev, path]
-    );
-  };
+    setFavorites((prev) => (prev.includes(path) ? prev.filter((p) => p !== path) : [...prev, path]))
+  }
 
   // Filter navigation items based on user permissions and search
-  const filteredNavItems = navItems.filter(item => {
-    if (userData?.role === "admin" || userData?.role === "super-admin") return true;
-
+  const filteredNavItems = navItems.filter((item) => {
+    if (userData?.role === "admin" || userData?.role === "super-admin") return true
     const pathToPermissionMap = {
       "/dashboard": "dashboard",
       "/sections": "sections",
@@ -465,282 +458,330 @@ function SidebarContent({
       "/invoice": "invoice",
       "/sales-report": "sales-report",
       "/return-dashboard": "return-dashboard",
-      "/customerAccounts": "customerAccounts"
-    };
-
-    const requiredPermission = pathToPermissionMap[item.path];
-    if (!requiredPermission) return true;
-
-    return hasPermission(requiredPermission);
-  });
+      "/customerAccounts": "customerAccounts",
+    }
+    const requiredPermission = pathToPermissionMap[item.path]
+    if (!requiredPermission) return true
+    // Explicit permission check: only show if permission is true
+    return userData.permissions && userData.permissions[requiredPermission] === true
+  })
 
   // Filter by search query
-  const searchFilteredItems = filteredNavItems.filter(item => {
-    if (item.type === "header") return true;
-    if (!searchQuery) return true;
-    return item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           item.description?.toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  const searchFilteredItems = filteredNavItems.filter((item) => {
+    if (item.type === "header") return true
+    if (!searchQuery) return true
+    return (
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  })
 
   // Group items by section
-  const groupedItems = {};
-  searchFilteredItems.forEach(item => {
+  const groupedItems = {}
+  searchFilteredItems.forEach((item) => {
     if (item.type === "header") {
       if (item.section) {
         groupedItems[item.section] = {
           header: item,
-          items: []
-        };
+          items: [],
+        }
       }
     } else if (item.section && groupedItems[item.section]) {
-      groupedItems[item.section].items.push(item);
+      groupedItems[item.section].items.push(item)
     } else if (!item.section) {
-      if (!groupedItems['main']) {
-        groupedItems['main'] = { header: null, items: [] };
+      if (!groupedItems["main"]) {
+        groupedItems["main"] = { header: null, items: [] }
       }
-      groupedItems['main'].items.push(item);
+      groupedItems["main"].items.push(item)
     }
-  });
+  })
 
-  const finalItems = [];
+  const finalItems = []
   Object.entries(groupedItems).forEach(([section, group]) => {
     if (group.items.length > 0) {
       if (group.header) {
-        finalItems.push(group.header);
+        finalItems.push(group.header)
       }
-      finalItems.push(...group.items);
+      finalItems.push(...group.items)
     }
-  });
+  })
 
-  const isAdminOrSuperAdmin = userData?.role === "admin" || userData?.role === "super-admin" || (sessionStorage.getItem("email") === "info@rtechsl.lk" && sessionStorage.getItem("restrictedUser") === "true");
+  const isAdminOrSuperAdmin =
+    userData?.role === "admin" ||
+    userData?.role === "super-admin" ||
+    (sessionStorage.getItem("email") === "info@rtechsl.lk" && sessionStorage.getItem("restrictedUser") === "true")
+
+  const isAdmin = userData?.role === "admin";
+  const isSuperAdmin = userData?.role === "super-admin";
 
   return (
-    <>
-      {/* Header with Search */}
-      <div className="p-4 border-b border-border bg-gradient-to-br from-primary-light via-surface to-accent/20">
-        <div className="flex items-center gap-3 mb-4 relative">
-          
-          <div className="flex-1">
-            <p className="font-semibold text-text-primary text-sm">Welcome back!</p>
-            <p className="text-text-secondary text-xs truncate">{userEmail}</p>
-          </div>
-          {/* User Manual Icon */}
-          <div className="relative" ref={manualMenuRef}>
-            <button
-              className="p-2 rounded-full hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-primary"
-              title="User Manuals"
-              onClick={() => setShowManualMenu((prev) => !prev)}
-            >
-              <BookOpen className="w-5 h-5 text-primary" />
-            </button>
-            {showManualMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white border border-border rounded-lg shadow-lg z-50 animate-fade-in">
-                <button
-                  className="w-full text-left px-4 py-2 hover:bg-primary-light text-text-primary rounded-t-lg"
-                  onClick={() => { setShowManualMenu(false); navigate('/User-Hrm'); }}
-                >
-                  HRM User Manual
-                </button>
-                <button
-                  className="w-full text-left px-4 py-2 hover:bg-primary-light text-text-primary rounded-b-lg"
-                  onClick={() => { setShowManualMenu(false); navigate('/User-Sales'); }}
-                >
-                  Sales User Manual
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Search Bar */}
-        <div className="relative group">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-secondary group-focus-within:text-primary transition-colors" />
-          <input
-            type="text"
-            placeholder="Search menu... (Ctrl+K)"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 text-sm bg-white border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 hover:border-primary/50"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-secondary hover:text-primary transition-colors"
-            >
-              ×
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <div className="flex-1 overflow-y-auto px-2 py-4 scrollbar-thin scrollbar-thumb-border">
-        {finalItems.map((item) => {
-          if (item.type === "header") {
-            if (item.section) {
-              return (
-                <div
-                  key={item.name}
-                  onClick={() => toggleSection(item.section)}
-                  className="flex items-center justify-between px-4 py-3 mt-4 mb-2 text-xs font-semibold text-text-secondary uppercase tracking-wider cursor-pointer hover:bg-primary-light rounded-lg transition-all duration-200 group"
-                >
-                  <span className="group-hover:text-primary transition-colors">{item.name}</span>
-                  <ChevronDown
-                    className={`w-4 h-4 transition-transform duration-200 group-hover:text-primary ${openSections[item.section] ? "transform rotate-180" : ""}`}
-                  />
+    <div className="flex h-full w-full">
+      {/* Main Sidebar (left) */}
+      <div className="flex flex-col h-full w-full">
+        {/* Header with Search */}
+        <div className="p-6 border-b border-slate-200/50 bg-gradient-to-br from-blue-600/10 via-indigo-50/80 to-purple-50/60 backdrop-blur-sm">
+          <div className="flex items-center gap-4 mb-6 relative">
+            <div className="flex-1">
+              <p className="font-bold text-slate-800 text-lg bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                Welcome back!
+              </p>
+              <p className="text-slate-600 text-sm truncate font-medium">{userEmail}</p>
+            </div>
+            {/* User Manual Icon */}
+            <div className="relative" ref={manualMenuRef}>
+              <button
+                className="p-3 rounded-xl bg-white/80 backdrop-blur-sm hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 focus:outline-none focus:ring-4 focus:ring-blue-200/50 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-blue-200/50 border border-slate-200/50"
+                title="User Manuals"
+                onClick={() => setShowManualMenu((prev) => !prev)}
+              >
+                <BookOpen className="w-5 h-5 text-blue-600" />
+              </button>
+              {showManualMenu && (
+                <div className="absolute right-0 mt-3 w-56 bg-white/95 backdrop-blur-md border border-slate-200/50 rounded-2xl shadow-2xl z-50 animate-in slide-in-from-top-2 duration-300 overflow-hidden">
+                  <button
+                    className="w-full text-left px-5 py-4 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 text-slate-700 hover:text-blue-700 transition-all duration-200 font-medium border-b border-slate-100/50"
+                    onClick={() => {
+                      setShowManualMenu(false)
+                      navigate("/User-Hrm")
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Users className="w-4 h-4 text-blue-500" />
+                      HRM User Manual
+                    </div>
+                  </button>
+                  <button
+                    className="w-full text-left px-5 py-4 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 text-slate-700 hover:text-blue-700 transition-all duration-200 font-medium"
+                    onClick={() => {
+                      setShowManualMenu(false)
+                      navigate("/User-Sales")
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <TrendingUp className="w-4 h-4 text-green-500" />
+                      Sales User Manual
+                    </div>
+                  </button>
                 </div>
-              );
-            }
-            return (
-              <div key={item.name} className="px-4 py-3 mt-4 mb-2 text-xs font-semibold text-text-secondary uppercase tracking-wider">
-                {item.name}
-              </div>
-            );
-          }
+              )}
+            </div>
+          </div>
+          {/* Enhanced Search Bar */}
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors duration-300" />
+            <input
+              type="text"
+              placeholder="Search menu... (Ctrl+K)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-12 py-4 text-sm bg-white/80 backdrop-blur-sm border border-slate-200/50 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-200/50 focus:border-blue-300/50 transition-all duration-300 hover:border-blue-300/50 hover:bg-white/90 placeholder-slate-400 font-medium shadow-lg"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-red-500 transition-colors duration-200 text-xl font-bold"
+              >
+                ×
+              </button>
+            )}
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none" />
+          </div>
+        </div>
 
-          if (item.section && !openSections[item.section]) {
-            return null;
-          }
-
-          const isFavorite = favorites.includes(item.path);
-          const isRecent = recentPages.includes(item.path);
-
-          return (
-            <div key={item.name} className="relative group">
+        {/* Main Scrollable Content */}
+        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent hover:scrollbar-thumb-slate-400 px-4 py-6">
+          {/* Navigation */}
+          <div className="space-y-6">
+            {/* Dashboard Row */}
+            <div className="flex gap-3">
               <NavLink
-                to={item.path}
+                to="/dashboard"
                 className={({ isActive }) =>
-                  `flex items-center px-4 py-3 mb-1 text-sm font-medium rounded-lg transition-all duration-300 relative group/item hover:shadow-md ${isActive
-                    ? "bg-gradient-to-r from-primary to-primary-dark text-white shadow-lg transform scale-[1.02] border-l-4 border-accent"
-                    : "text-text-secondary hover:bg-gradient-to-r hover:from-primary-light hover:to-accent/20 hover:text-primary hover:border-l-4 hover:border-primary/30"
+                  `flex-1 flex items-center justify-center gap-3 p-4 bg-gradient-to-r from-white/90 to-blue-50/80 backdrop-blur-sm border border-slate-200/50 rounded-2xl shadow-lg hover:shadow-xl hover:from-blue-50 hover:to-indigo-50 hover:border-blue-300/50 transition-all duration-300 cursor-pointer hover:scale-[1.02] ${isActive
+                    ? "from-blue-500 to-indigo-600 text-white shadow-blue-200/50 border-blue-400"
+                    : "text-slate-700 hover:text-blue-700"
                   }`
                 }
               >
-                <div className="flex items-center flex-1">
-                  <div className={`${location.pathname === item.path ? "text-white" : "text-primary"} transition-colors duration-200`}>
-                    {item.icon}
-                  </div>
-                  <div className="ml-3 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{item.name}</span>
-                      {item.badge && (
-                        <span className="px-2 py-0.5 text-xs bg-red-100 text-red-600 rounded-full animate-pulse font-semibold">New</span>
-                      )}
-                      {item.count && (
-                        <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded-full font-medium">{item.count}</span>
-                      )}
-                      {item.section === "quickActions" && (
-                        <Zap className="w-3 h-3 text-yellow-500 animate-pulse" />
-                      )}
-                    </div>
-                    {item.description && (
-                      <p className="text-xs text-text-secondary mt-0.5 opacity-75">{item.description}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Action buttons */}
-                <div className="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-all duration-200 transform translate-x-2 group-hover/item:translate-x-0">
-                  {item.shortcut && (
-                    <span className="text-xs text-text-secondary bg-surface px-1.5 py-0.5 rounded border shadow-sm">
-                      {item.shortcut}
-                    </span>
-                  )}
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      toggleFavorite(item.path);
-                    }}
-                    className={`p-1 rounded transition-all duration-200 hover:scale-110 ${isFavorite ? "text-yellow-500" : "text-text-secondary hover:text-yellow-500"}`}
-                    title={isFavorite ? "Remove from favorites" : "Add to favorites"}
-                  >
-                    <Star className={`w-3 h-3 ${isFavorite ? "fill-current" : ""}`} />
-                  </button>
-                </div>
+                <Home className="w-6 h-6" />
+                <span className="font-bold text-lg">Admin Dashboard</span>
               </NavLink>
-
-              {/* Recent indicator */}
-              {isRecent && (
-                <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-blue-500 rounded-r-full animate-pulse"></div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Bottom Actions */}
-      <div className="p-4 border-t border-border bg-gradient-to-br from-surface via-primary-light/30 to-accent/10">
-        <div className="flex items-center justify-start flex-wrap gap-2">
-          {/* Admin-only buttons */}
-          {isAdminOrSuperAdmin && (
-            <>
               <NavLink
-                to="/user"
-                className="flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 hover:shadow-md hover:scale-105"
-                title="User Management (Admin Only)"
+                to="/salesdashboard"
+                className={({ isActive }) =>
+                  `flex-1 flex items-center justify-center gap-3 p-4 bg-gradient-to-r from-white/90 to-green-50/80 backdrop-blur-sm border border-slate-200/50 rounded-2xl shadow-lg hover:shadow-xl hover:from-green-50 hover:to-emerald-50 hover:border-green-300/50 transition-all duration-300 cursor-pointer hover:scale-[1.02] ${isActive
+                    ? "from-green-500 to-emerald-600 text-white shadow-green-200/50 border-green-400"
+                    : "text-slate-700 hover:text-green-700"
+                  }`
+                }
               >
-                <User className="w-4 h-4 mr-1" />
+                <TrendingUp className="w-6 h-6" />
+                <span className="font-bold text-lg">Sales Overview</span>
               </NavLink>
-              <button
-                onClick={() => navigate('/buisness')}
-                className="flex items-center px-3 py-2 text-sm font-medium text-blue-500 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 hover:shadow-md hover:scale-105"
-                title="Business Settings (Admin Only)"
-              >
-                <Settings className="w-4 h-4 mr-1" />
-              </button>
-            </>
-          )}
-
-          {/* Regular user buttons */}
-          {hasPermission('my') && (
-            <NavLink
-              to="/my"
-              className="flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg text-green-500 hover:bg-green-50 hover:text-green-700 transition-all duration-200 hover:shadow-md hover:scale-105"
-              title="My Settings"
-            >
-              <User className="w-4 h-4 mr-1" />
-            </NavLink>
-          )}
-
-          {hasPermission('invoice') && (
-            <div className="relative group">
-              <button
-                onClick={() => navigate('/invoice')}
-                className="flex items-center px-3 py-2 text-sm font-medium text-green-500 rounded-lg hover:bg-green-50 hover:text-green-700 transition-all duration-200 hover:shadow-md hover:scale-105"
-                title="Invoice"
-              >
-                <Receipt className="w-4 h-4 mr-1" />
-              </button>
             </div>
-          )}
 
-          <div className="relative group">
-            <button
-              onClick={handleLogout}
-              className="flex items-center px-3 py-2 text-sm font-medium text-red-500 rounded-lg hover:bg-red-50 hover:text-red-700 transition-all duration-200 hover:shadow-md hover:scale-105"
-              title="Logout"
-            >
-              <LogOut className="w-4 h-4 mr-1" />
-            </button>
+            {/* Human Resource Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 px-3">
+                <div className="flex-1 h-px bg-gradient-to-r from-blue-200 to-transparent" />
+              </div>
+              <div className="grid grid-cols-5 gap-4 p-6 bg-gradient-to-br from-blue-50/80 via-indigo-50/60 to-purple-50/40 rounded-3xl shadow-xl border border-blue-100/50 backdrop-blur-sm">
+                {humanResourceModules.filter(app => hasModulePermission(app.key)).map((app, index) => (
+                  <div key={app.name} className="group relative">
+                    <NavLink
+                      to={app.path}
+                      className={({ isActive }) =>
+                        `flex flex-col items-center justify-center w-24 h-24 bg-white/90 backdrop-blur-sm border border-slate-200/50 rounded-2xl shadow-lg transition-all duration-300 cursor-pointer hover:scale-110 hover:shadow-2xl hover:border-${app.color}-300/50 hover:bg-gradient-to-br hover:from-${app.color}-50 hover:to-${app.color}-100/50 group-hover:z-10 ${isActive
+                          ? `border-${app.color}-400 bg-gradient-to-br from-${app.color}-500 to-${app.color}-600 text-white shadow-${app.color}-200/50`
+                          : `text-${app.color}-600 hover:text-${app.color}-700`
+                        }`
+                      }
+                      title={app.name}
+                    >
+                      <div className="mb-2">{app.icon}</div>
+                      <span className="text-xs font-bold text-center leading-tight px-1">{app.name}</span>
+                    </NavLink>
+                    <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-20">
+                      <div className="bg-slate-800/90 backdrop-blur-sm text-white text-xs px-3 py-2 rounded-xl shadow-xl border border-slate-600/50 whitespace-nowrap font-medium">
+                        {app.desc}
+                        <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-slate-800/90 rotate-45" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Sales & Inventory Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 px-3">
+                  <div className="flex-1 h-px bg-gradient-to-r from-green-200 to-transparent" />
+                </div>
+                <div className="grid grid-cols-5 gap-4 p-6 bg-gradient-to-br from-green-50/80 via-emerald-50/60 to-teal-50/40 rounded-3xl shadow-xl border border-green-100/50 backdrop-blur-sm">
+                  {salesInventoryModules.filter(app => hasModulePermission(app.key)).map((app, index) => (
+                    <div key={app.name} className="group relative">
+                      <NavLink
+                        to={app.path}
+                        className={({ isActive }) =>
+                          `flex flex-col items-center justify-center w-24 h-24 bg-white/90 backdrop-blur-sm border border-slate-200/50 rounded-2xl shadow-lg transition-all duration-300 cursor-pointer hover:scale-110 hover:shadow-2xl hover:border-${app.color}-300/50 hover:bg-gradient-to-br hover:from-${app.color}-50 hover:to-${app.color}-100/50 group-hover:z-10 ${isActive
+                            ? `border-${app.color}-400 bg-gradient-to-br from-${app.color}-500 to-${app.color}-600 text-white shadow-${app.color}-200/50`
+                            : `text-${app.color}-600 hover:text-${app.color}-700`
+                          }`
+                        }
+                        title={app.name}
+                      >
+                        <div className="mb-2">{app.icon}</div>
+                        <span className="text-xs font-bold text-center leading-tight px-1">{app.name}</span>
+                      </NavLink>
+                      <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-20">
+                        <div className="bg-slate-800/90 backdrop-blur-sm text-white text-xs px-3 py-2 rounded-xl shadow-xl border border-slate-600/50 whitespace-nowrap font-medium">
+                          {app.desc}
+                          <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-slate-800/90 rotate-45" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Quick Stats */}
-        <div className="mt-3 pt-3 border-t border-border/50">
-          <div className="flex items-center justify-between text-xs text-text-secondary">
-            <div className="flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              <span>Recent: {recentPages.length}</span>
+          {/* Right Action Panel */}
+          <div className="fixed right-0 top-1/2 w-20 -translate-y-1/2 flex flex-col items-center bg-white/95 backdrop-blur-md shadow-2xl border-l border-slate-200/50 z-50 rounded-l-3xl">
+            <div className="flex flex-col items-center justify-center gap-4 p-4">
+              {/* User Management (admin and super-admin only) */}
+              { (isAdmin || isSuperAdmin) && (
+                <div className="group relative">
+                  <NavLink
+                    to="/user"
+                    className="flex flex-col items-center justify-center p-4 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-100 text-blue-600 hover:from-blue-100 hover:to-indigo-200 hover:text-blue-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-blue-200/50"
+                    title="User Management"
+                  >
+                    <User className="w-7 h-7" />
+                  </NavLink>
+                  <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
+                    <div className="bg-slate-800/90 backdrop-blur-sm text-white text-sm px-3 py-2 rounded-xl shadow-xl border border-slate-600/50 whitespace-nowrap font-medium">
+                      User Management
+                      <div className="absolute top-1/2 -translate-y-1/2 -right-1 w-2 h-2 bg-slate-800/90 rotate-45" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Business Settings (super-admin only) */}
+              { isSuperAdmin && (
+                <div className="group relative">
+                  <button
+                    onClick={() => navigate("/buisness")}
+                    className="flex flex-col items-center justify-center p-4 rounded-2xl bg-gradient-to-br from-purple-50 to-violet-100 text-purple-600 hover:from-purple-100 hover:to-violet-200 hover:text-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-purple-200/50"
+                    title="Business Settings"
+                  >
+                    <Settings className="w-7 h-7" />
+                  </button>
+                  <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
+                    <div className="bg-slate-800/90 backdrop-blur-sm text-white text-sm px-3 py-2 rounded-xl shadow-xl border border-slate-600/50 whitespace-nowrap font-medium">
+                      Business Settings
+                      <div className="absolute top-1/2 -translate-y-1/2 -right-1 w-2 h-2 bg-slate-800/90 rotate-45" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* My Profile (all users) */}
+              <div className="group relative">
+                <NavLink
+                  to="/my"
+                  className="flex flex-col items-center justify-center p-4 rounded-2xl bg-gradient-to-br from-green-50 to-emerald-100 text-green-600 hover:from-green-100 hover:to-emerald-200 hover:text-green-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-green-200/50"
+                  title="My Profile"
+                >
+                  <User className="w-7 h-7" />
+                </NavLink>
+                <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
+                  <div className="bg-slate-800/90 backdrop-blur-sm text-white text-sm px-3 py-2 rounded-xl shadow-xl border border-slate-600/50 whitespace-nowrap font-medium">
+                    My Profile
+                    <div className="absolute top-1/2 -translate-y-1/2 -right-1 w-2 h-2 bg-slate-800/90 rotate-45" />
+                  </div>
+                </div>
+              </div>
+
+              {hasPermission("invoice") && (
+                <div className="group relative">
+                  <button
+                    onClick={() => navigate("/invoice")}
+                    className="flex flex-col items-center justify-center p-4 rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-100 text-amber-600 hover:from-amber-100 hover:to-yellow-200 hover:text-amber-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-amber-200/50"
+                    title="Invoice"
+                  >
+                    <Receipt className="w-7 h-7" />
+                  </button>
+                  <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
+                    <div className="bg-slate-800/90 backdrop-blur-sm text-white text-sm px-3 py-2 rounded-xl shadow-xl border border-slate-600/50 whitespace-nowrap font-medium">
+                      Invoice
+                      <div className="absolute top-1/2 -translate-y-1/2 -right-1 w-2 h-2 bg-slate-800/90 rotate-45" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="w-full h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent my-2" />
+
+              <div className="group relative">
+                <button
+                  onClick={handleLogout}
+                  className="flex flex-col items-center justify-center p-4 rounded-2xl bg-gradient-to-br from-red-50 to-rose-100 text-red-600 hover:from-red-100 hover:to-rose-200 hover:text-red-700 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-red-200/50"
+                  title="Logout"
+                >
+                  <LogOut className="w-7 h-7" />
+                </button>
+                <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
+                  <div className="bg-slate-800/90 backdrop-blur-sm text-white text-sm px-3 py-2 rounded-xl shadow-xl border border-slate-600/50 whitespace-nowrap font-medium">
+                    Logout
+                    <div className="absolute top-1/2 -translate-y-1/2 -right-1 w-2 h-2 bg-slate-800/90 rotate-45" />
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
-              <Star className="w-3 h-3 text-yellow-500" />
-              <span>Favorites: {favorites.length}</span>
-            </div>
-            <span className="text-primary font-medium bg-primary-light px-2 py-1 rounded-full text-xs">v2.0</span>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

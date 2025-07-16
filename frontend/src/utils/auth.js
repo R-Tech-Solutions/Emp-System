@@ -11,7 +11,9 @@ export const getUserData = () => {
   return userData ? JSON.parse(userData) : null;
 };
 
-// Check if user has specific permission
+// Checks if the current user has a specific permission.
+// Usage: hasPermission('permissionName')
+// Returns true if the user is admin/super-admin or if the permission is set to true in userData.permissions.
 export const hasPermission = (permission) => {
   const userData = getUserData();
   if (!userData) return false;

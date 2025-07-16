@@ -8,20 +8,20 @@ import { useNavigate } from "react-router-dom";
 export default function UserManagementPage() {
   const navigate = useNavigate();
   const VALID_EMAIL = "info@rtechsl.lk";
-  
+
   // Check if user has access to this page
   useEffect(() => {
     const isLoggedIn = sessionStorage.getItem("isLoggedIn") === "true";
     const email = sessionStorage.getItem("email");
     const restrictedUser = sessionStorage.getItem("restrictedUser") === "true";
     const userData = JSON.parse(sessionStorage.getItem("userData") || "{}");
-    
+
     // Allow access if:
     // 1. User is logged in with the specific hardcoded credentials, OR
     // 2. User is logged in and has admin or super-admin role
     const hasValidCredentials = email === VALID_EMAIL && restrictedUser;
     const isAdminOrSuperAdmin = userData.role === "admin" || userData.role === "super-admin";
-    
+
     if (!isLoggedIn || (!hasValidCredentials && !isAdminOrSuperAdmin)) {
       navigate("/login");
       return;
@@ -43,7 +43,7 @@ export default function UserManagementPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showEditPassword, setShowEditPassword] = useState(false)
   const [isLoadingUsers, setIsLoadingUsers] = useState(true)
-  
+
   // Define sidebar permissions structure
   const sidebarPermissions = {
     "Human Resource": {
@@ -122,7 +122,7 @@ export default function UserManagementPage() {
     const email = sessionStorage.getItem("email");
     const restrictedUser = sessionStorage.getItem("restrictedUser") === "true";
     const userData = JSON.parse(sessionStorage.getItem("userData") || "{}");
-    
+
     const hasValidCredentials = email === VALID_EMAIL && restrictedUser;
     const isAdminOrSuperAdmin = userData.role === "admin" || userData.role === "super-admin";
     if (hasValidCredentials || isAdminOrSuperAdmin) {
@@ -206,31 +206,31 @@ export default function UserManagementPage() {
     if (name === "role") {
       if (value === "super-admin") {
         // Super Admin gets all permissions and requires mobile number
-        setFormData((prev) => ({ 
-          ...prev, 
+        setFormData((prev) => ({
+          ...prev,
           [name]: value,
           permissions: {} // Empty object means all permissions for super admin
         }))
       } else if (value === "admin") {
         // Admin gets all permissions
-        setFormData((prev) => ({ 
-          ...prev, 
+        setFormData((prev) => ({
+          ...prev,
           [name]: value,
           permissions: {} // Empty object means all permissions for admin
         }))
       } else {
         // User role - initialize with no permissions
-        setFormData((prev) => ({ 
-          ...prev, 
+        setFormData((prev) => ({
+          ...prev,
           [name]: value,
           permissions: {}
         }))
       }
-      
+
       // Clear mobile number if not Super Admin
       if (value !== "super-admin") {
-        setFormData((prev) => ({ 
-          ...prev, 
+        setFormData((prev) => ({
+          ...prev,
           mobileNumber: ""
         }))
       }
@@ -252,11 +252,11 @@ export default function UserManagementPage() {
   const handleCategoryPermissionChange = (category, checked) => {
     const categoryPermissions = sidebarPermissions[category]
     const newPermissions = { ...formData.permissions }
-    
+
     Object.keys(categoryPermissions).forEach(permission => {
       newPermissions[permission] = checked
     })
-    
+
     setFormData((prev) => ({
       ...prev,
       permissions: newPermissions
@@ -266,7 +266,7 @@ export default function UserManagementPage() {
   // Check if all permissions in a category are selected
   const isCategoryFullySelected = (category) => {
     const categoryPermissions = sidebarPermissions[category]
-    return Object.keys(categoryPermissions).every(permission => 
+    return Object.keys(categoryPermissions).every(permission =>
       formData.permissions[permission] === true
     )
   }
@@ -274,10 +274,10 @@ export default function UserManagementPage() {
   // Check if any permissions in a category are selected
   const isCategoryPartiallySelected = (category) => {
     const categoryPermissions = sidebarPermissions[category]
-    const hasSelected = Object.keys(categoryPermissions).some(permission => 
+    const hasSelected = Object.keys(categoryPermissions).some(permission =>
       formData.permissions[permission] === true
     )
-    const hasUnselected = Object.keys(categoryPermissions).some(permission => 
+    const hasUnselected = Object.keys(categoryPermissions).some(permission =>
       formData.permissions[permission] !== true
     )
     return hasSelected && hasUnselected
@@ -331,7 +331,7 @@ export default function UserManagementPage() {
 
     try {
       const response = await axios.put(
-       `${backEndURL}/api/users/${currentUser.id}`,
+        `${backEndURL}/api/users/${currentUser.id}`,
         formData
       );
       setUsers((prev) =>
@@ -408,34 +408,6 @@ export default function UserManagementPage() {
 
   return (
     <div className="min-h-screen bg-background text-text-primary">
-      {/* Header */}
-      <header className="bg-surface shadow-md border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-text-primary">User Management</h1>
-            <div className="flex items-center gap-4">
-              <div className="text-sm text-text-secondary">
-                Logged in as: <span className="font-medium text-text-primary">
-                  {JSON.parse(sessionStorage.getItem("userData") || "{}").name || sessionStorage.getItem("email")}
-                </span>
-                <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded">
-                  {JSON.parse(sessionStorage.getItem("userData") || "{}").role || "Admin"}
-                </span>
-              </div>
-              <button
-                onClick={() => {
-                  sessionStorage.clear();
-                  navigate("/login");
-                }}
-                className="px-3 py-1 bg-accent hover:bg-accent/80 text-text-primary text-sm font-medium rounded-md transition-colors"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Controls */}
@@ -476,11 +448,10 @@ export default function UserManagementPage() {
             </select>
 
             <button
-              className={`px-3 py-2 rounded-md font-medium text-sm transition-colors ${
-                statusFilter === 'active' 
-                  ? 'bg-green-100 text-green-800 border border-green-300' 
+              className={`px-3 py-2 rounded-md font-medium text-sm transition-colors ${statusFilter === 'active'
+                  ? 'bg-green-100 text-green-800 border border-green-300'
                   : 'bg-background border border-border text-text-primary hover:bg-surface'
-              }`}
+                }`}
               onClick={() => setStatusFilter(statusFilter === 'active' ? 'all' : 'active')}
             >
               Show Active
@@ -645,18 +616,16 @@ export default function UserManagementPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            user.role === "admin" ? "bg-primary-light text-primary" : "bg-secondary/20 text-text-primary"
-                          }`}
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === "admin" ? "bg-primary-light text-primary" : "bg-secondary/20 text-text-primary"
+                            }`}
                         >
                           {user.role}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            user.status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                          }`}
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                            }`}
                         >
                           {user.status}
                         </span>
@@ -672,14 +641,15 @@ export default function UserManagementPage() {
                         >
                           <PencilIcon className="h-5 w-5" />
                         </button>
-                        <button 
-                          className={`text-accent hover:text-accent/80 ${(() => { const userData = JSON.parse(sessionStorage.getItem("userData") || "{}"); return userData.role !== "super-admin" ? 'opacity-50 cursor-not-allowed' : '' })()}`}
-                          onClick={() => { const userData = JSON.parse(sessionStorage.getItem("userData") || "{}"); if (userData.role === "super-admin") openDeleteModal(user); }}
-                          title="Delete user"
-                          disabled={(() => { const userData = JSON.parse(sessionStorage.getItem("userData") || "{}"); return userData.role !== "super-admin"; })()}
-                        >
-                          <TrashIcon className="h-5 w-5" />
-                        </button>
+                        {JSON.parse(sessionStorage.getItem("userData") || "{}").role === "super-admin" && (
+                          <button
+                            className="text-accent hover:text-accent/80"
+                            onClick={() => openDeleteModal(user)}
+                            title="Delete user"
+                          >
+                            <TrashIcon className="h-5 w-5" />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -725,9 +695,8 @@ export default function UserManagementPage() {
                         type="email"
                         value={formData.email}
                         onChange={handleChange}
-                        className={`w-full px-4 py-2 rounded-md bg-background border ${
-                          formErrors.email ? "border-accent" : "border-border"
-                        } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
+                        className={`w-full px-4 py-2 rounded-md bg-background border ${formErrors.email ? "border-accent" : "border-border"
+                          } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
                         placeholder="user@example.com"
                       />
                       {formErrors.email && <p className="mt-1 text-sm text-accent">{formErrors.email}</p>}
@@ -744,9 +713,8 @@ export default function UserManagementPage() {
                           type={showPassword ? "text" : "password"}
                           value={formData.password}
                           onChange={handleChange}
-                          className={`w-full px-4 py-2 pr-10 rounded-md bg-background border ${
-                            formErrors.password ? "border-accent" : "border-border"
-                          } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
+                          className={`w-full px-4 py-2 pr-10 rounded-md bg-background border ${formErrors.password ? "border-accent" : "border-border"
+                            } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
                           placeholder="••••••••"
                         />
                         <button
@@ -774,9 +742,8 @@ export default function UserManagementPage() {
                         type="text"
                         value={formData.name}
                         onChange={handleChange}
-                        className={`w-full px-4 py-2 rounded-md bg-background border ${
-                          formErrors.name ? "border-accent" : "border-border"
-                        } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
+                        className={`w-full px-4 py-2 rounded-md bg-background border ${formErrors.name ? "border-accent" : "border-border"
+                          } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
                         placeholder="John Doe"
                       />
                       {formErrors.name && <p className="mt-1 text-sm text-accent">{formErrors.name}</p>}
@@ -792,9 +759,8 @@ export default function UserManagementPage() {
                         type="text"
                         value={formData.username}
                         onChange={handleChange}
-                        className={`w-full px-4 py-2 rounded-md bg-background border ${
-                          formErrors.username ? "border-accent" : "border-border"
-                        } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
+                        className={`w-full px-4 py-2 rounded-md bg-background border ${formErrors.username ? "border-accent" : "border-border"
+                          } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
                         placeholder="Unique username"
                       />
                       {formErrors.username && <p className="mt-1 text-sm text-accent">{formErrors.username}</p>}
@@ -851,9 +817,8 @@ export default function UserManagementPage() {
                           type="tel"
                           value={formData.mobileNumber}
                           onChange={handleChange}
-                          className={`w-full px-4 py-2 rounded-md bg-background border ${
-                            formErrors.mobileNumber ? "border-accent" : "border-border"
-                          } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
+                          className={`w-full px-4 py-2 rounded-md bg-background border ${formErrors.mobileNumber ? "border-accent" : "border-border"
+                            } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
                           placeholder="+1234567890"
                         />
                         {formErrors.mobileNumber && <p className="mt-1 text-sm text-accent">{formErrors.mobileNumber}</p>}
@@ -976,9 +941,8 @@ export default function UserManagementPage() {
                         type="email"
                         value={formData.email}
                         onChange={handleChange}
-                        className={`w-full px-4 py-2 rounded-md bg-background border ${
-                          formErrors.email ? "border-accent" : "border-border"
-                        } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
+                        className={`w-full px-4 py-2 rounded-md bg-background border ${formErrors.email ? "border-accent" : "border-border"
+                          } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
                       />
                       {formErrors.email && <p className="mt-1 text-sm text-accent">{formErrors.email}</p>}
                     </div>
@@ -993,9 +957,8 @@ export default function UserManagementPage() {
                         type="text"
                         value={formData.name}
                         onChange={handleChange}
-                        className={`w-full px-4 py-2 rounded-md bg-background border ${
-                          formErrors.name ? "border-accent" : "border-border"
-                        } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
+                        className={`w-full px-4 py-2 rounded-md bg-background border ${formErrors.name ? "border-accent" : "border-border"
+                          } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
                       />
                       {formErrors.name && <p className="mt-1 text-sm text-accent">{formErrors.name}</p>}
                     </div>
@@ -1010,9 +973,8 @@ export default function UserManagementPage() {
                         type="text"
                         value={formData.username}
                         onChange={handleChange}
-                        className={`w-full px-4 py-2 rounded-md bg-background border ${
-                          formErrors.username ? "border-accent" : "border-border"
-                        } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
+                        className={`w-full px-4 py-2 rounded-md bg-background border ${formErrors.username ? "border-accent" : "border-border"
+                          } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
                       />
                       {formErrors.username && <p className="mt-1 text-sm text-accent">{formErrors.username}</p>}
                     </div>
@@ -1050,9 +1012,8 @@ export default function UserManagementPage() {
                           type="tel"
                           value={formData.mobileNumber}
                           onChange={handleChange}
-                          className={`w-full px-4 py-2 rounded-md bg-background border ${
-                            formErrors.mobileNumber ? "border-accent" : "border-border"
-                          } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
+                          className={`w-full px-4 py-2 rounded-md bg-background border ${formErrors.mobileNumber ? "border-accent" : "border-border"
+                            } text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary`}
                           placeholder="+1234567890"
                         />
                         {formErrors.mobileNumber && <p className="mt-1 text-sm text-accent">{formErrors.mobileNumber}</p>}
@@ -1190,9 +1151,8 @@ export default function UserManagementPage() {
       {/* Toast Notification */}
       {toast.show && (
         <div
-          className={`fixed bottom-4 right-4 px-6 py-3 rounded-md shadow-lg ${
-            toast.type === "error" ? "bg-accent" : "bg-primary"
-          } text-white`}
+          className={`fixed bottom-4 right-4 px-6 py-3 rounded-md shadow-lg ${toast.type === "error" ? "bg-accent" : "bg-primary"
+            } text-white`}
         >
           {toast.message}
         </div>
