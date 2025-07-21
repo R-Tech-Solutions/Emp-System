@@ -36,6 +36,7 @@ import UserSales from "./pages/Usermanual/userSales.jsx";
 import ReturnDashboard from "./pages/Retrundashboard.jsx";
 import CustomerAccounts from "./pages/CustomerAccounts.jsx";
 import Sidebar from "./Sidebar.jsx"
+import Warranty from "./pages/Warranty.jsx"
 // Permission-based route component
 const PermissionRoute = ({ permission, children }) => {
   if (hasPermission(permission)) {
@@ -49,7 +50,7 @@ const AdminOnlyRoute = ({ children }) => {
   const userData = JSON.parse(sessionStorage.getItem("userData") || "{}");
   const email = sessionStorage.getItem("email");
   const restrictedUser = sessionStorage.getItem("restrictedUser") === "true";
-  
+
   // Allow access if user is admin, super-admin, or has the special hardcoded credentials
   if (userData.role === "admin" || userData.role === "super-admin" || (email === "info@rtechsl.lk" && restrictedUser)) {
     return children;
@@ -68,10 +69,10 @@ function hasInvoicePermission() {
 
 // NoAccess component for users without permission
 function NoAccess() {
-  return ( 
+  return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
       <h1 style={{ color: '#dc2626', fontSize: '2rem', marginBottom: '1rem' }}>🚫 Access Denied</h1>
-      <p style={{ color: '#64748b', fontSize: '1.1rem' }}>You do not have permission to access the Invoice page.<br/>Please contact your administrator if you believe this is a mistake.</p>
+      <p style={{ color: '#64748b', fontSize: '1.1rem' }}>You do not have permission to access the Invoice page.<br />Please contact your administrator if you believe this is a mistake.</p>
       <a href="/login" style={{ marginTop: '2rem', color: '#2563eb', textDecoration: 'underline' }}>Back to Login</a>
     </div>
   );
@@ -162,7 +163,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          
+
           <Route
             path="dashboard"
             element={
@@ -467,13 +468,23 @@ function App() {
               </ProtectedRoute>
             }
           />
-          
+
           <Route
             path="customerAccounts"
             element={
               <ProtectedRoute>
                 <PermissionRoute permission="customerAccounts">
                   <CustomerAccounts />
+                </PermissionRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="waranty"
+            element={
+              <ProtectedRoute>
+                <PermissionRoute permission="customerAccounts">
+                  <Warranty />
                 </PermissionRoute>
               </ProtectedRoute>
             }

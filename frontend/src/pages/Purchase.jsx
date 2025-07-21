@@ -6,6 +6,7 @@ import autoTable from 'jspdf-autotable'
 import { backEndURL } from "../Backendurl";
 import * as XLSX from 'xlsx';
 import { useToast } from "../components/Toats";
+import { FaEye, FaUndo } from 'react-icons/fa';
 
 export default function PurchaseApp() {
     const toast = useToast();
@@ -260,7 +261,8 @@ export default function PurchaseApp() {
                     ...item, 
                     newQuantity, 
                     productIdentifierType: product.productIdentifierType,
-                    existingIdentifiers: item.existingIdentifiers || [] // Preserve existing identifiers
+                    existingIdentifiers: item.existingIdentifiers || [], // Preserve existing identifiers
+                    warranty: product.warranty === true || product.warranty === 'Yes', // Store warranty as boolean
                 })
                 setIdentifierModalOpen(true)
             } else {
@@ -295,7 +297,8 @@ export default function PurchaseApp() {
                     // Replace all existing identifiers with the new ones
                     const newIdentifiers = identifiers.map(i => ({
                         value: i.value,
-                        index: i.index
+                        index: i.index,
+                        warranty: i.warranty,
                     }));
                     return {
                         ...item,
@@ -390,18 +393,23 @@ export default function PurchaseApp() {
             const identifierPromises = cartItems.map(async (item) => {
                 // Get all identifiers for this item (from both productIdentifiers and existingIdentifiers)
                 const allIdentifiers = [];
-                
                 // Add identifiers from productIdentifiers state
                 if (productIdentifiers[item.id]?.identifiers) {
                     allIdentifiers.push(...productIdentifiers[item.id].identifiers);
                 }
-                
                 // Add identifiers from cart item's existingIdentifiers
                 if (item.existingIdentifiers) {
                     allIdentifiers.push(...item.existingIdentifiers);
                 }
-                
-                if (allIdentifiers.length > 0) {
+                // Deduplicate by value
+                const uniqueIdentifiersMap = {};
+                allIdentifiers.forEach(i => {
+                    if (i.value && !uniqueIdentifiersMap[i.value]) {
+                        uniqueIdentifiersMap[i.value] = i;
+                    }
+                });
+                const uniqueIdentifiers = Object.values(uniqueIdentifiersMap);
+                if (uniqueIdentifiers.length > 0) {
                     return fetch(`${backEndURL}/api/identifiers/save`, {
                         method: 'POST',
                         headers: {
@@ -409,7 +417,7 @@ export default function PurchaseApp() {
                         },
                         body: JSON.stringify({
                             productId: item.sku,
-                            identifiers: allIdentifiers.map(i => i.value),
+                            identifiers: uniqueIdentifiers.map(i => ({ value: i.value, warranty: i.warranty })),
                             type: item.productIdentifierType,
                             purchaseId: `TEMP-${Date.now()}-${item.id}`
                         })
@@ -441,7 +449,7 @@ export default function PurchaseApp() {
                         allIdentifiers.push(...item.existingIdentifiers);
                     }
                     
-                    return {
+                    let result = {
                         sku: item.sku,
                         name: item.name,
                         quantity: item.quantity,
@@ -449,6 +457,10 @@ export default function PurchaseApp() {
                         total: item.total,
                         identifiers: allIdentifiers
                     };
+                    if (item.productIdentifierType === 'none' && item.warranty && item.warrantyValue) {
+                        result.warrantyValue = item.warrantyValue;
+                    }
+                    return result;
                 }),
                 subtotal,
                 total: grandTotal,
@@ -623,7 +635,8 @@ export default function PurchaseApp() {
                                 price: getProductPrice(product),
                                 total: getProductPrice(product) * (item.quantity + 1),
                                 productIdentifierType: productDetails.productIdentifierType,
-                                existingIdentifiers: item.existingIdentifiers || [] // Keep track of existing identifiers
+                                existingIdentifiers: item.existingIdentifiers || [], // Keep track of existing identifiers
+                                warranty: productDetails.warranty === true || productDetails.warranty === 'Yes',
                             }
                             : item
                     )
@@ -639,7 +652,8 @@ export default function PurchaseApp() {
                         quantity: 1,
                         total: getProductPrice(product),
                         productIdentifierType: productDetails.productIdentifierType,
-                        existingIdentifiers: [] // Initialize empty array for new products
+                        existingIdentifiers: [], // Initialize empty array for new products
+                        warranty: productDetails.warranty === true || productDetails.warranty === 'Yes',
                     },
                 ]
             })
@@ -1156,6 +1170,8 @@ export default function PurchaseApp() {
                                         <th className="text-center py-4 px-4 text-text-secondary font-semibold">Quantity</th>
                                         <th className="text-right py-4 px-4 text-text-secondary font-semibold">Price</th>
                                         <th className="text-right py-4 px-4 text-text-secondary font-semibold">Total</th>
+                                        {/* Warranty column for products with productIdentifierType none and warranty true */}
+                                        <th className="text-center py-4 px-4 text-text-secondary font-semibold">Warranty</th>
                                         <th className="text-center py-4 px-4 text-text-secondary font-semibold">Actions</th>
                                     </tr>
                                 </thead>
@@ -1219,6 +1235,23 @@ export default function PurchaseApp() {
                                                 />
                                             </td>
                                             <td className="text-right py-6 px-4 font-semibold text-text-primary">Rs {item.total.toFixed(2)}</td>
+                                            {/* Warranty input for productIdentifierType none and warranty true */}
+                                            <td className="text-center py-6 px-4">
+                                                {item.productIdentifierType === 'none' && item.warranty && (
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        step="1"
+                                                        value={item.warrantyValue || ''}
+                                                        onChange={e => {
+                                                            const value = e.target.value;
+                                                            setCartItems(prev => prev.map(ci => ci.id === item.id ? { ...ci, warrantyValue: value } : ci));
+                                                        }}
+                                                        className="w-24 px-2 py-1 border border-border rounded-lg text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+                                                        placeholder="Days"
+                                                    />
+                                                )}
+                                            </td>
                                             <td className="text-center py-6 px-4">
                                                 <button
                                                     onClick={() => removeItem(item.id)}
@@ -1741,7 +1774,8 @@ export default function PurchaseApp() {
                                     const formData = new FormData(e.target)
                                     const identifiers = Array.from({ length: currentItem.newQuantity }, (_, i) => ({
                                         index: i + 1,
-                                        value: formData.get(`identifier-${i}`)
+                                        value: formData.get(`identifier-${i}`),
+                                        warranty: currentItem.warranty ? formData.get(`warranty-${i}`) : undefined,
                                     }))
                                     handleIdentifiersSubmit(identifiers)
                                 }} className="flex flex-col flex-grow">
@@ -1749,7 +1783,8 @@ export default function PurchaseApp() {
                                         {Array.from({ length: currentItem.newQuantity }, (_, i) => {
                                             const existingIdentifier = currentItem.existingIdentifiers?.[i];
                                             return (
-                                                <div key={i} className="bg-surface p-4 rounded-xl border border-border/50">
+                                                <div key={i} className="bg-surface p-4 rounded-xl border border-border/50 flex flex-col md:flex-row md:items-center md:space-x-4">
+                                                    <div className="flex-1">
                                                     <label className="block text-sm font-semibold mb-2 text-text-primary">
                                                         Product {i + 1} {currentItem.productIdentifierType === 'serial' ? 'Serial Number' : 'IMEI'}
                                                         {existingIdentifier && (
@@ -1766,6 +1801,23 @@ export default function PurchaseApp() {
                                                         className="w-full px-4 py-3 bg-white border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-text-primary transition-all"
                                                         placeholder={`Enter ${currentItem.productIdentifierType === 'serial' ? 'serial number' : 'IMEI'} for product ${i + 1}`}
                                                     />
+                                                    </div>
+                                                    {currentItem.warranty && (
+                                                        <div className="flex-1 mt-4 md:mt-0">
+                                                            <label className="block text-sm font-semibold mb-2 text-text-primary">
+                                                                Warranty (days)
+                                                            </label>
+                                                            <input
+                                                                type="number"
+                                                                name={`warranty-${i}`}
+                                                                defaultValue={existingIdentifier?.warranty || ''}
+                                                                min="0"
+                                                                step="1"
+                                                                className="w-full px-4 py-3 bg-white border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-text-primary transition-all"
+                                                                placeholder="Enter warranty in days"
+                                                            />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             );
                                         })}
@@ -2031,16 +2083,450 @@ const handleExport = () => {
     XLSX.writeFile(wb, 'purchases.xlsx');
 };
 
+    const [activeTab, setActiveTab] = useState('purchase');
+    const [damagedItems, setDamagedItems] = useState([]);
+    const [selectedDamaged, setSelectedDamaged] = useState([]);
+    const [returnSupplier, setReturnSupplier] = useState("");
+    const [damagedLoading, setDamagedLoading] = useState(false);
+    const [damagedSupplierSelections, setDamagedSupplierSelections] = useState({}); // { [damagedItemKey]: { supplierId, supplierDetails } }
+    const [processedReturns, setProcessedReturns] = useState([]);
+    const [processedReturnsLoading, setProcessedReturnsLoading] = useState(false);
+
+    // Fetch processed returns when the tab is active
+    useEffect(() => {
+        if (activeTab === 'processedReturns') {
+            setProcessedReturnsLoading(true);
+            fetch(`${backEndURL}/api/return-process/processes`)
+                .then(res => res.json())
+                .then(data => setProcessedReturns(Array.isArray(data) ? data : []))
+                .catch(() => setProcessedReturns([]))
+                .finally(() => setProcessedReturnsLoading(false));
+        }
+    }, [activeTab]);
+
+    // Fetch damaged serial/IMEI items for the return tab
+    useEffect(() => {
+        if (activeTab !== 'damaged') return;
+        async function fetchDamaged() {
+            setDamagedLoading(true);
+            try {
+                const productsRes = await fetch(`${backEndURL}/api/products`);
+                const allProducts = await productsRes.json();
+                const serialProducts = allProducts.filter(p => p.productIdentifierType === 'serial');
+                const imeiProducts = allProducts.filter(p => p.productIdentifierType === 'imei');
+                let damaged = [];
+                for (const p of serialProducts) {
+                    const res = await fetch(`${backEndURL}/api/identifiers/serial/${p.sku}`);
+                    const data = await res.json();
+                    (data.identifiers || []).forEach(id => {
+                        if (id.damaged) {
+                            damaged.push({ ...id, type: 'serial', product: p });
+                        }
+                    });
+                }
+                for (const p of imeiProducts) {
+                    const res = await fetch(`${backEndURL}/api/identifiers/imei/${p.sku}`);
+                    const data = await res.json();
+                    (data.identifiers || []).forEach(id => {
+                        if (id.damaged) {
+                            damaged.push({ ...id, type: 'imei', product: p });
+                        }
+                    });
+                }
+                // Filter out items that have already been returned (exist in processedReturns)
+                const processedSet = new Set(
+                    processedReturns.map(r => `${r.product?.sku || ''}__${r.serial || r.imei || ''}`)
+                );
+                damaged = damaged.filter(item => {
+                    const key = `${item.product?.sku || ''}__${item.serial || item.imei || ''}`;
+                    return !processedSet.has(key);
+                });
+                setDamagedItems(damaged);
+            } catch {
+                setDamagedItems([]);
+            }
+            setDamagedLoading(false);
+        }
+        fetchDamaged();
+    }, [activeTab, processedReturns]);
+
+    const handleReturnSubmit = () => {
+        setShowReturnModal(true);
+    };
+
+    const handleConfirmReturn = async () => {
+        setReturning(true);
+        setReturnError("");
+        setReturnSuccess("");
+        try {
+            // Prepare payload
+            const payload = selectedDamaged.map(item => {
+                const key = item.type + '-' + (item.serial || item.imei);
+                const supplier = damagedSupplierSelections[key]?.supplierDetails;
+                return {
+                    type: item.type,
+                    serial: item.serial,
+                    imei: item.imei,
+                    product: item.product,
+                    supplier,
+                };
+            });
+            const res = await fetch(`${backEndURL}/api/returns/process`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ items: payload })
+            });
+            if (!res.ok) throw new Error('Failed to process returns');
+            setReturnSuccess('Return processed and supplier notified!');
+            // Optimistically remove returned items from UI
+            setDamagedItems(prev => prev.filter(item => !selectedDamaged.includes(item)));
+            setSelectedDamaged([]);
+            setDamagedSupplierSelections({});
+            setShowReturnModal(false);
+            toast.success('Return processed and supplier notified!');
+        } catch (err) {
+            setReturnError(err.message || 'Failed to process returns');
+            toast.error('Failed to process returns');
+        }
+        setReturning(false);
+};
+
     const renderCurrentView = () => {
+        if (activeTab === 'damaged') return renderDamagedTab();
         switch (currentView) {
             case "create":
-                return renderCreatePurchase()
+                return renderCreatePurchase();
             case "details":
-                return renderPurchaseDetails()
+                return renderPurchaseDetails();
             default:
-                return renderPurchaseList()
+                return renderPurchaseList();
         }
     }
+
+    // Damaged/Return Tab UI
+    const renderDamagedTab = () => (
+        <div className="min-h-screen bg-gradient-to-br from-background via-surface to-accent/20">
+            <div className="container mx-auto px-6 py-8 max-w-7xl">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-12">
+                    <div className="mb-6 lg:mb-0">
+                        <div className="flex items-center space-x-3 mb-4">
+                            <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-orange-500 rounded-xl flex items-center justify-center">
+                                <FaUndo className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-4xl font-bold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
+                                    Return/Damaged Products
+                                </h1>
+                                <p className="text-text-secondary mt-1">Manage and return damaged products to suppliers</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-border/50">
+                    <h2 className="text-2xl font-bold text-text-primary mb-6">Damaged Items</h2>
+                    {damagedLoading ? (
+                        <div>Loading damaged items...</div>
+                    ) : damagedItems.length === 0 ? (
+                        <div className="text-center text-text-secondary py-8">No damaged serial/IMEI items found.</div>
+                    ) : (
+                        <form onSubmit={e => { e.preventDefault(); handleReturnSubmit(); }}>
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th>Product</th>
+                                            <th>SKU</th>
+                                            <th>Type</th>
+                                            <th>Serial/IMEI</th>
+                                            <th>Damaged At</th>
+                                            <th>Customer</th>
+                                            <th>Supplier</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {damagedItems.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={8} className="text-center py-8 text-text-secondary">No damaged serial/IMEI items found.</td>
+                                            </tr>
+                                        ) : (
+                                            damagedItems.map((item, idx) => {
+                                                const key = item.type + '-' + (item.serial || item.imei);
+                                                const supplierSelection = damagedSupplierSelections[key] || {};
+                                                return (
+                                                    <tr key={idx}>
+                                                        <td>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedDamaged.includes(item)}
+                                                                onChange={e => {
+                                                                    if (e.target.checked) {
+                                                                        setSelectedDamaged(prev => [...prev, item]);
+                                                                        fetchSupplierForDamaged(item);
+                                                                    } else {
+                                                                        setSelectedDamaged(prev => prev.filter(i => i !== item));
+                                                                    }
+                                                                }}
+                                                            />
+                                                        </td>
+                                                        <td
+                                                            style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                                                            onClick={() => fetchSupplierForDamaged(item)}
+                                                        >
+                                                            {item.product?.name || '-'}
+                                                        </td>
+                                                        <td>{item.product?.sku || '-'}</td>
+                                                        <td>{item.type}</td>
+                                                        <td>{item.type === 'serial' ? item.serial : item.imei}</td>
+                                                        <td>{item.damagedAt ? new Date(item.damagedAt).toLocaleString() : '-'}</td>
+                                                        <td>{item.customer || '-'}</td>
+                                                        <td>
+                                                            {/* Supplier dropdown and details */}
+                                                            <select
+                                                                value={supplierSelection.supplierEmail || ''}
+                                                                onChange={e => handleSupplierChange(key, e.target.value)}
+                                                                className="px-4 py-2 rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-primary text-text-primary bg-white"
+                                                            >
+                                                                <option value="">-- Select Supplier --</option>
+                                                                {contactsSuppliers.map(supplier => (
+                                                                    <option key={supplier.id} value={supplier.email}>{supplier.name} {supplier.company ? `(${supplier.company})` : ""} [{supplier.email}]</option>
+                                                                ))}
+                                                            </select>
+                                                            {supplierSelection.supplierDetails && (
+                                                                <div className="bg-green-50 p-2 rounded mt-2">
+                                                                    <div><b>Name:</b> {supplierSelection.supplierDetails.contactId}</div>
+                                                                    <div><b>Status:</b> {supplierSelection.supplierDetails.status}</div>
+                                                                    <div><b>Total Amount:</b> {supplierSelection.supplierDetails.totalAmount}</div>
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div className="mt-6 flex items-center gap-4">
+                                <button
+                                    type="submit"
+                                    className="px-6 py-3 bg-gradient-to-r from-red-500 to-orange-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                                    disabled={selectedDamaged.length === 0 || selectedDamaged.some(item => {
+                                        const key = item.type + '-' + (item.serial || item.imei);
+                                        return !damagedSupplierSelections[key]?.supplierEmail;
+                                    })}
+                                >
+                                    Return Selected
+                                </button>
+                            </div>
+                        </form>
+                    )}
+                </div>
+                {showReturnModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                        <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-2xl relative border border-border/50">
+                            <button
+                                className="absolute top-4 right-4 text-text-secondary hover:text-text-primary text-2xl font-bold transition-colors"
+                                onClick={() => setShowReturnModal(false)}
+                                aria-label="Close"
+                            >
+                                &times;
+                            </button>
+                            <h2 className="text-2xl font-bold mb-4 text-primary">Confirm Return</h2>
+                            <div className="mb-4">You are about to return the following items to their suppliers:</div>
+                            <div className="overflow-x-auto mb-4">
+                                <table className="w-full">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Serial/IMEI</th>
+                                            <th>Supplier</th>
+                                            <th>Email</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {selectedDamaged.map((item, idx) => {
+                                            const key = item.type + '-' + (item.serial || item.imei);
+                                            const supplier = damagedSupplierSelections[key]?.supplierDetails;
+                                            return (
+                                                <tr key={idx}>
+                                                    <td>{item.product?.name || '-'}</td>
+                                                    <td>{item.serial || item.imei || '-'}</td>
+                                                    <td>{supplier?.name || supplier?.contactId || '-'}</td>
+                                                    <td>{supplier?.email || '-'}</td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {returnError && <div className="bg-red-100 text-red-800 px-4 py-2 rounded mb-2">{returnError}</div>}
+                            {returnSuccess && <div className="bg-green-100 text-green-800 px-4 py-2 rounded mb-2">{returnSuccess}</div>}
+                            <div className="flex gap-4 mt-4">
+                                <button
+                                    className="px-6 py-3 bg-gray-200 text-gray-800 font-semibold rounded-xl shadow hover:bg-gray-300"
+                                    onClick={() => setShowReturnModal(false)}
+                                    disabled={returning}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    className="px-6 py-3 bg-gradient-to-r from-red-500 to-orange-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                                    onClick={handleConfirmReturn}
+                                    disabled={returning}
+                                >
+                                    {returning ? 'Processing...' : 'Confirm Return'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+
+    // Helper to fetch supplier details for a damaged item
+    const fetchSupplierForDamaged = async (damagedItem) => {
+        try {
+            const purchasesRes = await fetch(`${backEndURL}/api/purchase`);
+            const purchases = await purchasesRes.json();
+            let foundPurchase = null;
+            for (const purchase of purchases) {
+                for (const item of purchase.items || []) {
+                    if (item.sku === damagedItem.product?.sku && Array.isArray(item.identifiers)) {
+                        if (damagedItem.type === 'serial') {
+                            if (item.identifiers.some(id => id.value === damagedItem.serial || id.serial === damagedItem.serial)) {
+                                foundPurchase = purchase;
+                                break;
+                            }
+                        } else if (damagedItem.type === 'imei') {
+                            if (item.identifiers.some(id => id.value === damagedItem.imei || id.imei === damagedItem.imei)) {
+                                foundPurchase = purchase;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (foundPurchase) break;
+            }
+            console.log('Clicked Damaged Item:', damagedItem);
+            console.log('Found Purchase:', foundPurchase);
+            if (!foundPurchase) return;
+            const customerEmail = foundPurchase.customerEmail;
+            console.log('Customer Email:', customerEmail);
+            // Fetch contacts and find supplier by email
+            const contactsRes = await fetch(`${backEndURL}/api/contacts`);
+            const allContacts = await contactsRes.json();
+            const supplier = allContacts.find(c => c.categoryType === 'Supplier' && c.email === customerEmail);
+            console.log('Found Supplier (Contact):', supplier);
+            if (supplier) {
+                setDamagedSupplierSelections(prev => ({
+                    ...prev,
+                    [damagedItem.type + '-' + (damagedItem.serial || damagedItem.imei)]: {
+                        supplierId: supplier.id,
+                        supplierEmail: supplier.email,
+                        supplierDetails: supplier
+                    }
+                }));
+            }
+        } catch (err) {
+            // ignore
+        }
+    };
+
+    // Helper to handle supplier dropdown change per item
+    const handleSupplierChange = (key, supplierEmail) => {
+        const supplier = contactsSuppliers.find(s => s.email === supplierEmail);
+        setDamagedSupplierSelections(prev => ({
+            ...prev,
+            [key]: {
+                ...prev[key],
+                supplierEmail,
+                supplierDetails: supplier || prev[key]?.supplierDetails
+            }
+        }));
+    };
+
+    // For Return/Damaged tab: suppliers from contacts
+    const [contactsSuppliers, setContactsSuppliers] = useState([]);
+
+    // Fetch contacts (suppliers) when Return/Damaged tab is active
+    useEffect(() => {
+        if (activeTab === 'damaged') {
+            fetch(`${backEndURL}/api/contacts`)
+                .then(res => res.json())
+                .then(data => {
+                    setContactsSuppliers(Array.isArray(data) ? data.filter(s => s.categoryType === 'Supplier') : []);
+                })
+                .catch(() => setContactsSuppliers([]));
+        }
+    }, [activeTab]);
+
+    // Modal and return state for Return/Damaged tab
+    const [showReturnModal, setShowReturnModal] = useState(false);
+    const [returning, setReturning] = useState(false);
+    const [returnError, setReturnError] = useState("");
+    const [returnSuccess, setReturnSuccess] = useState("");
+
+    // Processed Returns Tab UI
+    const renderProcessedReturnsTab = () => (
+        <div className="min-h-screen bg-gradient-to-br from-background via-surface to-accent/20">
+            <div className="container mx-auto px-6 py-8 max-w-7xl">
+                <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-12">
+                    <div className="mb-6 lg:mb-0">
+                        <div className="flex items-center space-x-3 mb-4">
+                            <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl flex items-center justify-center">
+                                <FaEye className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-4xl font-bold bg-gradient-to-r from-green-500 to-blue-500 bg-clip-text text-transparent">
+                                    Processed Returns
+                                </h1>
+                                <p className="text-text-secondary mt-1">All items that have been returned to suppliers</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-border/50">
+                    <h2 className="text-2xl font-bold text-text-primary mb-6">Processed Returns</h2>
+                    {processedReturnsLoading ? (
+                        <div>Loading processed returns...</div>
+                    ) : processedReturns.length === 0 ? (
+                        <div className="text-center text-text-secondary py-8">No processed returns found.</div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>SKU</th>
+                                        <th>Type</th>
+                                        <th>Serial/IMEI</th>
+                                        <th>Supplier</th>
+                                        <th>Returned At</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {processedReturns.map((item, idx) => (
+                                        <tr key={idx}>
+                                            <td>{item.product?.name || '-'}</td>
+                                            <td>{item.product?.sku || '-'}</td>
+                                            <td>{item.type}</td>
+                                            <td>{item.serial || item.imei || '-'}</td>
+                                            <td>{item.supplier?.name || item.supplier?.contactId || '-'}</td>
+                                            <td>{item.returnedAt ? new Date(item.returnedAt).toLocaleString() : '-'}</td>
+                                            <td>{item.status || '-'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
 
     return (
         <div className="min-h-screen bg-gray-900">
@@ -2065,8 +2551,28 @@ const handleExport = () => {
                     }
                 `}
             </style>
+            <div className="flex gap-4 px-6 pt-6">
+                <button
+                    className={`px-6 py-3 rounded-t-xl font-semibold ${activeTab === 'purchase' ? 'bg-white text-primary shadow' : 'bg-gray-200 text-gray-600'}`}
+                    onClick={() => setActiveTab('purchase')}
+                >
+                    Purchase
+                </button>
+                <button
+                    className={`px-6 py-3 rounded-t-xl font-semibold ${activeTab === 'damaged' ? 'bg-white text-red-600 shadow' : 'bg-gray-200 text-gray-600'}`}
+                    onClick={() => setActiveTab('damaged')}
+                >
+                    Return/Damaged
+                </button>
+                <button
+                    className={`px-6 py-3 rounded-t-xl font-semibold ${activeTab === 'processedReturns' ? 'bg-white text-green-600 shadow' : 'bg-gray-200 text-gray-600'}`}
+                    onClick={() => setActiveTab('processedReturns')}
+                >
+                    Processed Returns
+                </button>
+            </div>
             <div className="print-content">
-                {renderCurrentView()}
+                {activeTab === 'processedReturns' ? renderProcessedReturnsTab() : renderCurrentView()}
             </div>
             <toast.ToastContainer />
         </div>

@@ -19,7 +19,10 @@ function productData({
   retailPrice,
   retailPricePercent,
   productIdentifierType,
+  warranty,
 }) {
+  // Debug log
+  console.log('productData input:', arguments[0]);
   // Convert string "true"/"false" to boolean
   let weighWithScaleBool = false;
   if (typeof toWeighWithScale === "string") {
@@ -52,6 +55,7 @@ function productData({
     retailPrice: round2(retailPrice || 0),
     retailPricePercent: retailPricePercent || 0,
     productIdentifierType: productIdentifierType || "none", // default to none
+    warranty: typeof warranty === 'string' ? warranty : 'No',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };

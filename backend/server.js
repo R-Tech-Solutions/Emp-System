@@ -4,11 +4,11 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const db = require('./firebaseConfig'); 
 
-const departmentRoutes = require("./routes/system/DepartmentRoutes");
-const employmentTypeRoutes = require("./routes/system/EmploymentTypeRoutes");
-const employmentStatusRoutes = require("./routes/system/EmploymentStatusRoutes");
-const certificateLevelRoutes = require("./routes/system/CertificateLevelRoutes");
-const positionsRoutes = require("./routes/system/PositionsRoutes");
+const departmentRoutes = require("./routes/system/departmentRoutes");
+const employmentTypeRoutes = require("./routes/system/employmentTypeRoutes");
+const employmentStatusRoutes = require("./routes/system/employmentStatusRoutes");
+const certificateLevelRoutes = require("./routes/system/certificateLevelRoutes");
+const positionsRoutes = require("./routes/system/positionsRoutes");
 
 const employeeRoutes = require('./routes/employee/employeeRoutes');
 const taskRoutes = require('./routes/taskRoutes');
@@ -41,6 +41,7 @@ const returnRoute = require('./routes/ReturnRoute');
 const InvoiceModel = require('./models/InvoiceModel');
 const databaseRoutes = require('./routes/databaseRoutes');
 const holdBillsRoutes = require('./routes/HoldBillsRoutes');
+const returnProcessRoute = require('./routes/ReturnProcessRoute');
 
 dotenv.config();
 
@@ -101,6 +102,7 @@ app.use('/api/identifiers', identifiersRoutes);
 app.use('/api/business-settings', buisnessSettingsRoutes);
 app.use('/api/cashin', cashInRoutes);
 app.use('/api/returns', returnRoute);
+app.use('/api/return-process', returnProcessRoute); // changed from '/api/returns'
 app.use('/api/database', databaseRoutes);
 app.use('/api/hold-bills', holdBillsRoutes);
 

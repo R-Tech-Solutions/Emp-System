@@ -33,7 +33,10 @@ exports.createProduct = [upload.single("image"), async (req, res) => {
     if (req.file) {
       imageUrl = await uploadImageToStorage(req.file);
     }
+    // Debug log
+    console.log('REQ BODY:', req.body);
     const data = productData({ ...req.body, imageUrl });
+    console.log('DATA:', data);
     const sku = data.sku && data.sku.trim();
     if (!sku) {
       return res.status(400).json({ error: "SKU is required and must be unique." });
@@ -115,7 +118,6 @@ exports.updateProduct = [upload.single("image"), async (req, res) => {
     const docRef = db.collection(COLLECTION_NAME).doc(req.params.id);
     const doc = await docRef.get();
     if (!doc.exists) return res.status(404).json({ error: "Product not found" });
-    
     let imageUrl = doc.data().imageUrl || "";
     if (req.file) {
       if (imageUrl) {
@@ -123,17 +125,16 @@ exports.updateProduct = [upload.single("image"), async (req, res) => {
       }
       imageUrl = await uploadImageToStorage(req.file);
     }
-    
+    // Debug log
+    console.log('REQ BODY:', req.body);
     const updatedData = productData({ ...req.body, imageUrl });
+    console.log('DATA:', updatedData);
     updatedData.updatedAt = new Date().toISOString();
-    
     await docRef.update(updatedData);
-    
     // Update cache
     const updatedProduct = { id: doc.id, ...updatedData };
     productCache.set(doc.id, { data: updatedProduct, timestamp: Date.now() });
     productCache.delete('all'); // Clear all products cache
-    
     res.json(updatedProduct);
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -34,6 +34,7 @@ export default function ProductManagement() {
     retailPrice: 0,
     retailPricePercent: 0,
     productIdentifierType: "none",
+    warranty: "No",
   });
 
   // Modal and edit states
@@ -262,6 +263,13 @@ export default function ProductManagement() {
       }));
       return;
     }
+    if (field === "warranty") {
+      setNewProduct({
+        ...newProduct,
+        warranty: value ? "Yes" : "No",
+      });
+      return;
+    }
     setNewProduct({
       ...newProduct,
       [field]: value,
@@ -286,6 +294,13 @@ export default function ProductManagement() {
     if (errors[field]) {
       setErrors({ ...errors, [field]: null });
     }
+    if (field === "warranty") {
+      setEditProduct({
+        ...editProduct,
+        warranty: value ? "Yes" : "No",
+      });
+      return;
+    }
   };
 
   const handleEditImageChange = (e) => {
@@ -305,10 +320,10 @@ export default function ProductManagement() {
 
     setIsLoading(true);
     try {
+      const productToSend = { ...newProduct, warranty: newProduct.warranty === "Yes" ? "Yes" : "No" };
+      console.log("Submitting product:", productToSend);
       const formData = new FormData();
-      // Add all fields to formData for backend
-      Object.entries(newProduct).forEach(([key, value]) => {
-        // Only append if not null/undefined
+      Object.entries(productToSend).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
           formData.append(key, value);
         }
@@ -341,6 +356,7 @@ export default function ProductManagement() {
         retailPrice: 0,
         retailPricePercent: 0,
         productIdentifierType: "none",
+        warranty: "No",
       });
       setErrors({});
     } catch (err) {
@@ -366,8 +382,10 @@ export default function ProductManagement() {
 
     setIsLoading(true);
     try {
+      const productToSend = { ...editProduct, warranty: editProduct.warranty === "Yes" ? "Yes" : "No" };
+      console.log("Submitting edit:", productToSend);
       const formData = new FormData();
-      Object.entries(editProduct).forEach(([key, value]) => {
+      Object.entries(productToSend).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
           formData.append(key, value);
         }
@@ -672,6 +690,19 @@ export default function ProductManagement() {
                 <div>
                   <h3 className="text-xl font-bold text-text-primary mb-6">Basic Information</h3>
                   <div className="space-y-6">
+                    {/* Warranty Checkbox */}
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id="warranty"
+                        checked={newProduct.warranty === "Yes"}
+                        onChange={e => handleNewProductChange("warranty", e.target.checked)}
+                        className="form-checkbox h-5 w-5 text-primary rounded-lg"
+                      />
+                      <label htmlFor="warranty" className="text-lg font-bold text-text-primary">
+                        Warranty
+                      </label>
+                    </div>
                     <div>
                       <label className="block text-lg font-bold text-text-primary mb-2">Product Type</label>
                       <select
@@ -970,6 +1001,7 @@ export default function ProductManagement() {
                     retailPrice: 0,
                     retailPricePercent: 0,
                     productIdentifierType: "none",
+                    warranty: "No",
                   });
                   setErrors({});
                 }}
@@ -1306,6 +1338,19 @@ export default function ProductManagement() {
                 <div>
                   <h3 className="text-xl font-bold text-text-primary mb-6">Basic Information</h3>
                   <div className="space-y-6">
+                    {/* Warranty Checkbox */}
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="checkbox"
+                        id="editWarranty"
+                        checked={editProduct.warranty === "Yes"}
+                        onChange={e => handleEditProductChange("warranty", e.target.checked)}
+                        className="form-checkbox h-5 w-5 text-primary rounded-lg"
+                      />
+                      <label htmlFor="editWarranty" className="text-lg font-bold text-text-primary">
+                        Warranty
+                      </label>
+                    </div>
                     <div>
                       <label className="block text-lg font-bold text-text-primary mb-2">Product Type</label>
                       <select

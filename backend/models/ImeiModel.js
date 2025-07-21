@@ -17,15 +17,30 @@ class ImeiModel {
                 const existingIdentifiers = existingData.identifiers || [];
                 
                 // Append new identifiers
-                const newIdentifiers = imeiData.map(imei => ({
-                    imei,
+                const newIdentifiers = imeiData.map(imeiObj => {
+                    if (typeof imeiObj === 'string') {
+                        return {
+                            imei: imeiObj,
+                            sold: false,
+                            createdAt: new Date(),
+                            soldAt: null,
+                            purchaseId: purchaseId,
+                            damaged: false,
+                            opened: false
+                        };
+                    } else {
+                        return {
+                            imei: imeiObj.value || imeiObj.imei,
+                            warranty: imeiObj.warranty,
                     sold: false,
                     createdAt: new Date(),
                     soldAt: null,
                     purchaseId: purchaseId,
                     damaged: false,
                     opened: false
-                }));
+                        };
+                    }
+                });
                 
                 // Combine existing and new identifiers
                 const updatedIdentifiers = [...existingIdentifiers, ...newIdentifiers];
@@ -40,15 +55,30 @@ class ImeiModel {
                 // Create new document
                 const docRef = await this.collection.doc(productId).set({
                     productId,
-                    identifiers: imeiData.map(imei => ({
-                        imei,
+                    identifiers: imeiData.map(imeiObj => {
+                        if (typeof imeiObj === 'string') {
+                            return {
+                                imei: imeiObj,
+                                sold: false,
+                                createdAt: new Date(),
+                                soldAt: null,
+                                purchaseId: purchaseId,
+                                damaged: false,
+                                opened: false
+                            };
+                        } else {
+                            return {
+                                imei: imeiObj.value || imeiObj.imei,
+                                warranty: imeiObj.warranty,
                         sold: false,
                         createdAt: new Date(),
                         soldAt: null,
                         purchaseId: purchaseId,
                         damaged: false,
                         opened: false
-                    }))
+                            };
+                        }
+                    })
                 });
                 return docRef;
             }
@@ -78,12 +108,24 @@ class ImeiModel {
     async update(productId, imeiData) {
         try {
             const docRef = await this.collection.doc(productId).update({
-                identifiers: imeiData.map(imei => ({
-                    imei,
+                identifiers: imeiData.map(imeiObj => {
+                    if (typeof imeiObj === 'string') {
+                        return {
+                            imei: imeiObj,
+                            sold: false,
+                            createdAt: new Date(),
+                            soldAt: null
+                        };
+                    } else {
+                        return {
+                            imei: imeiObj.value || imeiObj.imei,
+                            warranty: imeiObj.warranty,
                     sold: false,
                     createdAt: new Date(),
                     soldAt: null
-                }))
+                        };
+                    }
+                })
             });
             return docRef;
         } catch (error) {

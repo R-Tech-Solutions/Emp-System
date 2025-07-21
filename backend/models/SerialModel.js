@@ -17,15 +17,31 @@ class SerialModel {
                 const existingIdentifiers = existingData.identifiers || [];
                 
                 // Append new identifiers
-                const newIdentifiers = serialData.map(serial => ({
-                    serial,
+                const newIdentifiers = serialData.map(serialObj => {
+                    // serialObj can be a string or an object with serial and warranty
+                    if (typeof serialObj === 'string') {
+                        return {
+                            serial: serialObj,
+                            sold: false,
+                            createdAt: new Date(),
+                            soldAt: null,
+                            purchaseId: purchaseId,
+                            damaged: false,
+                            opened: false
+                        };
+                    } else {
+                        return {
+                            serial: serialObj.value || serialObj.serial,
+                            warranty: serialObj.warranty,
                     sold: false,
                     createdAt: new Date(),
                     soldAt: null,
                     purchaseId: purchaseId,
                     damaged: false,
                     opened: false
-                }));
+                        };
+                    }
+                });
                 
                 // Combine existing and new identifiers
                 const updatedIdentifiers = [...existingIdentifiers, ...newIdentifiers];
@@ -40,15 +56,30 @@ class SerialModel {
                 // Create new document
                 const docRef = await this.collection.doc(productId).set({
                     productId,
-                    identifiers: serialData.map(serial => ({
-                        serial,
+                    identifiers: serialData.map(serialObj => {
+                        if (typeof serialObj === 'string') {
+                            return {
+                                serial: serialObj,
+                                sold: false,
+                                createdAt: new Date(),
+                                soldAt: null,
+                                purchaseId: purchaseId,
+                                damaged: false,
+                                opened: false
+                            };
+                        } else {
+                            return {
+                                serial: serialObj.value || serialObj.serial,
+                                warranty: serialObj.warranty,
                         sold: false,
                         createdAt: new Date(),
                         soldAt: null,
                         purchaseId: purchaseId,
                         damaged: false,
                         opened: false
-                    }))
+                            };
+                        }
+                    })
                 });
                 return docRef;
             }
@@ -78,12 +109,24 @@ class SerialModel {
     async update(productId, serialData) {
         try {
             const docRef = await this.collection.doc(productId).update({
-                identifiers: serialData.map(serial => ({
-                    serial,
+                identifiers: serialData.map(serialObj => {
+                    if (typeof serialObj === 'string') {
+                        return {
+                            serial: serialObj,
+                            sold: false,
+                            createdAt: new Date(),
+                            soldAt: null
+                        };
+                    } else {
+                        return {
+                            serial: serialObj.value || serialObj.serial,
+                            warranty: serialObj.warranty,
                     sold: false,
                     createdAt: new Date(),
                     soldAt: null
-                }))
+                        };
+                    }
+                })
             });
             return docRef;
         } catch (error) {
